@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: URP_CartoonTree_Leaves 3
+  m_Shader: {fileID: 4800000, guid: 855f1d8b303cab3429abb9f212f1fd8d, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: 313e417ca0f14c04a8cf971accdf74a5, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _WindDistortionMap:
+        m_Texture: {fileID: 2800000, guid: e82bf72157401624698e571bf7bf369e, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _MaxRange: 1
+    - _Metallic: 1
+    - _MinRange: 0.5
+    - _RimMaxRange: 1
+    - _RimMinRange: 0
+    - _RimOffset: 0
+    - _RimRange: 1
+    - _RimWidth: 1
+    - _ScatteringDistoration: 1
+    - _ScatteringInt: 1
+    - _ScatteringPow: 1.5
+    - _Smoothness: 0.066
+    - _SpecInt: 1
+    - _SpecPow: 1
+    - _WindStrength: 1
+    m_Colors:
+    - _BaseColor: {r: 0.16509432, g: 1, b: 0.34545073, a: 1}
+    - _BottomColor: {r: 0.16862746, g: 0.3372549, b: 0.3647059, a: 1}
+    - _ColorTint: {r: 1, g: 1, b: 1, a: 1}
+    - _DarkColor: {r: 0, g: 0.5218003, b: 0.5566038, a: 1}
+    - _DarkColorTint: {r: 0.011480933, g: 0.8113208, b: 0.04504069, a: 1}
+    - _RimCol: {r: 0.60546476, g: 1, b: 0.13679248, a: 1}
+    - _SpecCol: {r: 0.2754231, g: 0.56, b: 0.2509434, a: 1}
+    - _TopColor: {r: 0.25485048, g: 0.6509434, b: 0.43734428, a: 1}
+    - _WindFrequency: {r: 0.05, g: 0.05, b: 0, a: 0}
+  m_BuildTextureStacks: []

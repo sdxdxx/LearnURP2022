@@ -1,0 +1,8 @@
+﻿.idea
+UserSettings
+Library
+Logs
+obj
+Recordings
+*.csproj
+*.sln
