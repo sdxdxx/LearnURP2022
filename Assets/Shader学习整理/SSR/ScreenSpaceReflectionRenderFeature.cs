@@ -62,22 +62,26 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
         //执行传递。这是自定义渲染发生的地方
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
-            CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);//获得一个为ProfilerTag的CommandBuffer
-            
             var stack = VolumeManager.instance.stack;//获取Volume的栈
             screenSpaceReflectionVolume = stack.GetComponent<ScreenSpaceReflectionVolume>();//从栈中获取到ColorTintVolume
             material.SetColor("_BaseColor", screenSpaceReflectionVolume.ColorChange.value);//将材质颜色设置为volume中的值
-            
-            //性能分析器(自带隐式垃圾回收),之后可以在FrameDebugger中查看
-            using (new ProfilingScope(cmd, m_ProfilingSampler))
+            material.SetFloat("_StepLength",screenSpaceReflectionVolume.StepLength.value);
+            material.SetFloat("_Bias",screenSpaceReflectionVolume.Bias.value);
+            if (screenSpaceReflectionVolume.EnableReflection.value)
             {
-                Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle);
-                Blitter.BlitCameraTexture(cmd,tempRTHandle,cameraColorRTHandle,material,0);//写入渲染命令进CommandBuffer
-            }
+                CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);//获得一个为ProfilerTag的CommandBuffer
             
-            context.ExecuteCommandBuffer(cmd);//执行CommandBuffer
-            cmd.Clear();
-            CommandBufferPool.Release(cmd);//释放CommandBuffer
+                //性能分析器(自带隐式垃圾回收),之后可以在FrameDebugger中查看
+                using (new ProfilingScope(cmd, m_ProfilingSampler))
+                {
+                    Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle);
+                    Blitter.BlitCameraTexture(cmd,tempRTHandle,cameraColorRTHandle,material,0);//写入渲染命令进CommandBuffer
+                }
+            
+                context.ExecuteCommandBuffer(cmd);//执行CommandBuffer
+                cmd.Clear();
+                CommandBufferPool.Release(cmd);//释放CommandBuffer
+            }
         }
         
         //在完成渲染相机时调用
