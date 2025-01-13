@@ -35,11 +35,11 @@ Material:
     m_Floats:
     - PixelSnap: 0
     - _EnableExternalAlpha: 0
-    - _InlineWidth: 0
-    - _Light: 5
+    - _InlineWidth: 0.1
+    - _Light: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _Flip: {r: 1, g: 1, b: 1, a: 1}
-    - _InlineColor: {r: 0, g: 0, b: 0, a: 1}
+    - _InlineColor: {r: 1, g: 1, b: 1, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []

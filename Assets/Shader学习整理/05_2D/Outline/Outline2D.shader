@@ -1,4 +1,4 @@
-Shader "URP/2D/Ouline"
+Shader "URP/2D/Inline"
 {
     Properties
     {
@@ -87,10 +87,8 @@ Shader "URP/2D/Ouline"
                  //上面的代码在_InlineWidth = 0时，仍然有一丝描边的颜色。这里控制一下
                  float threshold  = step(0.000001,_InlineWidth);
                  result = lerp(mainTex,result,threshold);
-
-                float4 temp = float4(1.0,1.0,1.0,1.0);
                 
-                return _InlineColor;
+                return result;
             }
 		ENDHLSL
 

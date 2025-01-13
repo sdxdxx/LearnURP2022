@@ -49,6 +49,22 @@ MonoBehaviour:
       serializedVersion: 2
       m_Bits: 16
     shader: {fileID: 4800000, guid: 5fae94a8a3c7f324596e73f876327e4c, type: 3}
+--- !u!114 &-3768913323404907122
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78434f8baf84542a196bb6e69aef22d3, type: 3}
+  m_Name: ScreenSpaceReflectionRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  settings:
+    renderPassEvent: 550
+    shader: {fileID: 4800000, guid: 5894e2fe031c94bc58637f6e8470e7f4, type: 3}
 --- !u!114 &-3720884500850813466
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -156,7 +172,8 @@ MonoBehaviour:
   - {fileID: 4836069913302751489}
   - {fileID: -6643330489509375760}
   - {fileID: 4910406226321685812}
-  m_RendererFeatureMap: adc0de57c6d2eee5d7c237a8a6a61b4cbeb84ddb1c055f8d48b3ff2b16d55de0e6d587b442c35ccc51e642729de87eac01595dabf62b1d43f090451f1e26cea3343dc54672442544
+  - {fileID: -3768913323404907122}
+  m_RendererFeatureMap: adc0de57c6d2eee5d7c237a8a6a61b4cbeb84ddb1c055f8d48b3ff2b16d55de0e6d587b442c35ccc51e642729de87eac01595dabf62b1d43f090451f1e26cea3343dc546724425448ead36094d21b2cb
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
