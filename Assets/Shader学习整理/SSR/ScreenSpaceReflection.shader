@@ -68,17 +68,17 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                 float linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
                 float3 posVS = ReconstructViewPositionFromDepth(i.texcoord,linear01Depth);
                 float3 nDirWS = SAMPLE_TEXTURE2D(_CameraNormalsTexture,sampler_PointClamp,i.texcoord).xyz;
-                float3 nDirVS = TransformWorldToViewDir(nDirWS);
-                float3 sampleNormalizeVector = reflect(normalize(posVS),nDirVS);
+                float3 nDirVS = TransformWorldToViewNormal(nDirWS);
+                float3 sampleNormalizeVector = normalize(reflect(normalize(posVS),nDirVS));
                 float3 samplePosVS = posVS;
                 float stepLength = _StepLength;
                 int maxStep = 256;
                 float3 sampleClipPos;
                 float2 sampleScreenPos;
-                
-                for (int step = 1; step<=128; step++)
+                int step;
+                for (step = 1; step<=32; step++)
                 {
-                    samplePosVS += sampleNormalizeVector*stepLength*step;
+                    samplePosVS += sampleNormalizeVector*stepLength;
                     sampleClipPos = mul((float3x3)unity_CameraProjection, samplePosVS);
                     sampleScreenPos = (sampleClipPos.xy / sampleClipPos.z) * 0.5 + 0.5;
                     float sampleRawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,sampleScreenPos).r;
@@ -87,13 +87,14 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                     {
                         break;
                     }
+                    
                 }
+                
                 float2 reflectScreenPos = sampleScreenPos;
                 half4 albedo_reflect =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, reflectScreenPos);
 
                 half4 result = albedo_reflect*_BaseColor;
-
-                half4 tempResult = half4(nDirWS,1.0);
+                half4 tempResult = half4(nDirVS,1.0);
                 return result;
             }
             
