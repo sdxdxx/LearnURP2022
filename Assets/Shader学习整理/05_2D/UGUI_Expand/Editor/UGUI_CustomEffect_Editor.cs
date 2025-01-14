@@ -5,11 +5,9 @@ using UnityEngine;
 [CustomEditor(typeof(UGUI_CustomEffect))]
 public class UGUI_CustomEffect_Editor : Editor
 {
-    //public float OutlineWidth = 0;
     public override void OnInspectorGUI()
     {
         //base.OnInspectorGUI();
-        
         
         UGUI_CustomEffect t = (UGUI_CustomEffect)target;
         
@@ -19,7 +17,7 @@ public class UGUI_CustomEffect_Editor : Editor
         if (t.EnableGradient)
         {
             EditorGUI.indentLevel++;
-            t.EnableVertexColorMode = EditorGUILayout.Toggle("Enable Vertex Color Mode", t.EnableVertexColorMode);
+            //t.EnableVertexColorMode = EditorGUILayout.Toggle("Enable Vertex Color Mode", t.EnableVertexColorMode);
             t.GradientColor1 = EditorGUILayout.ColorField("Gradient Color 1", t.GradientColor1);
             t.GradientColor2 = EditorGUILayout.ColorField("Gradient Color 2", t.GradientColor2);
             if (t.EnableVertexColorMode)
@@ -59,7 +57,7 @@ public class UGUI_CustomEffect_Editor : Editor
         {
             EditorGUI.indentLevel++;
             t.ShadowColor = EditorGUILayout.ColorField("Shadow Color", t.ShadowColor);
-            t.ShadowScale = EditorGUILayout.Slider("Shadow Scale", t.ShadowScale, 0.9f, 1.1f);
+            //t.ShadowScale = EditorGUILayout.FloatField("Shadow Scale", t.ShadowScale);
             t.ShadowOffset = EditorGUILayout.Vector2Field("Shadow Offset", t.ShadowOffset);
             EditorGUI.indentLevel--;
         }
@@ -67,15 +65,18 @@ public class UGUI_CustomEffect_Editor : Editor
         EditorGUILayout.Space(5);
         
         //Underline Settings
-        GUILayout.Label("下划线设置");
-        t.EnableUnderline = EditorGUILayout.Toggle("Enable Underline", t.EnableUnderline);
-        if (t.EnableUnderline)
+        if (t.IsText)
         {
-            EditorGUI.indentLevel++;
-            t.UnderlineHeight = EditorGUILayout.Slider("Underline Height", t.UnderlineHeight, 0.0f, 100.0f);
-            t.UnderlineOffset = EditorGUILayout.FloatField("Underline Offset", t.UnderlineOffset);
-            t.UnderlineColor = EditorGUILayout.ColorField("Underline Color", t.UnderlineColor);
-            EditorGUI.indentLevel--;
+            GUILayout.Label("下划线设置");
+            t.EnableUnderline = EditorGUILayout.Toggle("Enable Underline", t.EnableUnderline);
+            if (t.EnableUnderline)
+            {
+                EditorGUI.indentLevel++;
+                t.UnderlineHeight = EditorGUILayout.Slider("Underline Height", t.UnderlineHeight, 0.0f, 100.0f);
+                t.UnderlineOffset = EditorGUILayout.FloatField("Underline Offset", t.UnderlineOffset);
+                t.UnderlineColor = EditorGUILayout.ColorField("Underline Color", t.UnderlineColor);
+                EditorGUI.indentLevel--;
+            }
         }
         
         if (GUI.changed)

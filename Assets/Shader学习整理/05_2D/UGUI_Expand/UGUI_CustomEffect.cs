@@ -12,11 +12,11 @@ using UnityEngine.UI;
 
         [Header("Gradient Settings")] 
         public bool EnableGradient = false;
-        public bool EnableVertexColorMode = false;
-        public Color GradientColor1 = Color.red;
-        public Color GradientColor2 = Color.green;
-        public Color GradientColor3 = Color.blue;
-        public Color GradientColor4 = Color.yellow;
+        [HideInInspector]public bool EnableVertexColorMode = false;
+        public Color GradientColor1 = Color.red;//左上
+        public Color GradientColor2 = Color.green;//右上
+        public Color GradientColor3 = Color.blue;//左下
+        public Color GradientColor4 = Color.yellow;//右下
         [Range(0f,1f)]public float GradientRange = 0.5f;
         [Range(0f,1f)]public float GradientSmoothRange = 0.1f;
         [Range(0f,1f)]public float GradientIntensity = 1.0f;
@@ -30,7 +30,7 @@ using UnityEngine.UI;
 
         [Header("Shadow Settings")] 
         public bool EnableShadow = false;
-        [Range(0.9f,1.1f)]public float ShadowScale = 1.0f;
+        private float ShadowScale = 1.0f;
         public Vector2 ShadowOffset = new Vector4(0, 0);
         public Color ShadowColor = Color.black;
         
@@ -114,6 +114,8 @@ using UnityEngine.UI;
         public void _Refresh()
         {
             IsText = gameObject.GetComponent<Text>();
+
+            EnableVertexColorMode = IsText;
             
             base.graphic.material.SetFloat("_GradientIntensity",this.GradientIntensity);
             base.graphic.material.SetColor("_GradientColor1", this.GradientColor1);
@@ -261,11 +263,6 @@ using UnityEngine.UI;
                 {
                     width += this.OutlineWidth;
                 }
-
-                if (EnableShadow)
-                {
-                    width += new Vector2(this.ShadowOffset.x, this.ShadowOffset.y).magnitude+(Mathf.Abs(ShadowScale-1))*100;
-                }
                 
                 // 为每个顶点设置新的Position和UV，并传入原始UV框
                 v1 = _SetNewPosAndUV(v1, width, posCenter, triX, triY, uvX, uvY, uvOriginMinaAndMax);
@@ -302,7 +299,7 @@ using UnityEngine.UI;
                     var v6 = m_VetexList[i + 5];
                     
                     v1.color = GradientColor1;
-                    v2.color = GradientColor1;
+                    v2.color = GradientColor2;
                     v3.color = GradientColor4;
                     v4.color = GradientColor4;
                     v5.color = GradientColor3;

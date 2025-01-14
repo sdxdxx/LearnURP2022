@@ -154,9 +154,26 @@ Shader "URP/2D/UGUI/CustomEffect"
                  result.a = color.a+outlineRange;
                 return result;
             }
-            
-		
-            Varyings UnlitVertex(Attributes v)
+
+		    Varyings ShadowVertex(Attributes v)
+            {
+                Varyings o = (Varyings)0;
+		        float2x2 scaleMatrix = float2x2(
+                    _ShadowScale,0,
+                    0,_ShadowScale);
+                v.positionOS.xy = mul(scaleMatrix,v.positionOS.xy);
+                v.positionOS.xy +=_ShadowOffset;
+                o.positionCS = TransformObjectToHClip(v.positionOS);
+                o.positionOS = v.positionOS;
+                o.uv.xy = TRANSFORM_TEX(v.uv, _MainTex);
+		        o.uv.zw = v.uv.zw;
+                o.color = v.color * _Color * _RendererColor;
+		        o.original_uv_MinAndMax = v.uv1;
+		        o.uv2 = v.uv2;
+                return o;
+            }
+
+		    Varyings UnlitVertex(Attributes v)
             {
                 Varyings o = (Varyings)0;
                 o.positionCS = TransformObjectToHClip(v.positionOS);
@@ -168,13 +185,12 @@ Shader "URP/2D/UGUI/CustomEffect"
 		        o.uv2 = v.uv2;
                 return o;
             }
-
+		    
 		     half4 ShadowFragment(Varyings i) : SV_Target
             {
                 #ifdef _EnableShadow
                  //剔除原UV之外内容
-                float shadowTilling = 1/_ShadowScale;
-                float2 shadowUV = i.uv*shadowTilling-(shadowTilling-1)*0.5f+_MainTex_TexelSize.xy*_ShadowOffset.xy;
+                float2 shadowUV = i.uv;
                 float4 shadowOriginalUV = i.original_uv_MinAndMax;
                 float mainTex_shadow = SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,shadowUV).a;
                 float shadowLimitation = IsInRect(shadowUV,shadowOriginalUV);
@@ -257,12 +273,13 @@ Shader "URP/2D/UGUI/CustomEffect"
             }
 		ENDHLSL
 
+        //ShadowPass
         Pass
         {
             Tags { "LightMode" = "SRPDefaultUnlit" }
             
             HLSLPROGRAM
-			#pragma vertex UnlitVertex
+			#pragma vertex ShadowVertex
             #pragma fragment ShadowFragment
 
 			#pragma shader_feature _IsText
