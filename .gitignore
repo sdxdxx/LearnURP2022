@@ -1,4 +1,4 @@
-﻿.idea
+.idea
 UserSettings
 Library
 Logs
@@ -6,6 +6,4 @@ obj
 Recordings
 *.csproj
 *.sln
-Assets/Shader学习整理/05_2D/UGUI_Expand/.DS_Store
-Assets/Shader学习整理/05_2D/UGUI_Expand/.DS_Store
-Assets/Shader学习整理/05_2D/.DS_Store
+*.DS_Store
