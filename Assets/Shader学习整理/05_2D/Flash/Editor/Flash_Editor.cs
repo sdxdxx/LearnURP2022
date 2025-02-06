@@ -38,7 +38,7 @@ public class Flash_Editor : Editor
         if (isChineseMode)
         {
             // Debug
-            GUILayout.Label("调试");
+            GUILayout.Label("调试",EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             t.EnableDebugMode = EditorGUILayout.Toggle("启用调试模式", t.EnableDebugMode);
             if (t.EnableDebugMode)
@@ -48,7 +48,7 @@ public class Flash_Editor : Editor
             EditorGUILayout.Space(10);
             
             //Mask
-            GUILayout.Label("遮罩");
+            GUILayout.Label("遮罩",EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             t.EnableCustomMask = EditorGUILayout.Toggle("启用自定义流光遮罩", t.EnableCustomMask);
             if (t.EnableCustomMask)
@@ -66,7 +66,7 @@ public class Flash_Editor : Editor
             EditorGUILayout.Space(10);
             
             //Mask Settings
-            GUILayout.Label("遮罩其它参数设置");
+            GUILayout.Label("遮罩其它参数设置",EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             
             //Add Mode
@@ -82,7 +82,7 @@ public class Flash_Editor : Editor
             EditorGUILayout.Space(10);
             
             //Time
-            GUILayout.Label("时间设置");
+            GUILayout.Label("时间设置",EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             t.FlashTime = EditorGUILayout.Slider("流光移动时间",t.FlashTime, 0.0f, 30.0f);
             t.DelayTime = EditorGUILayout.Slider("流光移动间隔时间",t.DelayTime, 0.0f, 30.0f);
@@ -93,7 +93,7 @@ public class Flash_Editor : Editor
         else
         {
             // Debug
-            GUILayout.Label("Debug");
+            GUILayout.Label("Debug",EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             t.EnableDebugMode = EditorGUILayout.Toggle("Enable Debug Mode", t.EnableDebugMode);
             if (t.EnableDebugMode)
@@ -103,7 +103,7 @@ public class Flash_Editor : Editor
             EditorGUILayout.Space(10);
             
             //Mask
-            GUILayout.Label("Flash Mask");
+            GUILayout.Label("Flash Mask",EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             t.EnableCustomMask = EditorGUILayout.Toggle("Enable Custom Flash Mask", t.EnableCustomMask);
             if (t.EnableCustomMask)
@@ -121,7 +121,7 @@ public class Flash_Editor : Editor
             EditorGUILayout.Space(10);
             
             //Mask Settings
-            GUILayout.Label("Other Flash Mask Settings");
+            GUILayout.Label("Other Flash Mask Settings",EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             
             //Add Mode
@@ -137,7 +137,7 @@ public class Flash_Editor : Editor
             EditorGUILayout.Space(10);
             
             //Time
-            GUILayout.Label("Time Settings");
+            GUILayout.Label("Time Settings",EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             t.FlashTime = EditorGUILayout.Slider("Flash Time",t.FlashTime, 0.0f, 30.0f);
             t.DelayTime = EditorGUILayout.Slider("Flash Delay Time",t.DelayTime, 0.0f, 30.0f);

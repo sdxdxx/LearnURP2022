@@ -39,7 +39,7 @@ public class UGUI_CustomEffect_Editor : Editor
         if (isChineseMode)
         {
             // 渐变设置
-            GUILayout.Label("渐变设置");
+            GUILayout.Label("渐变设置",EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             t.EnableGradient = EditorGUILayout.Toggle("启用渐变", t.EnableGradient);
             if (t.EnableGradient)
@@ -69,7 +69,7 @@ public class UGUI_CustomEffect_Editor : Editor
             EditorGUILayout.Space(5);
             
             // 外描边设置
-            GUILayout.Label("外描边设置");
+            GUILayout.Label("外描边设置",EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             t.EnableOutline = EditorGUILayout.Toggle("启用外描边", t.EnableOutline);
             if (t.EnableOutline)
@@ -82,7 +82,7 @@ public class UGUI_CustomEffect_Editor : Editor
             EditorGUILayout.Space(5);
             
             //阴影设置
-            GUILayout.Label("阴影设置");
+            GUILayout.Label("阴影设置",EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             t.EnableShadow = EditorGUILayout.Toggle("启用阴影", t.EnableShadow);
             if (t.EnableShadow)
@@ -98,7 +98,7 @@ public class UGUI_CustomEffect_Editor : Editor
             //字体下划线设置
             if (t.IsText)
             {
-                GUILayout.Label("下划线设置");
+                GUILayout.Label("下划线设置",EditorStyles.boldLabel);
                 EditorGUI.indentLevel++;
                 t.EnableUnderline = EditorGUILayout.Toggle("启用字体下划线", t.EnableUnderline);
                 if (t.EnableUnderline)
@@ -113,7 +113,7 @@ public class UGUI_CustomEffect_Editor : Editor
         else
         {
             // Gradient Settings
-            GUILayout.Label("Gradient Settings");
+            GUILayout.Label("Gradient Settings",EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             t.EnableGradient = EditorGUILayout.Toggle("Enable Gradient", t.EnableGradient);
             if (t.EnableGradient)
@@ -142,7 +142,7 @@ public class UGUI_CustomEffect_Editor : Editor
             EditorGUILayout.Space(5);
             
             // Outline Settings
-            GUILayout.Label("Outline Settings");
+            GUILayout.Label("Outline Settings",EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             t.EnableOutline = EditorGUILayout.Toggle("Enable Outline", t.EnableOutline);
             if (t.EnableOutline)
@@ -155,7 +155,7 @@ public class UGUI_CustomEffect_Editor : Editor
             EditorGUILayout.Space(5);
             
             //Shadow Settings
-            GUILayout.Label("Shadow Settings");
+            GUILayout.Label("Shadow Settings",EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             t.EnableShadow = EditorGUILayout.Toggle("Enable Shadow", t.EnableShadow);
             if (t.EnableShadow)
@@ -171,7 +171,7 @@ public class UGUI_CustomEffect_Editor : Editor
             //Underline Settings
             if (t.IsText)
             {
-                GUILayout.Label("Underline Settings");
+                GUILayout.Label("Underline Settings",EditorStyles.boldLabel);
                 EditorGUI.indentLevel++;
                 t.EnableUnderline = EditorGUILayout.Toggle("Enable Underline", t.EnableUnderline);
                 if (t.EnableUnderline)
