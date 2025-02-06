@@ -1,4 +1,4 @@
-Shader "URP/PostProcessing/ScreenSpaceReflection"
+Shader "URP/PostProcessing/ScreenSpaceReflection/BinarySearch"
 {
     Properties
     {
@@ -72,10 +72,15 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                 float3 sampleNormalizeVector = normalize(reflect(normalize(posVS),nDirVS));
                 float3 samplePosVS = posVS;
                 float stepLength = _StepLength;
-                int maxStep = 64;
+                int maxStep = 128;
                 float3 sampleClipPos;
                 float2 sampleScreenPos;
                 int step;
+
+
+                half4 result = half4(1.0,1.0,1.0,1.0);
+                
+                UNITY_LOOP
                 for (step = 1; step<=maxStep; step++)
                 {
                     samplePosVS += sampleNormalizeVector*stepLength;
@@ -85,25 +90,15 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                     float sampleLinearEyeDepth = LinearEyeDepth(sampleRawDepth,_ZBufferParams);
                     if ((sampleLinearEyeDepth<-samplePosVS.z)&&(-samplePosVS.z<(sampleLinearEyeDepth+_Bias)))
                     {
-                        break;
+                        float2 reflectScreenPos = sampleScreenPos;
+                        half3 albedo_reflect =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, reflectScreenPos);
+                        result.rgb = albedo_reflect*_BaseColor;
+                        return result;
                     }
-                    
                 }
-                
-                half4 result = half4(1.0,1.0,1.0,1.0);
-                if (step>maxStep)
-                {
-                    result.rgb = half3(0,0,0);
-                }
-                else
-                {
-                    float2 reflectScreenPos = sampleScreenPos;
-                    half3 albedo_reflect =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, reflectScreenPos);
-                    result.rgb = albedo_reflect*_BaseColor;
-                }
-                
-                half4 tempResult = half4(result.rgb,1.0);
-                return tempResult;
+
+                result = half4(0.0,0.0,0.0,1.0);
+                return result;
             }
             
             ENDHLSL

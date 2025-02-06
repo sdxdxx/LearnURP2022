@@ -1,14 +1,21 @@
+using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
 public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
 {
+    public enum ScreenSpaceReflectionShader
+    {
+        Simple = 1,
+        BinarySearch
+    };
+    
     [System.Serializable]
      public class Settings
     {
+        public ScreenSpaceReflectionShader screenSpaceReflectionShader = ScreenSpaceReflectionShader.Simple;
         public RenderPassEvent renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
-        public Shader shader;
     }
      
      //自定义的Pass
@@ -25,15 +32,28 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
 
         private RTHandle cameraColorRTHandle;//可以理解为GameView_RenderTarget的句柄
         private RTHandle tempRTHandle;
+        private RTHandle tempRTHandle2;
 
         //自定义Pass的构造函数(用于传参)
-        public CustomRenderPass(RenderPassEvent evt, Shader shader)
+        public CustomRenderPass(RenderPassEvent evt, ScreenSpaceReflectionShader shaderType)
         {
             renderPassEvent = evt; //传入设置的渲染事件顺序(renderPassEvent在基类ScriptableRenderPass中)
-            if (!shader)
+            
+            Shader shader;
+            
+            switch (shaderType)
             {
-                shader = Shader.Find("URP/PostProcessing/ScreenSpaceReflection");
+                case ScreenSpaceReflectionShader.Simple:
+                    shader= Shader.Find("URP/PostProcessing/ScreenSpaceReflection/Simple");
+                    break;
+                case ScreenSpaceReflectionShader.BinarySearch:
+                    shader= Shader.Find("URP/PostProcessing/ScreenSpaceReflection/BinarySearch");
+                    break;
+                default:
+                    shader= Shader.Find("URP/PostProcessing/ScreenSpaceReflection/Simple");
+                    break;
             }
+            
             material = CoreUtils.CreateEngineMaterial(shader);//根据传入的Shader创建material;
         }
 
@@ -57,6 +77,7 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
             ConfigureTarget(cameraColorRTHandle);//确认传入的目标为cameraColorRT
             
             GetTempRT(ref tempRTHandle,this.renderingData);//获取与摄像机大小一致的临时RT
+            GetTempRT(ref tempRTHandle2,this.renderingData);//获取与摄像机大小一致的临时RT
         }
         
         //执行传递。这是自定义渲染发生的地方
@@ -75,7 +96,15 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
                 using (new ProfilingScope(cmd, m_ProfilingSampler))
                 {
                     Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle);
-                    Blitter.BlitCameraTexture(cmd,tempRTHandle,cameraColorRTHandle,material,0);//写入渲染命令进CommandBuffer
+                    Blitter.BlitCameraTexture(cmd,tempRTHandle,tempRTHandle2,material,0);//写入渲染命令进CommandBuffer
+                    if (screenSpaceReflectionVolume.ShowReflectionTexture.value)
+                    {
+                        Blitter.BlitCameraTexture(cmd,tempRTHandle2,cameraColorRTHandle);
+                    }
+                    else
+                    {
+                        Shader.SetGlobalTexture("_ScreenSpaceReflectionTexture",tempRTHandle2);
+                    }
                 }
             
                 context.ExecuteCommandBuffer(cmd);//执行CommandBuffer
@@ -103,7 +132,7 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
     //初始化时调用
     public override void Create()
     {
-        m_ScriptablePass = new CustomRenderPass(settings.renderPassEvent,settings.shader);
+        m_ScriptablePass = new CustomRenderPass(settings.renderPassEvent,settings.screenSpaceReflectionShader);
     }
     
     //每帧调用,将pass添加进流程

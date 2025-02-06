@@ -33,6 +33,8 @@ public class Flash_Editor : Editor
         
         base.OnInspectorGUI();
         
+        GUILayout.Space(10);
+        
         Flash t = (Flash)target;
 
         if (isChineseMode)
