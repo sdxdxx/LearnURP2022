@@ -190,7 +190,7 @@ Shader "URP/2D/UGUI/CustomEffect"
             {
                 #ifdef _EnableShadow
                  //剔除原UV之外内容
-                float2 shadowUV = i.uv;
+                float2 shadowUV = i.uv.xy;
                 float4 shadowOriginalUV = i.original_uv_MinAndMax;
                 float mainTex_shadow = SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,shadowUV).a;
                 float shadowLimitation = IsInRect(shadowUV,shadowOriginalUV);
@@ -205,11 +205,10 @@ Shader "URP/2D/UGUI/CustomEffect"
 
             half4 UnlitFragment(Varyings i) : SV_Target
             {
-                float4 mainTex = i.color * SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,i.uv)*IsInRect(i.uv,i.original_uv_MinAndMax);
-
+                half4 mainTex = i.color * SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,i.uv.xy)*IsInRect(i.uv.xy,i.original_uv_MinAndMax);
                 
                 #ifdef _IsText
-                mainTex.rgb = i.color;
+                mainTex.rgb = i.color.rgb;
                 #endif
                 
                 #ifdef _EnableGradient
@@ -261,7 +260,7 @@ Shader "URP/2D/UGUI/CustomEffect"
                 outlineWidth = _OutlineWidth+0.0001f;
                 #endif
                 
-                result = Outline(mainTex,_OutlineColor,outlineWidth,i.uv,i.original_uv_MinAndMax);
+                result = Outline(mainTex,_OutlineColor,outlineWidth,i.uv.xy,i.original_uv_MinAndMax);
 
                 
                 float underLineMask = step(5.0,i.uv.z);
@@ -279,15 +278,10 @@ Shader "URP/2D/UGUI/CustomEffect"
             Tags { "LightMode" = "SRPDefaultUnlit" }
             
             HLSLPROGRAM
+            
 			#pragma vertex ShadowVertex
             #pragma fragment ShadowFragment
-
-			#pragma shader_feature _IsText
-            #pragma shader_feature _EnableVertexColorMode
-            #pragma shader_feature _EnableGradient
-            #pragma shader_feature _EnableOutline
-            #pragma shader_feature _EnableUnderline
-            #pragma shader_feature _EnableShadow
+			
             ENDHLSL
         }
 
@@ -296,15 +290,10 @@ Shader "URP/2D/UGUI/CustomEffect"
             Tags { "LightMode" = "Universal2D" }
             
             HLSLPROGRAM
+            
 			#pragma vertex UnlitVertex
             #pragma fragment UnlitFragment
-
-			#pragma shader_feature _IsText
-            #pragma shader_feature _EnableVertexColorMode
-            #pragma shader_feature _EnableGradient
-            #pragma shader_feature _EnableOutline
-            #pragma shader_feature _EnableUnderline
-            #pragma shader_feature _EnableShadow
+			
             ENDHLSL
         }
 
@@ -313,15 +302,10 @@ Shader "URP/2D/UGUI/CustomEffect"
             Tags { "LightMode" = "UniversalForward" "Queue"="Transparent" "RenderType"="Transparent"}
 
             HLSLPROGRAM
+            
             #pragma vertex UnlitVertex
             #pragma fragment UnlitFragment
-
-            #pragma shader_feature _IsText
-            #pragma shader_feature _EnableVertexColorMode
-            #pragma shader_feature _EnableGradient
-            #pragma shader_feature _EnableOutline
-            #pragma shader_feature _EnableUnderline
-            #pragma shader_feature _EnableShadow
+            
             ENDHLSL
         }
     }
