@@ -5,16 +5,16 @@ using UnityEngine.Rendering.Universal;
 
 public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
 {
-    public enum ScreenSpaceReflectionShader
+    public enum ScreenSpaceReflectionType
     {
-        Simple = 1,
-        BinarySearch
-    };
+        Simple_ViewSpace = 1,
+        BinarySearch_ViewSpace,
+        Efficient_ScreenSpace
+    }
     
     [System.Serializable]
      public class Settings
     {
-        public ScreenSpaceReflectionShader screenSpaceReflectionShader = ScreenSpaceReflectionShader.Simple;
         public RenderPassEvent renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
     }
      
@@ -35,25 +35,12 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
         private RTHandle tempRTHandle2;
 
         //自定义Pass的构造函数(用于传参)
-        public CustomRenderPass(RenderPassEvent evt, ScreenSpaceReflectionShader shaderType)
+        public CustomRenderPass(RenderPassEvent evt)
         {
             renderPassEvent = evt; //传入设置的渲染事件顺序(renderPassEvent在基类ScriptableRenderPass中)
-            
+
             Shader shader;
-            
-            switch (shaderType)
-            {
-                case ScreenSpaceReflectionShader.Simple:
-                    shader= Shader.Find("URP/PostProcessing/ScreenSpaceReflection/Simple");
-                    break;
-                case ScreenSpaceReflectionShader.BinarySearch:
-                    shader= Shader.Find("URP/PostProcessing/ScreenSpaceReflection/BinarySearch");
-                    break;
-                default:
-                    shader= Shader.Find("URP/PostProcessing/ScreenSpaceReflection/Simple");
-                    break;
-            }
-            
+            shader= Shader.Find("URP/PostProcessing/ScreenSpaceReflection");
             material = CoreUtils.CreateEngineMaterial(shader);//根据传入的Shader创建material;
         }
 
@@ -84,10 +71,38 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
             var stack = VolumeManager.instance.stack;//获取Volume的栈
-            screenSpaceReflectionVolume = stack.GetComponent<ScreenSpaceReflectionVolume>();//从栈中获取到ColorTintVolume
-            material.SetColor("_BaseColor", screenSpaceReflectionVolume.ColorChange.value);//将材质颜色设置为volume中的值
+            screenSpaceReflectionVolume = stack.GetComponent<ScreenSpaceReflectionVolume>();//从栈中获取到Volume
+            var shaderType = (ScreenSpaceReflectionType)screenSpaceReflectionVolume.ScreenSpaceReflectionMode.value;
+            
+            material.DisableKeyword("SIMPLE_VS");
+            material.DisableKeyword("BINARY_SEARCH_VS");
+            material.DisableKeyword("EFFICIENT_SS");
+            
+            switch (shaderType)
+            {
+                case ScreenSpaceReflectionType.Simple_ViewSpace:
+                    material.EnableKeyword("SIMPLE_VS");
+                    break;
+                
+                case ScreenSpaceReflectionType.BinarySearch_ViewSpace:
+                    material.EnableKeyword("BINARY_SEARCH_VS");
+                    break;
+                
+                case ScreenSpaceReflectionType.Efficient_ScreenSpace:
+                    material.EnableKeyword("EFFICIENT_SS");
+                    break;
+            }
+            //材质参数设置
+            material.SetColor("_BaseColor", screenSpaceReflectionVolume.ColorChange.value);
+            
+            //Simple
             material.SetFloat("_StepLength",screenSpaceReflectionVolume.StepLength.value);
-            material.SetFloat("_Bias",screenSpaceReflectionVolume.Bias.value);
+            material.SetFloat("_Thickness",screenSpaceReflectionVolume.Thickness.value);
+            
+            //BinarySearch
+            material.SetFloat("_MaxStepLength",screenSpaceReflectionVolume.MaxStepLength.value);
+            material.SetFloat("_MinDistance",screenSpaceReflectionVolume.MinDistance.value);
+            
             if (screenSpaceReflectionVolume.EnableReflection.value)
             {
                 CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);//获得一个为ProfilerTag的CommandBuffer
@@ -132,7 +147,7 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
     //初始化时调用
     public override void Create()
     {
-        m_ScriptablePass = new CustomRenderPass(settings.renderPassEvent,settings.screenSpaceReflectionShader);
+        m_ScriptablePass = new CustomRenderPass(settings.renderPassEvent);
     }
     
     //每帧调用,将pass添加进流程

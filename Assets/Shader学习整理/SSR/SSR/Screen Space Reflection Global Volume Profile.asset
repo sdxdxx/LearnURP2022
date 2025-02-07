@@ -13,6 +13,9 @@ MonoBehaviour:
   m_Name: ScreenSpaceReflectionVolume
   m_EditorClassIdentifier: 
   active: 1
+  ScreenSpaceReflectionMode:
+    m_OverrideState: 1
+    m_Value: 2
   EnableReflection:
     m_OverrideState: 1
     m_Value: 1
@@ -24,10 +27,16 @@ MonoBehaviour:
     m_Value: {r: 1, g: 1, b: 1, a: 1}
   StepLength:
     m_OverrideState: 1
-    m_Value: 0.081
-  Bias:
+    m_Value: 0.05
+  Thickness:
     m_OverrideState: 1
-    m_Value: 0.124
+    m_Value: 0.097
+  MaxStepLength:
+    m_OverrideState: 1
+    m_Value: 0.1
+  MinDistance:
+    m_OverrideState: 1
+    m_Value: 0.02
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
