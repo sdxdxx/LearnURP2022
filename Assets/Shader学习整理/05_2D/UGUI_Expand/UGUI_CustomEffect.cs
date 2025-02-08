@@ -97,7 +97,7 @@ using UnityEngine.UI;
                 base.graphic.canvas.additionalShaderChannels |= v2;
             }
  
-            this._Refresh();
+            this.Refresh();
         }
         
 #if UNITY_EDITOR
@@ -106,12 +106,12 @@ using UnityEngine.UI;
          base.OnValidate();
          if (base.graphic.material != null)
          {
-             this._Refresh();
+             this.Refresh();
          }
      }
 #endif
      
-        public void _Refresh()
+        public void Refresh()
         {
             IsText = gameObject.GetComponent<Text>();
 
@@ -188,21 +188,8 @@ using UnityEngine.UI;
             vh.GetUIVertexStream(m_VetexList);
 
            
-            this._ProcessVertices();
+            this.ProcessVertices();
             
-            // 添加下划线
-            if (EnableUnderline)
-            {
-                this.UnderlineHeightHalf = this.UnderlineHeight * .5f;
-                // cachedTextGenerator是当前实际显示出来的相关信息,cachedTextGeneratorForLayout是所有布局信息(包括看不到的)
-                this.characters = text.cachedTextGenerator.GetCharactersArray();
-                this.lines = text.cachedTextGenerator.GetLinesArray();
-                this.textChars = this.text.text.ToCharArray();
-                // 使用characterCountVisible来得到真正显示的字符数量.characterCount会额外包含(在宽度不足)时候裁剪掉的(边缘)字符,会导致显示的下划线多一个空白的宽度
-                this.characterCountVisible = text.cachedTextGenerator.characterCountVisible;
-                
-                this.DrawAllLinesLine(vh);
-            }
             
             vh.Clear();
             vh.AddUIVertexTriangleStream(m_VetexList);
@@ -210,7 +197,7 @@ using UnityEngine.UI;
         }
  
  
-        private void _ProcessVertices()
+        private void ProcessVertices()
         {
             
             float vertexMinX = m_VetexList[0].position.x;
@@ -315,6 +302,19 @@ using UnityEngine.UI;
                 }
             }
             
+            // 添加下划线
+            if (EnableUnderline)
+            {
+                this.UnderlineHeightHalf = this.UnderlineHeight * .5f;
+                // cachedTextGenerator是当前实际显示出来的相关信息,cachedTextGeneratorForLayout是所有布局信息(包括看不到的)
+                this.characters = text.cachedTextGenerator.GetCharactersArray();
+                this.lines = text.cachedTextGenerator.GetLinesArray();
+                this.textChars = this.text.text.ToCharArray();
+                // 使用characterCountVisible来得到真正显示的字符数量.characterCount会额外包含(在宽度不足)时候裁剪掉的(边缘)字符,会导致显示的下划线多一个空白的宽度
+                this.characterCountVisible = text.cachedTextGenerator.characterCountVisible;
+                
+                this.DrawAllLinesLine();
+            }
         }
  
  
@@ -359,7 +359,7 @@ using UnityEngine.UI;
         }
         
         // 显示所有下划线
-        private void DrawAllLinesLine(VertexHelper vh)
+        private void DrawAllLinesLine()
         {
             var uv0 = this.GetUnderlineCharUV(text);
             for (int i = 0; i < this.lines.Length; i++)
@@ -385,7 +385,7 @@ using UnityEngine.UI;
                 var bottomY = this.GetLineBottomY(i);
 
                 var firstCharOff = line.startCharIdx;
-                this.AddUnderlineVertTriangle(vh, line.startCharIdx, endIndex, firstCharOff, bottomY, uv0);
+                this.AddUnderlineVertTriangle(line.startCharIdx, endIndex, firstCharOff, bottomY, uv0);
             }
         }
 
@@ -410,7 +410,7 @@ using UnityEngine.UI;
             return cursorPos;
         }
         
-        private void AddUnderlineVertTriangle(VertexHelper vh, int startIndex, int endIndex, float firstCharOff, float bottomY, Vector2 uv0)
+        private void AddUnderlineVertTriangle(int startIndex, int endIndex, float firstCharOff, float bottomY, Vector2 uv0)
         {
             if (this.textChars[endIndex] == '\n')
             {

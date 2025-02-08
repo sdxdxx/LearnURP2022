@@ -178,19 +178,30 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                 float2 sampleScreenPos = i.texcoord;
                 float2 screenParams = _ScreenParams.xy;
                 float2 samplePixelPos = i.texcoord*_ScreenParams.xy;
+                float realSamplePixelPosY = i.texcoord.y*_ScreenParams.xy;
                 float maxReflectLength = _MaxReflectLength;
 
-                float3 finalSamplePosVS = posVS+maxReflectLength*sampleNormalizeVector;
-                float3 finalSampleClipPos = mul((float3x3)unity_CameraProjection, finalSamplePosVS);
-                float2 finalSampleScreenPos = (finalSampleClipPos.xy / finalSampleClipPos.z) * 0.5 + 0.5;
+                float3 startSamplePosVS = posVS;
+                float3 startSampleClipPos = mul((float3x3)unity_CameraProjection, startSamplePosVS);
+                float k_start = startSampleClipPos.z;
+                float2 startNDCPos = i.texcoord*2-1;
+                float2 startSampleScreenPos = i.texcoord;
+                float3 endSamplePosVS = posVS+maxReflectLength*sampleNormalizeVector;
+                float3 endSampleClipPos = mul((float3x3)unity_CameraProjection, endSamplePosVS);
+                float k_end = endSampleClipPos.z;
+                float2 endNDCPos = endSampleClipPos.xy / endSampleClipPos.z;
+                float2 endSampleScreenPos = endNDCPos * 0.5 + 0.5;
 
-                float2 A = i.texcoord*_ScreenParams.xy;
-                float2 B = finalSampleScreenPos*_ScreenParams.xy;
+                float2 A = startSampleScreenPos*_ScreenParams.xy;
+                float2 B = endSampleScreenPos*_ScreenParams.xy;
 
-                float k = (B.y- A.y) / (B.x - A.x);
+                float slope = (B.y- A.y) / (B.x - A.x);
+
+                float deltaX = 1*(step(B.x,A.x)*2-1);
+                float deltaY = slope;
                 
                 //简便计算,若斜率绝对值大于1，则交换X轴和Y轴
-                if (abs(k)>1)
+                if (abs(slope)>1)
                 {
                     float temp = A.x;
                     A.x = A.y;
@@ -204,23 +215,40 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                     screenParams.x = screenParams.y;
                     screenParams.y = temp;
 
-                    k = rcp(k);
+                    slope = rcp(slope);
+
+                    deltaX = slope;
+                    deltaY = 1*(step(B.x,A.x)*2-1);
                 }
                 
-                float deltaX = 1*(step(B.x,A.x)*2-1);
-                float deltaY = k;
-
                 int maxStep = abs(B.x - A.x);
 
+                half4 result = half4(0.0,0.0,0.0,1.0);
+
+                UNITY_LOOP
                 for (int step = 0; step<maxStep; step++)
                 {
-                    samplePixelPos += deltaX;
-                    sampleScreenPos = sampleScreenPos/screenParams;
+                    samplePixelPos.x += deltaX;
+                    realSamplePixelPosY += deltaY;
+                    samplePixelPos.y = round(realSamplePixelPosY);
+                    sampleScreenPos = samplePixelPos/screenParams;
                     float sampleRawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,sampleScreenPos).r;
                     float sampleLinearEyeDepth = LinearEyeDepth(sampleRawDepth,_ZBufferParams);
+                    float k = k_start+ (step/maxStep)*(k_end - k_start);
+                    float2 realNDCPos = sampleScreenPos*2-1;
+                    float3 realClipPos = float3(realNDCPos*k,k);
+                    float3 realPosVS = mul((float3x3)unity_CameraInvProjection,realClipPos);
+                    if ((sampleLinearEyeDepth<-realPosVS.z)&&(-realPosVS.z<(sampleLinearEyeDepth+_Thickness)))
+                    {
+                        float2 reflectScreenPos = sampleScreenPos;
+                        half3 albedo_reflect =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, reflectScreenPos);
+                        result.rgb = albedo_reflect*_BaseColor;
+                        return result;
+                    }
+                    
                 }
 
-                return half4(0,0,0,1);
+                return result;
                 
                 
                 /*
@@ -247,6 +275,8 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                 return result;
                 */
             }
+            
+
             
             half4 frag (Varyings i) : SV_TARGET
             {

@@ -11,6 +11,8 @@ public class UGUI_CustomEffect_Editor : Editor
     {
         //base.OnInspectorGUI();
         
+        EditorUtility.SetDirty(target);//增加脏标记，保证刷新(只管理绘制部分)
+        
         UGUI_CustomEffect t = (UGUI_CustomEffect)target;
         
         EditorGUI.BeginChangeCheck();
@@ -188,7 +190,7 @@ public class UGUI_CustomEffect_Editor : Editor
         
         if (GUI.changed)
         {
-            t._Refresh();
+            t.Refresh();
         }
     }
     

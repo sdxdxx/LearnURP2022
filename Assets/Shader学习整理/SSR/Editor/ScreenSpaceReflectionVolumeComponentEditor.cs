@@ -7,7 +7,8 @@ namespace UnityEditor.Rendering.Universal
     enum ScreenSpaceReflectionType
     {
         Simple_ViewSpace = 1,
-        BinarySearch_ViewSpace
+        BinarySearch_ViewSpace,
+        Efficient_ScreenSpace
     }
     
     [CustomEditor(typeof(ScreenSpaceReflectionVolume))]
@@ -60,6 +61,12 @@ namespace UnityEditor.Rendering.Universal
                 {
                     PropertyField(m_MaxStepLength);
                     PropertyField(m_MinDistance);
+                    break;
+                }
+
+                case ScreenSpaceReflectionType.Efficient_ScreenSpace:
+                {
+                    PropertyField(m_Thickness);
                     break;
                 }
             }
