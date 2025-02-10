@@ -22,6 +22,7 @@ namespace UnityEditor.Rendering.Universal
         private SerializedDataParameter m_Thickness;
         private SerializedDataParameter m_MaxStepLength;
         private SerializedDataParameter m_MinDistance;
+        private SerializedDataParameter m_MaxReflectLength;
         
         public override void OnEnable()
         {
@@ -35,6 +36,7 @@ namespace UnityEditor.Rendering.Universal
             m_Thickness = Unpack(o.Find(x => x.Thickness));
             m_MaxStepLength = Unpack(o.Find(x => x.MaxStepLength));
             m_MinDistance = Unpack(o.Find(x => x.MinDistance));
+            m_MaxReflectLength = Unpack(o.Find(x => x.MaxReflectLength));
         }
         
         public override void OnInspectorGUI()
@@ -66,6 +68,7 @@ namespace UnityEditor.Rendering.Universal
 
                 case ScreenSpaceReflectionType.Efficient_ScreenSpace:
                 {
+                    PropertyField(m_MaxReflectLength);
                     PropertyField(m_Thickness);
                     break;
                 }

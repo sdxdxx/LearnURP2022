@@ -30,13 +30,16 @@ MonoBehaviour:
     m_Value: 0.05
   Thickness:
     m_OverrideState: 1
-    m_Value: 0.097
+    m_Value: 0.077
   MaxStepLength:
     m_OverrideState: 1
     m_Value: 0.1
   MinDistance:
     m_OverrideState: 1
     m_Value: 0.02
+  MaxReflectLength:
+    m_OverrideState: 1
+    m_Value: 4.3
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0

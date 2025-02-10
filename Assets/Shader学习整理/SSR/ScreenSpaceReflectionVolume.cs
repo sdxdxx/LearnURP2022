@@ -27,6 +27,9 @@ public class ScreenSpaceReflectionVolume : VolumeComponent
     public ClampedFloatParameter MaxStepLength = new ClampedFloatParameter(0.1f, 0f, 5f);
     public ClampedFloatParameter MinDistance = new ClampedFloatParameter(0.02f, 0f, 1f);
     
+    //Efficient
+    public ClampedFloatParameter MaxReflectLength = new ClampedFloatParameter(1f, 0f, 100f);
+    
     [Serializable]
     public sealed class ScreenSpaceReflectionTypeParameter : VolumeParameter<ScreenSpaceReflectionVolume.ScreenSpaceReflectionType>
     {

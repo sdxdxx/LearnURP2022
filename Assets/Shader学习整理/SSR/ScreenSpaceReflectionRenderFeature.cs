@@ -103,6 +103,9 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
             material.SetFloat("_MaxStepLength",screenSpaceReflectionVolume.MaxStepLength.value);
             material.SetFloat("_MinDistance",screenSpaceReflectionVolume.MinDistance.value);
             
+            //Efficient
+            material.SetFloat("_MaxReflectLength",screenSpaceReflectionVolume.MaxReflectLength.value);
+            
             if (screenSpaceReflectionVolume.EnableReflection.value)
             {
                 CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);//获得一个为ProfilerTag的CommandBuffer
