@@ -30,7 +30,7 @@ MonoBehaviour:
     m_Value: 0.05
   Thickness:
     m_OverrideState: 1
-    m_Value: 0.077
+    m_Value: 0.093
   MaxStepLength:
     m_OverrideState: 1
     m_Value: 0.1

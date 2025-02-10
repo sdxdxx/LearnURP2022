@@ -204,9 +204,10 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                 float deltaX = (B.x - A.x) / maxStep;
                 float deltaY = slope;
 
-                /*
+                
                 //简便计算,若斜率绝对值大于1，则交换X轴和Y轴
-                if (abs(slope)>1)
+                bool needSwapXY = abs(slope)>1;
+                if (needSwapXY)
                 {
                     float temp = A.x;
                     A.x = A.y;
@@ -215,19 +216,13 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                     temp = B.x;
                     B.x = B.y;
                     B.y = temp;
-
-                    temp = screenParams.x;
-                    screenParams.x = screenParams.y;
-                    screenParams.y = temp;
-
-                    slope = rcp(slope);
-
-                    deltaX = slope;
-                    deltaY = 1*(step(B.x,A.x)*2-1);
-
-                    realSamplePixelPosY = i.texcoord.x*_ScreenParams.x;
+                    
+                    maxStep = abs(B.x - A.x);
+                    slope = (B.y- A.y) / maxStep;
+                    deltaX = (B.x - A.x) / maxStep;
+                    deltaY = slope;
                 }
-                */
+                
                 
                 
                 float stepLimit = clamp(maxStep,0,256);
@@ -237,8 +232,17 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                 UNITY_LOOP
                 for (int step = 0; step<stepLimit; step++)
                 {
-                    samplePixelPos.x += deltaX;
-                    realSamplePixelPosY += deltaY;
+                    if (!needSwapXY)
+                    {
+                        samplePixelPos.x += deltaX;
+                        realSamplePixelPosY += deltaY;
+                    }
+                    else
+                    {
+                        samplePixelPos.x += deltaY;
+                        realSamplePixelPosY += deltaX;
+                    }
+                    
                     samplePixelPos.y = round(realSamplePixelPosY);
                     sampleScreenPos = samplePixelPos/screenParams;
                     float sampleRawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,sampleScreenPos).r;
