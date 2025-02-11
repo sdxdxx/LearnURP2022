@@ -4,10 +4,11 @@ using UnityEngine.Rendering;
 namespace UnityEditor.Rendering.Universal
 {
     
-    enum ScreenSpaceReflectionType
+    public enum ScreenSpaceReflectionType
     {
         Simple_ViewSpace = 1,
         BinarySearch_ViewSpace,
+        BinarySearch_Jitter_ViewSpace,
         Efficient_ScreenSpace
     }
     
@@ -23,6 +24,7 @@ namespace UnityEditor.Rendering.Universal
         private SerializedDataParameter m_MaxStepLength;
         private SerializedDataParameter m_MinDistance;
         private SerializedDataParameter m_MaxReflectLength;
+        private SerializedDataParameter m_DeltaPixel;
         
         public override void OnEnable()
         {
@@ -37,6 +39,7 @@ namespace UnityEditor.Rendering.Universal
             m_MaxStepLength = Unpack(o.Find(x => x.MaxStepLength));
             m_MinDistance = Unpack(o.Find(x => x.MinDistance));
             m_MaxReflectLength = Unpack(o.Find(x => x.MaxReflectLength));
+            m_DeltaPixel = Unpack(o.Find(x => x.DeltaPixel));
         }
         
         public override void OnInspectorGUI()
@@ -65,10 +68,18 @@ namespace UnityEditor.Rendering.Universal
                     PropertyField(m_MinDistance);
                     break;
                 }
+                
+                case ScreenSpaceReflectionType.BinarySearch_Jitter_ViewSpace:
+                {
+                    PropertyField(m_MaxStepLength);
+                    PropertyField(m_MinDistance);
+                    break;
+                }
 
                 case ScreenSpaceReflectionType.Efficient_ScreenSpace:
                 {
                     PropertyField(m_MaxReflectLength);
+                    PropertyField(m_DeltaPixel);
                     PropertyField(m_Thickness);
                     break;
                 }

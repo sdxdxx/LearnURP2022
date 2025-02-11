@@ -9,6 +9,7 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
     {
         Simple_ViewSpace = 1,
         BinarySearch_ViewSpace,
+        BinarySearch_Jitter_ViewSpace,
         Efficient_ScreenSpace
     }
     
@@ -76,6 +77,7 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
             
             material.DisableKeyword("SIMPLE_VS");
             material.DisableKeyword("BINARY_SEARCH_VS");
+            material.DisableKeyword("BINARY_SEARCH_JITTER_VS");
             material.DisableKeyword("EFFICIENT_SS");
             
             switch (shaderType)
@@ -86,6 +88,10 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
                 
                 case ScreenSpaceReflectionType.BinarySearch_ViewSpace:
                     material.EnableKeyword("BINARY_SEARCH_VS");
+                    break;
+                
+                case ScreenSpaceReflectionType.BinarySearch_Jitter_ViewSpace:
+                    material.EnableKeyword("BINARY_SEARCH_JITTER_VS");
                     break;
                 
                 case ScreenSpaceReflectionType.Efficient_ScreenSpace:
@@ -105,6 +111,7 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
             
             //Efficient
             material.SetFloat("_MaxReflectLength",screenSpaceReflectionVolume.MaxReflectLength.value);
+            material.SetInt("_DeltaPixel",screenSpaceReflectionVolume.DeltaPixel.value);
             
             if (screenSpaceReflectionVolume.EnableReflection.value)
             {

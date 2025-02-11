@@ -9,7 +9,8 @@ public class ScreenSpaceReflectionVolume : VolumeComponent
     {
         Simple_ViewSpace = 1,
         BinarySearch_ViewSpace,
-        Efficient_ScreenSpace
+        BinarySearch_Jitter_ViewSpace,
+        Efficient_ScreenSpace_Debug
     }
     
     public ScreenSpaceReflectionTypeParameter ScreenSpaceReflectionMode= new ScreenSpaceReflectionTypeParameter(ScreenSpaceReflectionType.Simple_ViewSpace);
@@ -29,6 +30,7 @@ public class ScreenSpaceReflectionVolume : VolumeComponent
     
     //Efficient
     public ClampedFloatParameter MaxReflectLength = new ClampedFloatParameter(1f, 0f, 100f);
+    public ClampedIntParameter DeltaPixel = new ClampedIntParameter(1, 1, 50);
     
     [Serializable]
     public sealed class ScreenSpaceReflectionTypeParameter : VolumeParameter<ScreenSpaceReflectionVolume.ScreenSpaceReflectionType>
