@@ -9,7 +9,9 @@ namespace UnityEditor.Rendering.Universal
         Simple_ViewSpace = 1,
         BinarySearch_ViewSpace,
         BinarySearch_Jitter_ViewSpace,
-        Efficient_ScreenSpace
+        Efficient_ScreenSpace,
+        Efficient_ScreenSpace_Jitter,
+        HIZ_ViewSpace
     }
     
     [CustomEditor(typeof(ScreenSpaceReflectionVolume))]
@@ -25,6 +27,7 @@ namespace UnityEditor.Rendering.Universal
         private SerializedDataParameter m_MinDistance;
         private SerializedDataParameter m_MaxReflectLength;
         private SerializedDataParameter m_DeltaPixel;
+        private SerializedDataParameter m_DitherIntensity;
         
         public override void OnEnable()
         {
@@ -40,6 +43,7 @@ namespace UnityEditor.Rendering.Universal
             m_MinDistance = Unpack(o.Find(x => x.MinDistance));
             m_MaxReflectLength = Unpack(o.Find(x => x.MaxReflectLength));
             m_DeltaPixel = Unpack(o.Find(x => x.DeltaPixel));
+            m_DitherIntensity = Unpack(o.Find(x => x.DitherIntensity));
         }
         
         public override void OnInspectorGUI()
@@ -73,6 +77,7 @@ namespace UnityEditor.Rendering.Universal
                 {
                     PropertyField(m_MaxStepLength);
                     PropertyField(m_MinDistance);
+                    PropertyField(m_DitherIntensity);
                     break;
                 }
 
@@ -81,6 +86,15 @@ namespace UnityEditor.Rendering.Universal
                     PropertyField(m_MaxReflectLength);
                     PropertyField(m_DeltaPixel);
                     PropertyField(m_Thickness);
+                    break;
+                }
+                
+                case ScreenSpaceReflectionType.Efficient_ScreenSpace_Jitter:
+                {
+                    PropertyField(m_MaxReflectLength);
+                    PropertyField(m_DeltaPixel);
+                    PropertyField(m_Thickness);
+                    PropertyField(m_DitherIntensity);
                     break;
                 }
             }

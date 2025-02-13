@@ -10,7 +10,9 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
         Simple_ViewSpace = 1,
         BinarySearch_ViewSpace,
         BinarySearch_Jitter_ViewSpace,
-        Efficient_ScreenSpace
+        Efficient_ScreenSpace,
+        Efficient_ScreenSpace_Jitter,
+        HIZ_ViewSpace
     }
     
     [System.Serializable]
@@ -33,7 +35,12 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
 
         private RTHandle cameraColorRTHandle;//可以理解为GameView_RenderTarget的句柄
         private RTHandle tempRTHandle;
+        private RTHandle tempRTHandle1;
         private RTHandle tempRTHandle2;
+        private RTHandle tempRTHandle3;
+        private RTHandle tempRTHandle4;
+        private RTHandle tempRTHandle5;
+        private RTHandle tempRTHandle6;
 
         //自定义Pass的构造函数(用于传参)
         public CustomRenderPass(RenderPassEvent evt)
@@ -45,10 +52,12 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
             material = CoreUtils.CreateEngineMaterial(shader);//根据传入的Shader创建material;
         }
 
-        public void GetTempRT(ref RTHandle temp, in RenderingData data)
+        public void GetTempRT(ref RTHandle temp, in RenderingData data, int downSample)
         {
             RenderTextureDescriptor desc = data.cameraData.cameraTargetDescriptor;
             desc.depthBufferBits = 0; //这步很重要！！！
+            desc.height = desc.height / downSample;
+            desc.width = desc.width / downSample;
             RenderingUtils.ReAllocateIfNeeded(ref temp, desc);//使用该函数申请一张与相机大小一致的TempRT;
         }
 
@@ -64,8 +73,14 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
             ConfigureInput(ScriptableRenderPassInput.Color); //确认传入的参数类型为Color
             ConfigureTarget(cameraColorRTHandle);//确认传入的目标为cameraColorRT
             
-            GetTempRT(ref tempRTHandle,this.renderingData);//获取与摄像机大小一致的临时RT
-            GetTempRT(ref tempRTHandle2,this.renderingData);//获取与摄像机大小一致的临时RT
+            GetTempRT(ref tempRTHandle,this.renderingData,1);//获取与摄像机大小一致的临时RT
+            GetTempRT(ref tempRTHandle1,this.renderingData,2);//获取与摄像机大小1/4的临时RT
+            GetTempRT(ref tempRTHandle2,this.renderingData,4);//获取与摄像机大小1/16的临时RT
+            GetTempRT(ref tempRTHandle3,this.renderingData,8);//获取与摄像机大小1/64的临时RT
+            GetTempRT(ref tempRTHandle4,this.renderingData,16);//获取与摄像机大小1/256的临时RT
+            GetTempRT(ref tempRTHandle5,this.renderingData,32);//获取与摄像机大小1/1024的临时RT
+            GetTempRT(ref tempRTHandle6,this.renderingData,64);//获取与摄像机大小1/4096一致的临时RT
+            
         }
         
         //执行传递。这是自定义渲染发生的地方
@@ -79,6 +94,8 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
             material.DisableKeyword("BINARY_SEARCH_VS");
             material.DisableKeyword("BINARY_SEARCH_JITTER_VS");
             material.DisableKeyword("EFFICIENT_SS");
+            material.DisableKeyword("EFFICIENT_JITTER_SS");
+            material.DisableKeyword("HIZ_VS");
             
             switch (shaderType)
             {
@@ -97,6 +114,14 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
                 case ScreenSpaceReflectionType.Efficient_ScreenSpace:
                     material.EnableKeyword("EFFICIENT_SS");
                     break;
+                
+                case ScreenSpaceReflectionType.Efficient_ScreenSpace_Jitter:
+                    material.EnableKeyword("EFFICIENT_JITTER_SS");
+                    break;
+                
+                case ScreenSpaceReflectionType.HIZ_ViewSpace:
+                    material.EnableKeyword("HIZ_VS");
+                    break;
             }
             //材质参数设置
             material.SetColor("_BaseColor", screenSpaceReflectionVolume.ColorChange.value);
@@ -113,6 +138,9 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
             material.SetFloat("_MaxReflectLength",screenSpaceReflectionVolume.MaxReflectLength.value);
             material.SetInt("_DeltaPixel",screenSpaceReflectionVolume.DeltaPixel.value);
             
+            //Jitter Dither
+            material.SetFloat("_DitherIntensity",screenSpaceReflectionVolume.DitherIntensity.value);
+            
             if (screenSpaceReflectionVolume.EnableReflection.value)
             {
                 CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);//获得一个为ProfilerTag的CommandBuffer
@@ -120,15 +148,25 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
                 //性能分析器(自带隐式垃圾回收),之后可以在FrameDebugger中查看
                 using (new ProfilingScope(cmd, m_ProfilingSampler))
                 {
-                    Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle);
-                    Blitter.BlitCameraTexture(cmd,tempRTHandle,tempRTHandle2,material,0);//写入渲染命令进CommandBuffer
+                    
+                    if (shaderType == ScreenSpaceReflectionType.HIZ_ViewSpace)
+                    {
+                        Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle1,material,1);//采样深度图
+                        Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle2,material,1);
+                        Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle3,material,1);
+                        Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle4,material,1);
+                        Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle5,material,1);
+                        Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle6,material,1);
+                    }
+                    
+                    Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle,material,0);//写入渲染命令进CommandBuffer
                     if (screenSpaceReflectionVolume.ShowReflectionTexture.value)
                     {
-                        Blitter.BlitCameraTexture(cmd,tempRTHandle2,cameraColorRTHandle);
+                        Blitter.BlitCameraTexture(cmd,tempRTHandle,cameraColorRTHandle);
                     }
                     else
                     {
-                        Shader.SetGlobalTexture("_ScreenSpaceReflectionTexture",tempRTHandle2);
+                        Shader.SetGlobalTexture("_ScreenSpaceReflectionTexture",tempRTHandle);
                     }
                 }
             
@@ -146,7 +184,14 @@ public class ScreenSpaceReflectionRenderFeature : ScriptableRendererFeature
         
         public void OnDispose() 
         {
-            tempRTHandle?.Release();//如果tempRTHandle没被释放的话，会被释放
+            //如果tempRTHandle没被释放的话，会被释放
+            tempRTHandle?.Release();
+            tempRTHandle1?.Release();
+            tempRTHandle2?.Release();
+            tempRTHandle3?.Release();
+            tempRTHandle4?.Release();
+            tempRTHandle5?.Release();
+            tempRTHandle6?.Release();
         }
     }
 
