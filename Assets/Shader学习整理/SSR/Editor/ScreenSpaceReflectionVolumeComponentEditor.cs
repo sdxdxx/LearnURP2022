@@ -97,6 +97,13 @@ namespace UnityEditor.Rendering.Universal
                     PropertyField(m_DitherIntensity);
                     break;
                 }
+
+                case ScreenSpaceReflectionType.HIZ_ViewSpace:
+                {
+                    PropertyField(m_StepLength);
+                    PropertyField(m_Thickness);
+                    break;
+                }
             }
         }
     }

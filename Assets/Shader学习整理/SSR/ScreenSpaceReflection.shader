@@ -47,14 +47,15 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
             
             
             //----------贴图声明开始-----------
-            TEXTURE2D(_CameraOpaqueTexture);//获取到摄像机渲染画面的Texture
-            SAMPLER(sampler_CameraOpaqueTexture);
-            TEXTURE2D(_MainTex);
-            SAMPLER(sampler_MainTex);
             TEXTURE2D(_CameraDepthTexture);
-            SAMPLER(sampler_CameraDepthTexture);
+            //SAMPLER(sampler_CameraDepthTexture);
             TEXTURE2D(_CameraNormalsTexture);
-            SAMPLER(sampler_CameraNormalsTexture);
+            //SAMPLER(sampler_CameraNormalsTexture);
+            TEXTURE2D(_CameraDepthTexture_MipLevel_2);
+            TEXTURE2D(_CameraDepthTexture_MipLevel_3);
+            TEXTURE2D(_CameraDepthTexture_MipLevel_4);
+            TEXTURE2D(_CameraDepthTexture_MipLevel_5);
+            TEXTURE2D(_CameraDepthTexture_MipLevel_6);
             //----------贴图声明结束-----------
             
             CBUFFER_START(UnityPerMaterial)
@@ -514,30 +515,63 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
             }
 
             //Hiz 算法 SSR
+            float SampleDepthTexture_Hiz(float2 screenPos, int mipLevel)
+            {
+                float rawDepth;
+                switch (mipLevel)
+                {
+                    case 1:
+                        rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, screenPos).r;
+                        break;
+                    case 2:
+                        rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture_MipLevel_2,sampler_PointClamp, screenPos).r;
+                        break;
+                    case 3:
+                        rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture_MipLevel_3,sampler_PointClamp, screenPos).r;
+                        break;
+                    case 4:
+                        rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture_MipLevel_4,sampler_PointClamp, screenPos).r;
+                        break;
+                    case 5:
+                        rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture_MipLevel_5,sampler_PointClamp, screenPos).r;
+                        break;
+                    case 6:
+                        rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture_MipLevel_6,sampler_PointClamp, screenPos).r;
+                        break;
+                    default:
+                        rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, screenPos).r;
+                        break;
+                }
+                return rawDepth;
+            }
+
+            
             half4 ScreenSpaceReflection_Hiz(Varyings i)
             {
-                float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, i.texcoord).r;
+                 float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, i.texcoord).r;
                 float linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
                 float3 posVS = ReconstructViewPositionFromDepth(i.texcoord,linear01Depth);
                 float3 nDirWS = SAMPLE_TEXTURE2D(_CameraNormalsTexture,sampler_PointClamp,i.texcoord).xyz;
                 float3 nDirVS = TransformWorldToViewNormal(nDirWS);
                 float3 sampleNormalizeVector = normalize(reflect(normalize(posVS),nDirVS));
+                float3 lastSamplePosVS = posVS;
                 float3 samplePosVS = posVS;
                 float stepLength = _StepLength;
                 int maxStep = 128;
                 float3 sampleClipPos;
                 float2 sampleScreenPos;
                 int step;
+                int mipLevel = 1;
                 
                 half4 result = half4(1.0,1.0,1.0,1.0);
-                
+
                 UNITY_LOOP
                 for (step = 1; step<=maxStep; step++)
                 {
                     samplePosVS += sampleNormalizeVector*stepLength;
                     sampleClipPos = mul((float3x3)unity_CameraProjection, samplePosVS);
                     sampleScreenPos = (sampleClipPos.xy / sampleClipPos.z) * 0.5 + 0.5;
-                    float sampleRawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,sampleScreenPos).r;
+                    float sampleRawDepth = SampleDepthTexture_Hiz(sampleScreenPos,6).r;
                     float sampleLinearEyeDepth = LinearEyeDepth(sampleRawDepth,_ZBufferParams);
                     if ((sampleLinearEyeDepth<-samplePosVS.z)&&(-samplePosVS.z<(sampleLinearEyeDepth+_Thickness)))
                     {
@@ -547,7 +581,53 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                         return result;
                     }
                 }
+                
+                result = half4(0.0,0.0,0.0,1.0);
+                return result;
+                
+                UNITY_LOOP
+                for (step = 1; step<=maxStep; step++)
+                {
+                    lastSamplePosVS = samplePosVS;
 
+                    //步进
+                    samplePosVS += sampleNormalizeVector*stepLength;
+                    sampleClipPos = mul((float3x3)unity_CameraProjection, samplePosVS);
+                    sampleScreenPos = (sampleClipPos.xy / sampleClipPos.z) * 0.5 + 0.5;
+                    float sampleRawDepth = SampleDepthTexture_Hiz(sampleScreenPos,mipLevel).r;
+                    float sampleLinearEyeDepth = LinearEyeDepth(sampleRawDepth,_ZBufferParams);
+
+                    //通过判定
+                    if ((sampleLinearEyeDepth<-samplePosVS.z))
+                    {
+                        if (mipLevel<=1)
+                        {
+                            if (-samplePosVS.z<(sampleLinearEyeDepth+_Thickness))
+                            {
+                                float2 reflectScreenPos = sampleScreenPos;
+                                half3 albedo_reflect =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, reflectScreenPos);
+                                result.rgb = albedo_reflect*_BaseColor;
+                                return result;
+                            }
+                        }
+                        else
+                        {
+                            samplePosVS = lastSamplePosVS;
+                            stepLength *= 0.5f;
+                            mipLevel--;
+                        }
+                    }
+                    else
+                    {
+                        stepLength *= 2;
+                        if (mipLevel<6)
+                        {
+                            mipLevel++;
+                        }
+                        
+                    }
+                }
+                
                 result = half4(0.0,0.0,0.0,1.0);
                 return result;
             }
@@ -583,49 +663,11 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                 #endif
                 
                 
-                
                 return result;
             }
             
             ENDHLSL
         }
-
-        // SampleDepthTexture
-        pass
-        {
-            HLSLPROGRAM
-
-            #pragma vertex Vert
-            #pragma fragment frag
-
-           #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-           #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-           #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
-            #include  "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
-            
-            //----------贴图声明开始-----------
-            TEXTURE2D(_MainTex);
-            SAMPLER(sampler_MainTex);
-            TEXTURE2D(_CameraDepthTexture);
-            SAMPLER(sampler_CameraDepthTexture);
-            //----------贴图声明结束-----------
-            
-            CBUFFER_START(UnityPerMaterial)
-            //----------变量声明开始-----------
-            half4 _BaseColor;
-            //float4 _CameraOpaqueTexture_ST;
-            float4 _MainTex_ST;
-            //----------变量声明结束-----------
-            CBUFFER_END
-            
-            float4 frag (Varyings i) : SV_TARGET
-            {
-                //half4 albedo =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, i.texcoord);
-                float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,i.texcoord).r;
-                return float4(rawDepth,0,0,1);
-            }
-            
-            ENDHLSL
-        }
+        
     }
 }
