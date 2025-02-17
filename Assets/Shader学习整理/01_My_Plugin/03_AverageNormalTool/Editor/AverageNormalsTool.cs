@@ -50,7 +50,9 @@ public class AverageNormalsTool : EditorWindow
         EditorGUILayout.HelpBox("You can use it to average mesh normals", MessageType.Info);
         GUILayout.EndVertical();
     }
-    
+
+    #region Function
+
     private void WirteAverageNormalToVertexColorTools()
     {
         MeshFilter[] meshFilters = Selection.activeGameObject.GetComponentsInChildren<MeshFilter>();
@@ -99,6 +101,33 @@ public class AverageNormalsTool : EditorWindow
         }
         mesh.colors = vertexColors;
     }
+    
+    public Mesh GetMesh()
+    {
+        Mesh curMesh = null;
+
+        if (Selection.activeObject!=null)
+        {
+            MeshFilter curFilter = Selection.activeObject.GetComponent<MeshFilter>();
+            SkinnedMeshRenderer curSkinned = Selection.activeObject.GetComponent<SkinnedMeshRenderer>();
+            
+            //3D组件有两种
+            //一种是MeshFilter+MeshRender
+            //一种是SkinnedMeshRender
+            
+            if (curFilter && !curSkinned)
+            {
+                curMesh = curFilter.sharedMesh;
+            }
+
+            if (!curFilter && curSkinned)
+            {
+                curMesh = curSkinned.sharedMesh;
+            }
+        }
+
+        return curMesh;
+    }
 
     private void SaveAssets()
     {
@@ -114,7 +143,7 @@ public class AverageNormalsTool : EditorWindow
             else
             {
                 path = path.Replace(dataPath, "Assets");
-                Mesh curMesh = VTXPainter_Utils.GetMesh(Selection.activeObject.GameObject());
+                Mesh curMesh = GetMesh();
                 Mesh finalResult = Instantiate(curMesh);
                 AssetDatabase.CreateAsset(finalResult, path);
                     
@@ -135,6 +164,8 @@ public class AverageNormalsTool : EditorWindow
             }
         }
     }
+
+    #endregion
     
     #region BoxStyles
     void GenerateStyles()
