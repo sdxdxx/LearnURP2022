@@ -146,20 +146,24 @@ public class AverageNormalsTool : EditorWindow
                 Mesh curMesh = GetMesh();
                 Mesh finalResult = Instantiate(curMesh);
                 AssetDatabase.CreateAsset(finalResult, path);
+
+                
                     
                 MeshFilter curFilter = Selection.activeObject.GameObject().GetComponent<MeshFilter>();
                 SkinnedMeshRenderer curSkinned = Selection.activeObject.GameObject().GetComponent<SkinnedMeshRenderer>();
+                
 
                 if (curFilter && !curSkinned)
                 {
+                    EditorUtility.SetDirty(curFilter);//设置脏标记告诉Unity修改了参数
                     curFilter.sharedMesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
                 }
 
                 if (!curFilter && curSkinned)
                 {
+                    EditorUtility.SetDirty(curSkinned);//设置脏标记告诉Unity修改了参数
                     curSkinned.sharedMesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
                 }
-
                 Debug.Log("Asset exported: " + path);
             }
         }
