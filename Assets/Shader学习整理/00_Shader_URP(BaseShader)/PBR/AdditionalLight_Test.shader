@@ -1,9 +1,10 @@
-Shader "URP/Additional_Light"
+Shader "URP/Additional_Light_Test"
 {
     Properties
     {
         _BaseColor("Base Color",Color) = (1.0,1.0,1.0,1.0)
         _MainTex("MainTex",2D) = "white"{}
+        _BaseMap("BaseMap",2D) = "white"{}
     	_Smoothness("Smoothness",Range(0,1)) = 0
     	_Metallic("Metallic",Range(0,1)) = 0
     }
@@ -28,6 +29,8 @@ Shader "URP/Additional_Light"
     	    #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+    	    #include "CustomLitForwardPass.hlsl"
+    	    #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
 
             // 主光源和阴影
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
@@ -43,14 +46,17 @@ Shader "URP/Additional_Light"
             //----------贴图声明开始-----------
             TEXTURE2D(_MainTex);//定义贴图
             SAMPLER(sampler_MainTex);//定义采样器
+    	    
             //----------贴图声明结束-----------
             
             CBUFFER_START(UnityPerMaterial)
             //----------变量声明开始-----------
-            half4 _BaseColor;
+            //half4 _BaseColor;
+
+    	    //float4 _BaseMap_ST;
             float4 _MainTex_ST;
-            float _Smoothness;
-            float _Metallic;
+            //float _Smoothness;
+            //float _Metallic;
             //----------变量声明结束-----------
             CBUFFER_END
 
@@ -159,7 +165,7 @@ Shader "URP/Additional_Light"
             {
                 float4 pos : SV_POSITION;
                 float2 uv : TEXCOORD0;
-                float3 nDirOS : TEXCOORD1;
+                float3 nDirWS : TEXCOORD1;
                 float3 posOS : TEXCOORD2;
             };
 
@@ -167,7 +173,7 @@ Shader "URP/Additional_Light"
             {
                 vertexOutput o;
                 o.pos = TransformObjectToHClip(v.vertex.xyz);
-                o.nDirOS = v.normal;
+                o.nDirWS = v.normal;
                 o.uv = v.uv*_MainTex_ST.xy+_MainTex_ST.zw;
                 o.posOS = v.vertex.xyz;
                 return o;
@@ -182,10 +188,10 @@ Shader "URP/Additional_Light"
             #pragma vertex vert
             #pragma fragment frag
             
-            half4 frag (vertexOutput i) : SV_TARGET
+            half4 frag (vertexOutput input) : SV_TARGET
             {
 
-            	float3 posWS = TransformObjectToWorld(i.posOS);
+            	float3 posWS = TransformObjectToWorld(input.posOS);//input.positionWS;
                 float4 shadowCoord = TransformWorldToShadowCoord(posWS);
             	
             	
@@ -194,10 +200,15 @@ Shader "URP/Additional_Light"
             	float3 mainLightDir = mainLight.direction;
             	float mainLightShadow = MainLightRealtimeShadow(shadowCoord);
 
-            	float3 nDir = TransformObjectToWorldNormal(i.nDirOS);//空间转换在像素着色器完成效果会更好，不会出现顶点网格，但性能消耗增大
-            	float3 vDir = normalize(_WorldSpaceCameraPos.xyz - posWS.xyz);
+            	float3 nDir = TransformObjectToWorldNormal(input.nDirWS);//input.normalWS;
             	
-            	half4 albedo = SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,i.uv)*_BaseColor;
+            	float3 vDir = normalize(_WorldSpaceCameraPos.xyz - posWS.xyz);
+
+            	float3 hDir = normalize(_MainLightPosition.xyz+vDir);
+
+            	float3 rDir = reflect(-vDir,nDir);
+            	
+            	half4 albedo = SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,input.uv)*_BaseColor;
 
             	float metallic = _Metallic;
             	float smothness = _Smoothness-0.01;
@@ -218,43 +229,17 @@ Shader "URP/Additional_Light"
 				}
 
             	half3 FinalRGB = mainColor+additionalColor;
+
+            	float specular = pow(max(0,dot(nDir,_MainLightPosition.xyz)),50);
             	
 
-            	half4 result = half4(FinalRGB,1.0);
+            	half4 result = half4(specular.xxx,1.0);
             	
                 return result;
             }
             
             ENDHLSL
         }
-
-		//使用官方的ShadowCaster
-		Pass
-        {
-            Name "ShadowCaster"
-            Tags
-            {
-                "LightMode" = "ShadowCaster"
-            }
-            
-            ZWrite On
-            ZTest LEqual
-            ColorMask 0
-
-            HLSLPROGRAM
-            #pragma target 2.0
-
-            // -------------------------------------
-            // Shader Stages
-            #pragma vertex ShadowPassVertex
-            #pragma fragment ShadowPassFragment
-
-            // Includes
-            #include "Packages/com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl"
-            // -------------------------------------
-            
-            ENDHLSL
-        }
-		
+         
     }
 }

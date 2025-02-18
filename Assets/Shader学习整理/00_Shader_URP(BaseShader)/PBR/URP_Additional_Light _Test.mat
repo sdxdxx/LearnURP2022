@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: URP_Additional_Light
+  m_Name: URP_Additional_Light _Test
   m_Shader: {fileID: 4800000, guid: a92d4a7e4e7228741b11813b0b35c3a4, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
