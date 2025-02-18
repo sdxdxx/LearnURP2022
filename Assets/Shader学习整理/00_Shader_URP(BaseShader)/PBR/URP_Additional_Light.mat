@@ -29,7 +29,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Metallic: 1
+    - _Metallic: 0.5
     - _Smoothness: 0.5
     m_Colors:
     - _BaseColor: {r: 0.5019608, g: 0.5019608, b: 0.5019608, a: 1}

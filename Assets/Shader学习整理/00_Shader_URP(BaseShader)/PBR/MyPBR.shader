@@ -7,7 +7,6 @@ Shader "URP/MyPBR"
     	
     	[Header(PBR)]
         _ColorTint("Color Tint",Color) = (1.0,1.0,1.0,1.0)
-        _DarkColor("Dark Color",Color) = (0,0,0,1.0)
     	_MetallicSmoothnessTex("Metallic Smoothness Texture",2D) = "white"{}
     	_Smoothness("Smoothness",Range(0,1)) = 0
     	_Metallic("Metallic",Range(0,1)) = 0
@@ -57,7 +56,6 @@ Shader "URP/MyPBR"
             CBUFFER_START(UnityPerMaterial)
             //----------变量声明开始-----------
             half4 _ColorTint;
-            half4 _DarkColor;
 
     		float _NormalInt;
     		float4 _NormalMap_ST;
@@ -130,7 +128,7 @@ Shader "URP/MyPBR"
                 return o;
             }
 
-    		half3 CalculatePBRResult(float3 nDir, float3 lDir, float3 vDir, half3 MainTex, float smoothness, float metallic, float shadow)
+    		 half3 CalculatePBRResult(float3 nDir, float3 lDir, float3 vDir, half3 MainTex, half3 lightCol, float smoothness, float metallic, float shadow)
             {
 				float3 hDir = normalize(vDir+lDir);
 
@@ -139,10 +137,7 @@ Shader "URP/MyPBR"
 				float hDotv = max(saturate(dot(vDir,hDir)),0.000001);
 				float hDotl = max(saturate(dot(lDir,hDir)),0.000001);
 				float nDoth = max(saturate(dot(nDir,hDir)),0.000001);
-
-				//光照颜色
-				float3 lightCol = _MainLightColor.rgb;
-
+            	
 				//粗糙度一家
 				float perceptualRoughness = 1 - smoothness;//粗糙度
 				float roughness = perceptualRoughness * perceptualRoughness;//粗糙度二次方
@@ -185,16 +180,14 @@ Shader "URP/MyPBR"
 				 float3 DirectLightResult = diffColor + specColor;
 
 				//间接光漫反射
-				half3 ambient_contrib = SampleSH(nDir);
+				half3 ambient_contrib = SampleSH(nDir);//反射探针接收
 
 				float3 ambient = 0.03 * Albedo;
 
 				float3 iblDiffuse = max(half3(0, 0, 0), ambient.rgb + ambient_contrib);
 				float3 Flast = fresnelSchlickRoughness(max(nDotv, 0.0), F0, roughness);
 				 float kdLast = (1 - Flast) * (1 - metallic);
-
-				float3 iblDiffuseResult = iblDiffuse * kdLast * Albedo;
-
+            	
 				//间接光镜面反射
 				float mip_roughness = perceptualRoughness * (1.7 - 0.7 * perceptualRoughness);
 				float3 reflectVec = reflect(-vDir, nDir);
@@ -211,22 +204,9 @@ Shader "URP/MyPBR"
 				float grazingTerm = saturate(smoothness + (1 - oneMinusReflectivity));
 				float4 IndirectResult = float4(iblDiffuse * kdLast * Albedo + iblSpecular * surfaceReduction * FresnelLerp(F0, grazingTerm, nDotv), 1);
             	
-            	float3 result_RBR = lerp(DirectLightResult*_DarkColor,DirectLightResult,shadow) + IndirectResult*_MainLightColor.rgb;
+            	float3 result_RBR = DirectLightResult*shadow + IndirectResult*lightCol;
 
             	return  result_RBR;
-            }
-
-    		half3 CalculateDepthRim(float4 screenPos, float3 nDirVS, half3 RimColor, float RimOffset)
-            {
-            	float2 screenPos_Modified = screenPos.xy/screenPos.w;
-				float2 screenPos_Offset = screenPos_Modified + nDirVS.xy*RimOffset*0.001f/max(1,screenPos);//偏移后的视口坐标
-				float depthOffsetTex = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture,sampler_CameraDepthTexture,screenPos_Offset);
-				float depthTex = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture,sampler_CameraDepthTexture,screenPos_Modified);
-				float depthOffset = Linear01Depth(depthOffsetTex,_ZBufferParams);
-				float depth = Linear01Depth(depthTex,_ZBufferParams);
-				float screenDepthRim = saturate(depthOffset - depth);
-            	half3 depthRim = screenDepthRim*RimColor;
-            	return depthRim;
             }
 
     		float3 NormalBlendReoriented(float3 A, float3 B)
@@ -241,8 +221,8 @@ Shader "URP/MyPBR"
 
             	//MainTex
             	float2 mainTexUV = i.uv *_MainTex_ST.xy+_MainTex_ST.zw;
-                half4 mainTex = SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,mainTexUV);
-            	mainTex.rgb *=_ColorTint.rgb; 
+                half4 albedo = SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,mainTexUV);
+            	albedo.rgb *=_ColorTint.rgb; 
             	
             	//TBN Matrix & SampleNormalMap
 				 float3x3 TBN = float3x3(i.tDirWS,i.bDirWS,i.nDirWS);
@@ -252,32 +232,41 @@ Shader "URP/MyPBR"
 
 				//Vector
 				float3 nDir = normalize(mul(var_NormalMap,TBN));
-            	float3 nDirVS = normalize(mul((float3x3)UNITY_MATRIX_V, i.nDirWS));
-            	float3 lDir = normalize(_MainLightPosition.xyz);
             	float3 vDir = normalize(_WorldSpaceCameraPos.xyz - i.posWS.xyz);
             	
-            	//depth rim
-            	half3 depthRim = CalculateDepthRim(i.screenPos,nDirVS,_RimCol,_RimWidth);
-
-            	//shadow
-            	float shadow = MainLightRealtimeShadow(i.shadowCoord);
-
             	// Metallic & Smoothness
             	float4 MetallicSmoothnessTex = SAMPLE_TEXTURE2D(_MetallicSmoothnessTex,sampler_MetallicSmoothnessTex,i.uv).rgba;
             	float metallic = MetallicSmoothnessTex.r*_Metallic;
             	float smoothness = MetallicSmoothnessTex.a*_Smoothness;
-
-            	//PBR
-            	half3 result_RBR = CalculatePBRResult(nDir,lDir,vDir,mainTex,smoothness,metallic,shadow);
             	
-            	half3 MainFinalRGB = result_RBR+depthRim;
+            	//MainLight
+            	Light mainLight = GetMainLight(i.shadowCoord);
+                half3 mainLightColor = mainLight.color;
+            	float3 mainLightDir = mainLight.direction;
+            	float mainLightShadow = MainLightRealtimeShadow(i.shadowCoord);
+            	float3 mainLightRadiance = mainLightColor * mainLight.distanceAttenuation;
+            	half3 mainColor = CalculatePBRResult(nDir,mainLightDir,vDir,albedo.rgb,mainLightRadiance,smoothness,metallic,mainLightShadow);
+
+            	//AditionalLight
+            	uint lightCount = GetAdditionalLightsCount();
+            	half3 additionalColor = half3(0,0,0);
+				for (uint lightIndex = 0; lightIndex < lightCount; lightIndex++)
+				{
+				    Light additionalLight = GetAdditionalLight(lightIndex, i.posWS.xyz, 1);
+					half3 additionalLightColor = additionalLight.color;
+					float3 additionalLightDir = additionalLight.direction;
+					// 光照衰减和阴影系数
+                    float3 additionalLightRadiance = additionalLightColor * additionalLight.distanceAttenuation;
+				    additionalColor += CalculatePBRResult(nDir,additionalLightDir,vDir,albedo.rgb,additionalLightRadiance,smoothness,metallic,additionalLight.shadowAttenuation);
+				}
+            	
+            	half3 MainFinalRGB = mainColor+additionalColor;
 
             	half3 FinalRGB = MainFinalRGB;
             	
                 return half4(FinalRGB,1.0);
             }
     	ENDHLSL
-        
         pass
         {
 	        Tags{"LightMode"="UniversalForward"}
@@ -291,29 +280,34 @@ Shader "URP/MyPBR"
             
             ENDHLSL
         }
-    	
-    	// shadow casting pass with empty fragment
+        
+
+		//使用官方的ShadowCaster
 		Pass
-		{
-		Name "GrassShadowCaster"
-		Tags{ "LightMode" = "ShadowCaster" }
+        {
+            Name "ShadowCaster"
+            Tags
+            {
+                "LightMode" = "ShadowCaster"
+            }
+            
+            ZWrite On
+            ZTest LEqual
+            ColorMask 0
 
-		ZWrite On
-		ZTest LEqual
+            HLSLPROGRAM
+            #pragma target 2.0
 
-		HLSLPROGRAM
+            // -------------------------------------
+            // Shader Stages
+            #pragma vertex ShadowPassVertex
+            #pragma fragment ShadowPassFragment
 
-		 #pragma vertex vert
-		#pragma fragment frag_shadow
-		
-		#pragma target 4.6
-
-		half4 frag_shadow(vertexOutput i) : SV_TARGET
-		{
-			return 1;
-		 }
-
-		ENDHLSL
-		}
+            // Includes
+            #include "Packages/com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl"
+            // -------------------------------------
+            
+            ENDHLSL
+        }
     }
 }
