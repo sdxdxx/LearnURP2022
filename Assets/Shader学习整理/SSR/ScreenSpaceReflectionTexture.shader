@@ -14,11 +14,7 @@ Shader "URP/Test/ScreenSpaceReflectionTextureTest"
             "RenderType" = "Opaque"
             "RenderPipeline" = "UniversalPipeline"
         }
-    	
-         //解决深度引动模式Depth Priming Mode问题
-        UsePass "Universal Render Pipeline/Unlit/DepthOnly"
-        UsePass "Universal Render Pipeline/Lit/DepthNormals"
-        
+         
          pass
         {
             HLSLPROGRAM
@@ -84,5 +80,9 @@ Shader "URP/Test/ScreenSpaceReflectionTextureTest"
             
             ENDHLSL
         }
+
+        //解决深度引动模式Depth Priming Mode问题
+        UsePass "Universal Render Pipeline/Unlit/DepthOnly"
+        UsePass "Universal Render Pipeline/Lit/DepthNormals"
     }
 }

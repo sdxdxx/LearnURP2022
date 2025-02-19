@@ -209,7 +209,7 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                     
                     lastSamplePosVS = samplePosVS;
                     float2 ditherUV = fmod(sampleScreenPos*_ScreenParams, 4);  
-                    float jitter = dither[ditherUV.x * 4 + ditherUV.y]*_DitherIntensity;
+                    float jitter = sin(dither[ditherUV.x * 4 + ditherUV.y]*2*PI)*_DitherIntensity;
                     samplePosVS += sampleNormalizeVector*stepLength;
                     float3 realSamplePosVS = samplePosVS + jitter*sampleNormalizeVector*stepLength;
                     sampleClipPos = mul((float3x3)unity_CameraProjection, realSamplePosVS);
@@ -459,13 +459,11 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                 float stepLimit = clamp(maxStep,0,1024);//防止卡顿
 
                 half4 result = half4(0.0,0.0,0.0,1.0);
-                
                 UNITY_LOOP
                 for (int step = 0; step<stepLimit; step++)
                 {
-                    float2 realSamplePixelPos;
-                    float2 ditherUV = fmod(sampleScreenPos*_ScreenParams, 4);
-                    float ditherValue = dither[ditherUV.x * 4 + ditherUV.y]*_DitherIntensity;
+                    float2 ditherUV = fmod(samplePixelPos, 4);
+                    float ditherValue = sin(dither[ditherUV.x * 4 + ditherUV.y]*2*PI)*_DitherIntensity;
                     float2 ditherXY;
                     if (!needSwapXY)
                     {
