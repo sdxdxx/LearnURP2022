@@ -76,8 +76,8 @@ Shader "URP/PostProcessing/Custom_SSAO"
             {
 			    // 一坨随机数
 			    half gradientNoise = InterleavedGradientNoise(uv * _ScreenParams.xy, sampleIndex);
-			    half u = frac(Random(half2(0.0, sampleIndex)) + gradientNoise) * 2.0 - 1.0;
-			    half theta = Random(half2(1.0, sampleIndex) + gradientNoise) * TWO_PI;
+			    half u = frac(Random(half2(0.0, sampleIndex)) + sin(gradientNoise*2*PI)) * 2.0 - 1.0;
+			    half theta = Random(half2(1.0, sampleIndex) + sin(gradientNoise*2*PI)) * TWO_PI;
 			    half u2 = sqrt(1.0 - u * u);
 
 			    // 全球上随机一点
@@ -100,24 +100,33 @@ Shader "URP/PostProcessing/Custom_SSAO"
                 float existingDepth01 = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_CameraDepthTexture,i.texcoord).r;
                 float3 nDirWS = SAMPLE_TEXTURE2D_X(_CameraNormalsTexture,sampler_CameraNormalsTexture,i.texcoord).xyz;
                 float3 nDirVS = TransformWorldToViewNormal(nDirWS);//View Space Normal Direction
-                nDirVS = normalize(nDirVS)*float3(1.0,1.0,-1.0);
                 float linear01Depth = Linear01Depth(existingDepth01,_ZBufferParams);
                 float3 posVS_frag = ReconstructViewPositionFromDepth(i.texcoord,linear01Depth);//View Space Frag Pos
+            	float2 lastSampleScreenPos = i.texcoord;
             	
                 //Core
                 float ao = 0;
                 float sampleCount = _SampleCount;
             	float rcpSampleCount = rcp(sampleCount);
-            	
-                for(int index = 0; index<sampleCount; index++)
+
+            	UNITY_LOOP
+                for(int index = 1; index<=sampleCount; index++)
                 {
-                    float3 randomSampleVec = PickSampleVector(i.texcoord,index,rcpSampleCount,nDirVS);
+                    float3 randomSampleVec = PickSampleVector(lastSampleScreenPos,index,rcpSampleCount,nDirVS);
                 	
                      //Calculate Normal-Oriented Hemisphere Vector
                     float3 randomSamplePosVS = posVS_frag + randomSampleVec * _SampleRadius;
                 	
                     float3 randomSampleClipPos = mul((float3x3)unity_CameraProjection, randomSamplePosVS);
                     float2 randomSampleScreenPos = (randomSampleClipPos.xy / randomSampleClipPos.z) * 0.5 + 0.5;
+                	lastSampleScreenPos = randomSampleScreenPos;
+                	
+
+                    if (randomSampleScreenPos.x >1 || randomSampleVec.y >1)
+                    {
+	                    ao += 0;
+                    	continue;
+                    }
                 	
                     //Calculate Sample Point Depth
                     float OcculusionPoint01Depth;
@@ -133,20 +142,19 @@ Shader "URP/PostProcessing/Custom_SSAO"
                     float selfCheck = OcculusionPoint01Depth+_DepthBias < linear01Depth ? 1.0 : 0.0;//Calculate Depth Difference
 
                 	//Distance Weight
-                    float weight1 = smoothstep(0,0.2,length(randomSampleVec.xy));
+                    float weight1 = lerp(1,0.8,index/sampleCount);
                 	
                 	//Angle Weight
                 	float cosAngle =  dot(OcculusionVec,nDirVS);
-                	float weight2 = 1-smoothstep(0.8,1,cosAngle);
+                	float weight2 = saturate(cosAngle);
 
                 	//Add AO
                 	ao+= selfCheck * weight1*isInsideRadius*0.5f+weight2*isInsideRadius*selfCheck*0.5f;
                 }
                 
                 ao = ao/sampleCount;
-            	ao = step(_CullValue+0.001,ao);
+            	ao = smoothstep(_CullValue+0.001,1.0,ao);
 		        ao = max(0.0, 1-ao*_Intensity);
-                
                 return float4(ao,ao,ao,1);
                 
             }

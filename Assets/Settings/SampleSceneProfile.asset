@@ -132,7 +132,6 @@ MonoBehaviour:
   - {fileID: 849379129802519247}
   - {fileID: -7893295128165547882}
   - {fileID: -7011558710299706105}
-  - {fileID: -8871647154366343643}
   - {fileID: -7564463659827066114}
   - {fileID: 8841808791222145754}
 --- !u!114 &849379129802519247
@@ -193,31 +192,31 @@ MonoBehaviour:
     m_Value: 1
   Intensity:
     m_OverrideState: 1
-    m_Value: 0.64
+    m_Value: 1.2
   CullValue:
     m_OverrideState: 1
-    m_Value: 0.25
+    m_Value: 0.0288
   DepthBias:
     m_OverrideState: 1
-    m_Value: 0.000082
+    m_Value: 0.0002
   SampleCount:
     m_OverrideState: 1
-    m_Value: 64
+    m_Value: 16
   SampleRadius:
     m_OverrideState: 1
-    m_Value: 0.16
+    m_Value: 0.5
   InsideRadius:
     m_OverrideState: 1
-    m_Value: 0.08
+    m_Value: 0.003
   Blur:
     m_OverrideState: 1
     m_Value: 1
   BlurRadius:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 4
   BilaterFilterStrength:
     m_OverrideState: 1
-    m_Value: 0.003
+    m_Value: 0.01
   SSAO_Only:
     m_OverrideState: 1
     m_Value: 0

@@ -45,7 +45,7 @@ MonoBehaviour:
     m_Value: 8
   DitherIntensity:
     m_OverrideState: 1
-    m_Value: 0.93
+    m_Value: 2.1
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
