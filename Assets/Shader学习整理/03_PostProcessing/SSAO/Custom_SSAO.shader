@@ -149,7 +149,7 @@ Shader "URP/PostProcessing/Custom_SSAO"
                 	float weight2 = saturate(cosAngle);
 
                 	//Add AO
-                	ao+= selfCheck * weight1*isInsideRadius*0.5f+weight2*isInsideRadius*selfCheck*0.5f;
+                	ao+= selfCheck * weight1*isInsideRadius*0.3f+weight2*isInsideRadius*selfCheck*0.7f;
                 }
                 
                 ao = ao/sampleCount;

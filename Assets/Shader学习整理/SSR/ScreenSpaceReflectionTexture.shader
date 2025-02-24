@@ -55,6 +55,7 @@ Shader "URP/Test/ScreenSpaceReflectionTextureTest"
                 float2 uv : TEXCOORD0;
                 float3 nDirWS : TEXCOORD1;
                 float4 screenPos : TEXCOORD2;
+                float3 posWS : TEXCOORD3;
             };
 
             vertexOutput vert (vertexInput v)
@@ -66,6 +67,7 @@ Shader "URP/Test/ScreenSpaceReflectionTextureTest"
                 o.uv = v.uv*_MainTex_ST.xy+_MainTex_ST.zw;
                 float3 positionWS = TransformObjectToWorld(v.vertex.xyz);
                 o.screenPos = ComputeScreenPos(posCS);
+                o.posWS = positionWS;
                 return o;
             }
 

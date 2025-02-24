@@ -192,13 +192,13 @@ MonoBehaviour:
     m_Value: 1
   Intensity:
     m_OverrideState: 1
-    m_Value: 1.2
+    m_Value: 1
   CullValue:
     m_OverrideState: 1
     m_Value: 0.0288
   DepthBias:
     m_OverrideState: 1
-    m_Value: 0.0002
+    m_Value: 0.000038
   SampleCount:
     m_OverrideState: 1
     m_Value: 16
@@ -213,7 +213,7 @@ MonoBehaviour:
     m_Value: 1
   BlurRadius:
     m_OverrideState: 1
-    m_Value: 4
+    m_Value: 2
   BilaterFilterStrength:
     m_OverrideState: 1
     m_Value: 0.01

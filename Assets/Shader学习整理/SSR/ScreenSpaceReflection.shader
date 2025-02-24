@@ -22,6 +22,8 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
             #include  "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
+    		#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/GlobalIllumination.hlsl"
+            
             float3 ReconstructViewPositionFromDepth(float2 screenPos, float depth)
             {
                 float2 ndcPos = screenPos*2-1;//map[0,1] -> [-1,1]
@@ -123,7 +125,12 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                     }
                 }
 
-                result = half4(0.0,0.0,0.0,1.0);
+                float3 posWS = mul(UNITY_MATRIX_I_V,float4(posVS,1)).xyz;
+                float3 vDir = normalize(_WorldSpaceCameraPos.xyz - posWS.xyz);
+                float3 reflectVec = reflect(-vDir, nDirWS);
+				half4 rgbm =  SAMPLE_TEXTURECUBE_LOD(unity_SpecCube0,samplerunity_SpecCube0, reflectVec, 0);
+                float3 skyboxReflectColor = DecodeHDREnvironment(rgbm, unity_SpecCube0_HDR);
+                result = half4(skyboxReflectColor,1.0);
                 return result;
             }
 
@@ -185,7 +192,12 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                     }
                 }
                 
-                result = half4(0.0,0.0,0.0,1.0);
+                float3 posWS = mul(UNITY_MATRIX_I_V,float4(posVS,1)).xyz;
+                float3 vDir = normalize(_WorldSpaceCameraPos.xyz - posWS.xyz);
+                float3 reflectVec = reflect(-vDir, nDirWS);
+				half4 rgbm =  SAMPLE_TEXTURECUBE_LOD(unity_SpecCube0,samplerunity_SpecCube0, reflectVec, 0);
+                float3 skyboxReflectColor = DecodeHDREnvironment(rgbm, unity_SpecCube0_HDR);
+                result = half4(skyboxReflectColor,1.0);
                 return result;
             }
 
@@ -209,23 +221,21 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                 float3 samplePosVS = posVS;
                 float3 lastSamplePosVS = posVS;
                 float stepLength = _MaxStepLength;
-
-                
                 
                 int maxStep = 64;
                 float3 sampleClipPos;
                 float2 sampleScreenPos = i.texcoord.xy;
+                float2 pixelPos = round(i.texcoord.xy*_ScreenParams.xy);
                 int step;
                 half4 result = half4(1.0,1.0,1.0,1.0);
                 
-                UNITY_LOOP
+                //UNITY_LOOP
                 for (step = 1; step<=maxStep; step++)
                 {
-                    
                     lastSamplePosVS = samplePosVS;
-                    float2 ditherUV = fmod(sampleScreenPos*_ScreenParams, 4);  
-                    float jitter = sin(dither[ditherUV.x * 4 + ditherUV.y]*2*PI)*_DitherIntensity;
                     samplePosVS += sampleNormalizeVector*stepLength;
+                    float2 ditherUV = fmod(pixelPos, 4);  
+                    float jitter = dither[ditherUV.x * 4 + ditherUV.y]*_DitherIntensity*2.5f;
                     float3 realSamplePosVS = samplePosVS + jitter*sampleNormalizeVector*stepLength;
                     sampleClipPos = mul((float3x3)unity_CameraProjection, realSamplePosVS);
                     sampleScreenPos = (sampleClipPos.xy / sampleClipPos.z) * 0.5 + 0.5;
@@ -260,8 +270,13 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                         }
                     }
                 }
-                
-                result = half4(0.0,0.0,0.0,1.0);
+
+                float3 posWS = mul(UNITY_MATRIX_I_V,float4(posVS,1)).xyz;
+                float3 vDir = normalize(_WorldSpaceCameraPos.xyz - posWS.xyz);
+                float3 reflectVec = reflect(-vDir, nDirWS);
+				half4 rgbm =  SAMPLE_TEXTURECUBE_LOD(unity_SpecCube0,samplerunity_SpecCube0, reflectVec, 0);
+                float3 skyboxReflectColor = DecodeHDREnvironment(rgbm, unity_SpecCube0_HDR);
+                result = half4(skyboxReflectColor,1.0);
                 return result;
             }
 
@@ -375,11 +390,17 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                         float2 reflectScreenPos = sampleScreenPos;
                         half3 albedo_reflect =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, reflectScreenPos);
                         result.rgb = albedo_reflect*_BaseColor;
+                        return result;
                         break;
                     }
-                    
                 }
                 
+                float3 posWS = mul(UNITY_MATRIX_I_V,float4(posVS,1)).xyz;
+                float3 vDir = normalize(_WorldSpaceCameraPos.xyz - posWS.xyz);
+                float3 reflectVec = reflect(-vDir, nDirWS);
+				half4 rgbm =  SAMPLE_TEXTURECUBE_LOD(unity_SpecCube0,samplerunity_SpecCube0, reflectVec, 0);
+                float3 skyboxReflectColor = DecodeHDREnvironment(rgbm, unity_SpecCube0_HDR);
+                result = half4(skyboxReflectColor,1.0);
                 return result;
                 
                 
@@ -483,7 +504,7 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                 for (int step = 0; step<stepLimit; step++)
                 {
                     float2 ditherUV = fmod(samplePixelPos, 4);
-                    float ditherValue = sin(dither[ditherUV.x * 4 + ditherUV.y]*2*PI)*_DitherIntensity*0.33f;
+                    float ditherValue = sin(dither[ditherUV.x * 4 + ditherUV.y]*2*PI)*_DitherIntensity*0.5f;
                     float2 ditherXY;
                     if (!needSwapXY)
                     {
@@ -524,11 +545,18 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                         float2 reflectScreenPos = sampleScreenPos;
                         half3 albedo_reflect =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, reflectScreenPos);
                         result.rgb = albedo_reflect*_BaseColor;
+                        return result;
                         break;
                     }
                     
                 }
                 
+                float3 posWS = mul(UNITY_MATRIX_I_V,float4(posVS,1)).xyz;
+                float3 vDir = normalize(_WorldSpaceCameraPos.xyz - posWS.xyz);
+                float3 reflectVec = reflect(-vDir, nDirWS);
+				half4 rgbm =  SAMPLE_TEXTURECUBE_LOD(unity_SpecCube0,samplerunity_SpecCube0, reflectVec, 0);
+                float3 skyboxReflectColor = DecodeHDREnvironment(rgbm, unity_SpecCube0_HDR);
+                result = half4(skyboxReflectColor,1.0);
                 return result;
             }
 

@@ -42,10 +42,10 @@ MonoBehaviour:
     m_Value: 10.1
   DeltaPixel:
     m_OverrideState: 1
-    m_Value: 8
+    m_Value: 3
   DitherIntensity:
     m_OverrideState: 1
-    m_Value: 2.1
+    m_Value: 2
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
