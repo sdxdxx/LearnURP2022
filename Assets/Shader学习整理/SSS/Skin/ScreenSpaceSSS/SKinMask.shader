@@ -20,7 +20,6 @@ Shader "URP/PostProcessing/Skin"
         //SkinMask
         pass
         {
-            Tags{"LightMode"="UniversalForward"}
             
             Name "SkinMask"
              
