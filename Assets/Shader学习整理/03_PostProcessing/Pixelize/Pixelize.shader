@@ -55,6 +55,7 @@ Shader "URP/PostProcessing/Pixelize"
                 int2 downSamplePixelPos = int2(pixelPos.x/downSampleValue,pixelPos.y/downSampleValue);
                 
                 half4 pixelizeColor = half4(0,0,0,1.0f);
+                float rawMask = SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PixelizeMask,screenPos).r;
                 float mask = 0;
                 for (int i = 0; i<downSampleValue; i++)
                 {
@@ -68,15 +69,15 @@ Shader "URP/PostProcessing/Pixelize"
                 
                 half4 albedo =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, screenPos);
                 float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, screenPos).r;
-                float linearEyeDepth = LinearEyeDepth(rawDepth,_ZBufferParams);
-                float maskEyeDepth = SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,screenPos).g;
+                float linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
+                float maskRawDepth = SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,screenPos).g;
+                float mask01Depth = Linear01Depth(maskRawDepth,_ZBufferParams);
                 
-                //return  maskEyeDepth;
-                //return step(maskEyeDepth,linearEyeDepth+0.01);
-                
+                //return LinearEyeDepth(rawDepth,_ZBufferParams);
+                return SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PixelizeMask,screenPos).g;
                 pixelizeColor.rgb /= downSampleValue*downSampleValue; 
                 mask /= downSampleValue*downSampleValue;
-                mask = step(0.01f,mask)*step(maskEyeDepth,linearEyeDepth+0.01);
+                mask = step(0.001f,mask)*step(mask01Depth,linear01Depth+0.004);
                 half4 result = lerp(albedo,pixelizeColor,mask);
                 
                 return result;

@@ -15,11 +15,7 @@ Shader "URP/PixelizeObject"
             "RenderType" = "Opaque"
             "RenderPipeline" = "UniversalPipeline"
         }
-    	
-    	//解决深度引动模式Depth Priming Mode问题
-        UsePass "Universal Render Pipeline/Unlit/DepthOnly"
-        UsePass "Universal Render Pipeline/Lit/DepthNormals"
-        
+         
         HLSLINCLUDE
             
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
@@ -218,35 +214,70 @@ Shader "URP/PixelizeObject"
             }
             
         ENDHLSL
-
+         
+		//解决深度引动模式Depth Priming Mode问题
+        UsePass "Universal Render Pipeline/Unlit/DepthOnly"
+        UsePass "Universal Render Pipeline/Lit/DepthNormals"
+        
          pass
         {
+        	ZWrite On
+        	
             HLSLPROGRAM
-
+            
             #pragma vertex vert
             #pragma fragment frag
             
             ENDHLSL
         }
 
-        pass
+		pass
         {
 	        Name "PixelizeMask"
 
         	Tags{"LightMode" = "PixelizeMask"}
 	        
+        	ZWrite On
+        	ZTest LEqual
             HLSLPROGRAM
             
             #pragma vertex vert
             #pragma fragment frag_PixelizeMask
 
+            #pragma shader_feature IS_ORTH_CAM
+
+            //Remap
+            float remap(float original_value, float original_min, float original_max, float new_min, float new_max)
+             {
+               return new_min + (((original_value - original_min) / (original_max - original_min)) * (new_max - new_min));
+             }
+
             half4 frag_PixelizeMask (vertexOutput i) : SV_TARGET
             {
             	float3 nDir = TransformObjectToWorldNormal(i.nDirOS).xyz;
-            	return half4(1,TransformObjectToHClip(i.posOS).w,0,0);
+
+            	
+            	
+            	float3 posWS = TransformObjectToWorld(i.posOS).xyz;
+	            float isOrtho = UNITY_MATRIX_P[3][3];
+            	float rawDepth;
+            	
+            	#ifdef IS_ORTH_CAM
+            		//float linearEyeDepth = distance(_WorldSpaceCameraPos.xyz,posWS.xyz);
+            		float linearEyeDepth = i.screenPos.w;
+            		rawDepth = (rcp(linearEyeDepth)-_ZBufferParams.w)/_ZBufferParams.z;
+            		return half4(1,rawDepth,0,0);
+            	#else
+            		float linearEyeDepth = TransformObjectToHClip(i.posOS).w;
+            		rawDepth = (rcp(linearEyeDepth)-_ZBufferParams.w)/_ZBufferParams.z;
+            	#endif
+
+            	return half4(1,rawDepth,0,0);
             }
             
             ENDHLSL
         }
+
+
     }
 }

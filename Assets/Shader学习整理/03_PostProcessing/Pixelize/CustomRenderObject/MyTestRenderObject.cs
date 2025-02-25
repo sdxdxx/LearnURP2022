@@ -2,14 +2,16 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.Serialization;
 
-public class PixelizeFeature : ScriptableRendererFeature
+public class MyTestRenderObject : ScriptableRendererFeature
 {
     [System.Serializable]
      public class Settings
     {
         public RenderPassEvent renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
-        public LayerMask pixelizeObjectLayer;
+        public List<string> shaderTagsList = new List<string>();
+        public LayerMask layerMask;
     }
      
      //自定义的Pass
@@ -20,32 +22,47 @@ public class PixelizeFeature : ScriptableRendererFeature
         private List<ShaderTagId> shaderTagsList = new List<ShaderTagId>();
         
         //定义一个 ProfilingSampler 方便设置在FrameDebugger里查看
-        private const string ProfilerTag = "Pixelize";
+        private const string ProfilerTag = "MyRenderPass";
         private ProfilingSampler m_ProfilingSampler = new(ProfilerTag);
         
-        private Material material;
         private PixelizeVolume pixelizeVolume;
 
         private RTHandle cameraColorRTHandle;//可以理解为GameView_RenderTarget的句柄
-        private RTHandle depthTarget;
         private RTHandle maskRTHandle;
         private RTHandle tempRTHandle;
 
         //自定义Pass的构造函数(用于传参)
         public CustomRenderPass(Settings settings)
         {
-            filtering = new FilteringSettings(RenderQueueRange.all, settings.pixelizeObjectLayer);//设置过滤器
-            shaderTagsList.Add(new ShaderTagId("PixelizeMask"));
-            
-            Shader shader = Shader.Find("URP/PostProcessing/Pixelize");
+            filtering = new FilteringSettings(RenderQueueRange.all, settings.layerMask);//设置过滤器
+            if (settings.shaderTagsList != null && settings.shaderTagsList.Count > 0)
+            {
+                for (int i = 0; i < settings.shaderTagsList.Count; i++)
+                {
+                    shaderTagsList.Add(new ShaderTagId(settings.shaderTagsList[i]));
+                }
+            }
+            else
+            {
+                shaderTagsList.Add(new ShaderTagId("SRPDefaultUnlit"));
+                shaderTagsList.Add(new ShaderTagId("UniversalForward"));
+                shaderTagsList.Add(new ShaderTagId("UniversalForwardOnly"));
+            }
+           
             renderPassEvent = settings.renderPassEvent; //传入设置的渲染事件顺序(renderPassEvent在基类ScriptableRenderPass中)
-            material = CoreUtils.CreateEngineMaterial(shader);//根据传入的Shader创建material;
         }
 
-        public void GetTempRT(ref RTHandle temp, in RenderingData data)
+        public void GetTempRT(ref RTHandle temp, in RenderingData data, bool enableDepthBuffer)
         {
             RenderTextureDescriptor desc = data.cameraData.cameraTargetDescriptor;
-            desc.depthBufferBits = 0; //这步很重要！！！
+            if (enableDepthBuffer)
+            {
+                desc.depthBufferBits = 0;
+            }
+            else
+            {
+                desc.depthBufferBits = 0; //这步很重要！！！
+            }
             RenderingUtils.ReAllocateIfNeeded(ref temp, desc);//使用该函数申请一张与相机大小一致的TempRT;
         }
 
@@ -58,66 +75,36 @@ public class PixelizeFeature : ScriptableRendererFeature
         //此方法由渲染器在渲染相机之前调用
         public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
         {
-            depthTarget = renderingData.cameraData.renderer.cameraDepthTargetHandle;
             ConfigureInput(ScriptableRenderPassInput.Color); //确认传入的参数类型为Color
             
-            GetTempRT(ref tempRTHandle,this.renderingData);//获取与摄像机大小一致的临时RT
-            GetTempRT(ref maskRTHandle,this.renderingData);
+            GetTempRT(ref tempRTHandle,this.renderingData,false);//获取与摄像机大小一致的临时RT
+            GetTempRT(ref maskRTHandle,this.renderingData,true);
             
-            ConfigureTarget(maskRTHandle,depthTarget);
-            ConfigureClear(ClearFlag.All, Color.black);
+            //ConfigureTarget(maskRTHandle);
+            //ConfigureTarget(cameraColorRTHandle);
+            //ConfigureClear(ClearFlag.All, Color.black);
         }
         
         //执行传递。这是自定义渲染发生的地方
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
             
-            if (this.renderingData.cameraData.cameraType != CameraType.Game)
-            {
-                return;
-            }
-
-            if (Camera.main.orthographic)
-            {
-                Shader.EnableKeyword("IS_ORTH_CAM");
-            }
-            else
-            {
-                Shader.DisableKeyword("IS_ORTH_CAM");
-            }
-            
             CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);//获得一个为ProfilerTag的CommandBuffer
             
-            var stack = VolumeManager.instance.stack;//获取Volume的栈
-            pixelizeVolume = stack.GetComponent<PixelizeVolume>();//从栈中获取到Volume
-            material.SetColor("_BaseColor", pixelizeVolume.ColorChange.value);//将材质颜色设置为volume中的值
-            material.SetInt("_DownSampleValue", pixelizeVolume.DownSampleValue.value);
-            
-            
-            if (pixelizeVolume.EnablePixelizer.value)
+            //性能分析器(自带隐式垃圾回收),之后可以在FrameDebugger中查看
+            using (new ProfilingScope(cmd, m_ProfilingSampler))
             {
-                
-                //性能分析器(自带隐式垃圾回收),之后可以在FrameDebugger中查看
-                using (new ProfilingScope(cmd, m_ProfilingSampler))
-                {
-                    // Ensure we flush our command-buffer before we render...
-                    context.ExecuteCommandBuffer(cmd);
-                    cmd.Clear();
-                
-                    var depthParams = new RenderStateBlock(RenderStateMask.Depth);
-                    DepthState depthState = new DepthState(writeEnabled: true, CompareFunction.LessEqual);
-                    depthParams.depthState = depthState;
-                
-                    SortingCriteria sortingCriteria = SortingCriteria.CommonOpaque;
-                    var draw = CreateDrawingSettings(shaderTagsList, ref renderingData, sortingCriteria);
-                    context.DrawRenderers(renderingData.cullResults, ref draw, ref filtering);
-                
-                    Shader.SetGlobalTexture("_PixelizeMask",maskRTHandle);
-                    
-                    Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle);
-                    Blitter.BlitCameraTexture(cmd,tempRTHandle,cameraColorRTHandle,material,0);//写入渲染命令进CommandBuffer
-                }
-                
+                // Ensure we flush our command-buffer before we render...
+                context.ExecuteCommandBuffer(cmd);
+                cmd.Clear();
+            
+                var depthParams = new RenderStateBlock(RenderStateMask.Depth);
+                DepthState depthState = new DepthState(writeEnabled: true, CompareFunction.LessEqual);
+                depthParams.depthState = depthState;
+            
+                SortingCriteria sortingCriteria = SortingCriteria.CommonOpaque;
+                var draw = CreateDrawingSettings(shaderTagsList, ref renderingData, sortingCriteria);
+                context.DrawRenderers(renderingData.cullResults, ref draw, ref filtering);
             }
             
             context.ExecuteCommandBuffer(cmd);//执行CommandBuffer
