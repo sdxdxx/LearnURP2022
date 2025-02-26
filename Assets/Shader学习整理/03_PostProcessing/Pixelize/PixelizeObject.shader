@@ -264,8 +264,8 @@ Shader "URP/PixelizeObject"
             	
             	#ifdef IS_ORTH_CAM
             		//float linearEyeDepth = distance(_WorldSpaceCameraPos.xyz,posWS.xyz);
-            		float linearEyeDepth = i.screenPos.w;
-            		rawDepth = (rcp(linearEyeDepth)-_ZBufferParams.w)/_ZBufferParams.z;
+            		float linearEyeDepth = LinearEyeDepth(posWS,unity_MatrixV);
+            		rawDepth = 1-(linearEyeDepth - _ProjectionParams.y) / (_ProjectionParams.z - _ProjectionParams.y);
             		return half4(1,rawDepth,0,0);
             	#else
             		float linearEyeDepth = TransformObjectToHClip(i.posOS).w;

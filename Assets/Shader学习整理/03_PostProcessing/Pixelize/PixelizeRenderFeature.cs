@@ -63,7 +63,6 @@ public class PixelizeFeature : ScriptableRendererFeature
             
             GetTempRT(ref tempRTHandle,this.renderingData);//获取与摄像机大小一致的临时RT
             GetTempRT(ref maskRTHandle,this.renderingData);
-            
             ConfigureTarget(maskRTHandle,depthTarget);
             ConfigureClear(ClearFlag.All, Color.black);
         }
@@ -104,9 +103,11 @@ public class PixelizeFeature : ScriptableRendererFeature
                     context.ExecuteCommandBuffer(cmd);
                     cmd.Clear();
                 
+                    /* // 强制深度写入
                     var depthParams = new RenderStateBlock(RenderStateMask.Depth);
                     DepthState depthState = new DepthState(writeEnabled: true, CompareFunction.LessEqual);
                     depthParams.depthState = depthState;
+                    */
                 
                     SortingCriteria sortingCriteria = SortingCriteria.CommonOpaque;
                     var draw = CreateDrawingSettings(shaderTagsList, ref renderingData, sortingCriteria);

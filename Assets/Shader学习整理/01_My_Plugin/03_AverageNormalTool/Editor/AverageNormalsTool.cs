@@ -8,7 +8,8 @@ using UnityEngine;
 public class AverageNormalsTool : EditorWindow
 {
     GUIStyle boxStyle;
-    private bool isAveraged; 
+    private bool isAveraged;
+    public bool enableVertexColorMode = false;
     
     [MenuItem("Tools/AverageNormalsTool")]
     static void AddWindow()
@@ -29,10 +30,22 @@ public class AverageNormalsTool : EditorWindow
         GUILayout.BeginVertical(boxStyle);
         
         GUILayout.Space(10);
+        
+        enableVertexColorMode = GUILayout.Toggle(enableVertexColorMode,"Vertex Color Mode");
+        
+        GUILayout.Space(10);
 
         if (GUILayout.Button("Average Normals",GUILayout.Height(60)) && Selection.activeObject != null)
         {
-            WirteAverageNormalToVertexColorTools();
+            if (enableVertexColorMode)
+            {
+                WirteAverageNormalToVertexColorTools();
+            }
+            else
+            {
+                WirteAverageNormalToVertexNormalTools();
+            }
+            
         }
         
         GUILayout.Space(10);
@@ -47,12 +60,58 @@ public class AverageNormalsTool : EditorWindow
         GUILayout.Space(10);
         
         GUILayout.BeginVertical();
-        EditorGUILayout.HelpBox("You can use it to average mesh normals", MessageType.Info);
+        EditorGUILayout.HelpBox("You can use it to average mesh normals to vertex normal or vertex color", MessageType.Info);
         GUILayout.EndVertical();
     }
+    
+    # region Function
+    private void WirteAverageNormalToVertexNormalTools()
+    {
+        MeshFilter[] meshFilters = Selection.activeGameObject.GetComponentsInChildren<MeshFilter>();
+        foreach (var meshFilter in meshFilters)
+        {
+            Mesh mesh = meshFilter.sharedMesh;
+            WirteAverageNormalToVertexNormal(mesh);
+        }
 
-    #region Function
+        SkinnedMeshRenderer[] skinMeshRenders = Selection.activeGameObject.GetComponentsInChildren<SkinnedMeshRenderer>();
+        foreach (var skinMeshRender in skinMeshRenders)
+        {
+            Mesh mesh = skinMeshRender.sharedMesh;
+            WirteAverageNormalToVertexNormal(mesh);
+        }
+    }
 
+    private void WirteAverageNormalToVertexNormal(Mesh mesh)
+    {
+        var averageNormalHash = new Dictionary<Vector3, Vector3>();
+        for (var j = 0; j < mesh.vertexCount; j++)
+        {
+            if (!averageNormalHash.ContainsKey(mesh.vertices[j]))
+            {
+                averageNormalHash.Add(mesh.vertices[j], mesh.normals[j]);
+            }
+            else
+            {
+                averageNormalHash[mesh.vertices[j]] =
+                    (averageNormalHash[mesh.vertices[j]] + mesh.normals[j]).normalized;
+            }
+        }
+
+        var averageNormals = new Vector3[mesh.vertexCount];
+        for (var j = 0; j < mesh.vertexCount; j++)
+        {
+            averageNormals[j] = averageNormalHash[mesh.vertices[j]];
+        }
+
+        var vertexNormal = new Vector3[mesh.vertexCount];
+        for (var j = 0; j < mesh.vertexCount; j++)
+        {
+            vertexNormal[j] = new Vector4(averageNormals[j].x, averageNormals[j].y, averageNormals[j].z, 0);
+        }
+        mesh.normals = vertexNormal;
+    }
+    
     private void WirteAverageNormalToVertexColorTools()
     {
         MeshFilter[] meshFilters = Selection.activeGameObject.GetComponentsInChildren<MeshFilter>();
@@ -106,7 +165,7 @@ public class AverageNormalsTool : EditorWindow
     {
         Mesh curMesh = null;
 
-        if (Selection.activeObject!=null)
+        if (Selection.activeObject)
         {
             MeshFilter curFilter = Selection.activeObject.GetComponent<MeshFilter>();
             SkinnedMeshRenderer curSkinned = Selection.activeObject.GetComponent<SkinnedMeshRenderer>();
@@ -128,11 +187,11 @@ public class AverageNormalsTool : EditorWindow
 
         return curMesh;
     }
-
+    
     private void SaveAssets()
     {
         string path =
-            EditorUtility.SaveFilePanel("Export asset file", "Assets/MainGame/Art/ModifiedMesh/", Selection.activeObject.name + "_Modified", "asset");
+            EditorUtility.SaveFilePanel("Export asset file", Application.dataPath, Selection.activeObject.name + "_Modified", "asset");
         if (path.Length > 0)
         {
             var dataPath = Application.dataPath;
@@ -146,29 +205,24 @@ public class AverageNormalsTool : EditorWindow
                 Mesh curMesh = GetMesh();
                 Mesh finalResult = Instantiate(curMesh);
                 AssetDatabase.CreateAsset(finalResult, path);
-
-                
                     
                 MeshFilter curFilter = Selection.activeObject.GameObject().GetComponent<MeshFilter>();
                 SkinnedMeshRenderer curSkinned = Selection.activeObject.GameObject().GetComponent<SkinnedMeshRenderer>();
-                
 
                 if (curFilter && !curSkinned)
                 {
-                    EditorUtility.SetDirty(curFilter);//设置脏标记告诉Unity修改了参数
                     curFilter.sharedMesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
                 }
 
                 if (!curFilter && curSkinned)
                 {
-                    EditorUtility.SetDirty(curSkinned);//设置脏标记告诉Unity修改了参数
                     curSkinned.sharedMesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
                 }
+
                 Debug.Log("Asset exported: " + path);
             }
         }
     }
-
     #endregion
     
     #region BoxStyles

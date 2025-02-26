@@ -108,7 +108,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Active: 1
   settings:
-    renderPassEvent: 300
+    renderPassEvent: 400
     pixelizeObjectLayer:
       serializedVersion: 2
       m_Bits: 256

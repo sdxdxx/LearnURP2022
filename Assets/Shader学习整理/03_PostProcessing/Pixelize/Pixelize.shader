@@ -25,6 +25,8 @@ Shader "URP/PostProcessing/Pixelize"
             #pragma fragment frag
             #define DOWN_SAMPLE_VALUE 0
 
+            #pragma shader_feature IS_ORTH_CAM
+
            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
@@ -54,32 +56,44 @@ Shader "URP/PostProcessing/Pixelize"
                 int2 pixelPos = round(screenPos*_ScreenParams.xy);
                 int2 downSamplePixelPos = int2(pixelPos.x/downSampleValue,pixelPos.y/downSampleValue);
                 
-                half4 pixelizeColor = half4(0,0,0,1.0f);
+                
                 float rawMask = SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PixelizeMask,screenPos).r;
+                float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, screenPos).r;
+                float maskRawDepth = SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,screenPos).g;
+                float linear01Depth = 0;
+                float mask01Depth = 0;
+                float bias = 0;
+
+                #ifdef IS_ORTH_CAM
+                    linear01Depth = 1-rawDepth;//lerp(0, _ProjectionParams.z, rawDepth);
+                    mask01Depth = 1-maskRawDepth;
+                    bias = 0.009;
+                #else
+                    linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
+                    mask01Depth = Linear01Depth(maskRawDepth,_ZBufferParams);
+                    bias = 0.004;
+                #endif
+
+                float clearObjectMask_Reverse = step(mask01Depth,linear01Depth+bias);
+                
+                half4 pixelizeColor = half4(0,0,0,0.0f);
                 float mask = 0;
                 for (int i = 0; i<downSampleValue; i++)
                 {
                     for (int j = 0; j<downSampleValue;j++)
                     {
                         float2 sampleUV = (downSamplePixelPos*downSampleValue+float2(i,j))/_ScreenParams.xy;
-                        pixelizeColor.rgb += SAMPLE_TEXTURE2D(_BlitTexture, sampler_PointClamp, sampleUV);
+                        pixelizeColor += SAMPLE_TEXTURE2D(_BlitTexture, sampler_PointClamp, sampleUV);
                         mask += SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PixelizeMask,sampleUV).r;
                     }
                 }
                 
                 half4 albedo =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, screenPos);
-                float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, screenPos).r;
-                float linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
-                float maskRawDepth = SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,screenPos).g;
-                float mask01Depth = Linear01Depth(maskRawDepth,_ZBufferParams);
-                
-                //return LinearEyeDepth(rawDepth,_ZBufferParams);
-                return SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PixelizeMask,screenPos).g;
-                pixelizeColor.rgb /= downSampleValue*downSampleValue; 
+                pixelizeColor /= downSampleValue*downSampleValue; 
                 mask /= downSampleValue*downSampleValue;
-                mask = step(0.001f,mask)*step(mask01Depth,linear01Depth+0.004);
-                half4 result = lerp(albedo,pixelizeColor,mask);
+                mask = step(0.001f,mask)*clearObjectMask_Reverse;
                 
+                half4 result = lerp(albedo,pixelizeColor,mask);
                 return result;
             }
             
