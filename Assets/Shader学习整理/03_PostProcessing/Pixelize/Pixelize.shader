@@ -47,19 +47,11 @@ Shader "URP/PostProcessing/Pixelize"
             int _DownSampleValue;
             //----------变量声明结束-----------
             CBUFFER_END
-
             
-            half4 frag (Varyings i) : SV_TARGET
+            float CalculateClearObjectMaskReverse(float RawDepth, float MaskRawDepth)
             {
-                int downSampleValue = pow(2,_DownSampleValue);
-                float2 screenPos = i.texcoord.xy;
-                int2 pixelPos = round(screenPos*_ScreenParams.xy);
-                int2 downSamplePixelPos = int2(pixelPos.x/downSampleValue,pixelPos.y/downSampleValue);
-                
-                
-                float rawMask = SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PixelizeMask,screenPos).r;
-                float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, screenPos).r;
-                float maskRawDepth = SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,screenPos).g;
+                float rawDepth = RawDepth;
+                float maskRawDepth = MaskRawDepth;
                 float linear01Depth = 0;
                 float mask01Depth = 0;
                 float bias = 0;
@@ -71,29 +63,88 @@ Shader "URP/PostProcessing/Pixelize"
                 #else
                     linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
                     mask01Depth = Linear01Depth(maskRawDepth,_ZBufferParams);
-                    bias = 0.004;
+                    bias = 0.04;
                 #endif
 
                 float clearObjectMask_Reverse = step(mask01Depth,linear01Depth+bias);
+
+                return clearObjectMask_Reverse;
+            }
+            
+            half4 frag (Varyings input) : SV_TARGET
+            {
+                //计算采样参数
+                int downSampleValue = pow(2,_DownSampleValue);
+                float2 screenPos = input.texcoord.xy;
+                int2 pixelPos = round(screenPos*_ScreenParams.xy);
+                int2 downSamplePixelPos = int2(pixelPos.x/downSampleValue,pixelPos.y/downSampleValue);
+
+                //计算当前像素深度值和遮罩
+                float rawMask = SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,screenPos).r;
+                float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, screenPos).r;
+                float maskRawDepth = SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,screenPos).g;
                 
                 half4 pixelizeColor = half4(0,0,0,0.0f);
                 float mask = 0;
+                float pixelRawDepth = rawDepth;
+                float pixelMaskRawDepth = maskRawDepth;
+                
+                float2 lastSampleUV = screenPos;
+                UNITY_LOOP
                 for (int i = 0; i<downSampleValue; i++)
                 {
+                    UNITY_LOOP
                     for (int j = 0; j<downSampleValue;j++)
                     {
                         float2 sampleUV = (downSamplePixelPos*downSampleValue+float2(i,j))/_ScreenParams.xy;
-                        pixelizeColor += SAMPLE_TEXTURE2D(_BlitTexture, sampler_PointClamp, sampleUV);
-                        mask += SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PixelizeMask,sampleUV).r;
+                        float sampleRawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, sampleUV).r;
+                        float sampleMaskRawDepth = SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,sampleUV).g;
+                        float sampleClearObjectMask_Reverse = CalculateClearObjectMaskReverse(sampleRawDepth,sampleMaskRawDepth);
+                        
+                        if (sampleClearObjectMask_Reverse<0.1f)
+                        {
+                            pixelizeColor.rgb += SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp,lastSampleUV);
+                            pixelizeColor.a += 0.8;
+                        }
+                        else
+                        {
+                            lastSampleUV = sampleUV;
+                            pixelizeColor.rgb += SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp,sampleUV);
+                            pixelizeColor.a += 1;
+                        }
+                        pixelRawDepth = max(pixelRawDepth,SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, lastSampleUV).r);
+                        pixelMaskRawDepth = max(pixelMaskRawDepth,SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,lastSampleUV).g);
+                        mask += SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,sampleUV).r;
                     }
                 }
                 
                 half4 albedo =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, screenPos);
-                pixelizeColor /= downSampleValue*downSampleValue; 
+                pixelizeColor /= downSampleValue*downSampleValue;
                 mask /= downSampleValue*downSampleValue;
-                mask = step(0.001f,mask)*clearObjectMask_Reverse;
                 
-                half4 result = lerp(albedo,pixelizeColor,mask);
+                
+                float realPixelDepth = max(rawDepth,pixelRawDepth);
+                float realPixelMaskRawDepth = max(maskRawDepth,pixelMaskRawDepth);
+                
+                float clearObjectMask_Reverse = CalculateClearObjectMaskReverse(realPixelDepth,realPixelMaskRawDepth);
+                
+                mask = step(0.001f,mask)*clearObjectMask_Reverse;
+
+                if (_DownSampleValue == 0 )
+                {
+                    mask = rawMask;
+                }
+                
+                
+                
+                float realMask = mask*pixelizeColor.a;
+
+                float edgePixelMask = 1-step(realMask,rawMask);
+                
+                
+                half3 finalRGB = lerp(albedo.rgb,pixelizeColor.rgb,realMask);
+                half4 result = half4(finalRGB,albedo.a);
+
                 return result;
             }
             

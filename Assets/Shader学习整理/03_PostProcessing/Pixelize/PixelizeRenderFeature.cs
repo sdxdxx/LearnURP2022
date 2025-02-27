@@ -71,10 +71,12 @@ public class PixelizeFeature : ScriptableRendererFeature
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
             
+            
             if (this.renderingData.cameraData.cameraType != CameraType.Game)
             {
                 return;
             }
+            
 
             if (Camera.main.orthographic)
             {

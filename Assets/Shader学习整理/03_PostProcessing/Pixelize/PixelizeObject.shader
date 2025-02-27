@@ -6,6 +6,8 @@ Shader "URP/PixelizeObject"
         _MainTex("MainTex",2D) = "white"{}
     	_Smoothness("Smoothness",Range(0,1)) = 0
     	_Metallic("Metallic",Range(0,1)) = 0
+    	_OutlineColor("Outline Color",Color) = (0.0,0.0,0.0,0.0)
+        _OutlineWidth("Outline Width",Range(0,5)) = 1
     }
     
     SubShader
@@ -46,6 +48,8 @@ Shader "URP/PixelizeObject"
             float4 _MainTex_ST;
             float _Smoothness;
             float _Metallic;
+            half4 _OutlineColor;
+            float _OutlineWidth;
             //----------变量声明结束-----------
             CBUFFER_END
 
@@ -147,6 +151,7 @@ Shader "URP/PixelizeObject"
             {
                 float4 vertex : POSITION;
                 float3 normal : NORMAL;
+            	float3 color : COLOR;
                 float2 uv : TEXCOORD0;
             };
 
@@ -221,12 +226,47 @@ Shader "URP/PixelizeObject"
         
          pass
         {
+        	Tags { "LightMode" = "UniversalForward" }
+        	Cull Back
         	ZWrite On
         	
             HLSLPROGRAM
             
             #pragma vertex vert
             #pragma fragment frag
+            
+            ENDHLSL
+        }
+
+		//Outline
+        pass
+        {
+            Name "Outline"
+            Tags { "LightMode" = "SRPDefaultUnlit" }
+            Cull Front
+            HLSLPROGRAM
+
+            #pragma vertex vert_outline
+            #pragma fragment frag_outline
+            
+            
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+            
+            
+            vertexOutput vert_outline (vertexInput v)
+            {
+                vertexOutput o;
+                o.pos = TransformObjectToHClip(v.vertex.xyz+v.normal* _OutlineWidth * 0.1);
+                //float3 positionWS = TransformObjectToWorld(v.vertex.xyz);
+                return o;
+            }
+
+            half4 frag_outline (vertexOutput i) : SV_TARGET
+            {
+                return _OutlineColor;
+            }
             
             ENDHLSL
         }
@@ -241,7 +281,7 @@ Shader "URP/PixelizeObject"
         	ZTest LEqual
             HLSLPROGRAM
             
-            #pragma vertex vert
+            #pragma vertex vert_PixelizeMask
             #pragma fragment frag_PixelizeMask
 
             #pragma shader_feature IS_ORTH_CAM
@@ -251,13 +291,24 @@ Shader "URP/PixelizeObject"
              {
                return new_min + (((original_value - original_min) / (original_max - original_min)) * (new_max - new_min));
              }
+            
+
+             vertexOutput vert_PixelizeMask (vertexInput v)
+            {
+                vertexOutput o;
+            	v.vertex.xyz = v.vertex.xyz+v.normal* _OutlineWidth * 0.1;
+            	float4 posCS = TransformObjectToHClip(v.vertex.xyz);
+            	o.screenPos = ComputeScreenPos(posCS);
+                o.pos = posCS;
+                o.nDirOS = v.normal;
+                o.uv = v.uv*_MainTex_ST.xy+_MainTex_ST.zw;
+                o.posOS = v.vertex.xyz;
+                return o;
+            }
 
             half4 frag_PixelizeMask (vertexOutput i) : SV_TARGET
             {
             	float3 nDir = TransformObjectToWorldNormal(i.nDirOS).xyz;
-
-            	
-            	
             	float3 posWS = TransformObjectToWorld(i.posOS).xyz;
 	            float isOrtho = UNITY_MATRIX_P[3][3];
             	float rawDepth;
