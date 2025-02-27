@@ -93,6 +93,15 @@ public class PixelizeFeature : ScriptableRendererFeature
             pixelizeVolume = stack.GetComponent<PixelizeVolume>();//从栈中获取到Volume
             material.SetColor("_BaseColor", pixelizeVolume.ColorChange.value);//将材质颜色设置为volume中的值
             material.SetInt("_DownSampleValue", pixelizeVolume.DownSampleValue.value);
+
+            if (pixelizeVolume.EnablePoint.value)
+            {
+                material.EnableKeyword("ENABLE_POINT");
+            }
+            else
+            {
+                material.DisableKeyword("ENABLE_POINT");
+            }
             
             
             if (pixelizeVolume.EnablePixelizer.value)

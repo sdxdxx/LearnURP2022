@@ -53,8 +53,8 @@ Shader "URP/Cartoon/Coin"
             Cull Back
             Stencil 
             {
-                Ref 1
-                Comp GEqual //该ref值(1)比缓冲中的值大于等于时通过
+                Ref 0
+                Comp Always
                 Pass Replace
             }
             
@@ -209,8 +209,8 @@ Shader "URP/Cartoon/Coin"
             
             Stencil 
             {
-                Ref 0
-                Comp GEqual
+                Ref 1
+                Comp NotEqual
                 Pass Keep
             }
             
@@ -259,6 +259,87 @@ Shader "URP/Cartoon/Coin"
             half4 frag (vertexOutput i) : SV_TARGET
             {
                 return _OutlineColor;
+            }
+            
+            ENDHLSL
+        }
+
+        Pass
+        {
+	        Name "PixelizeMask"
+
+        	Tags{"LightMode" = "PixelizeMask"}
+	        
+        	ZWrite On
+        	ZTest LEqual
+            HLSLPROGRAM
+            
+            #pragma vertex vert_PixelizeMask
+            #pragma fragment frag_PixelizeMask
+
+            #pragma shader_feature IS_ORTH_CAM
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+
+            //Remap
+            float remap(float original_value, float original_min, float original_max, float new_min, float new_max)
+             {
+               return new_min + (((original_value - original_min) / (original_max - original_min)) * (new_max - new_min));
+             }
+
+             struct vertexInput
+            {
+                float4 vertex : POSITION;
+                float3 normal : NORMAL;
+            	float3 color : COLOR;
+                float2 uv : TEXCOORD0;
+            };
+
+            struct vertexOutput
+            {
+                float4 pos : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                float3 nDirOS : TEXCOORD1;
+                float3 posOS : TEXCOORD2;
+            	float4 screenPos : TEXCOORD3;
+            };
+
+            half4 _OutlineColor;
+            float _OutlineWidth;
+            
+             vertexOutput vert_PixelizeMask (vertexInput v)
+            {
+                vertexOutput o;
+            	v.vertex.xyz = v.vertex.xyz+v.normal* _OutlineWidth * 0.1;
+            	float4 posCS = TransformObjectToHClip(v.vertex.xyz);
+            	o.screenPos = ComputeScreenPos(posCS);
+                o.pos = posCS;
+                o.nDirOS = v.normal;
+                o.uv = v.uv;
+                o.posOS = v.vertex.xyz;
+                return o;
+            }
+
+            half4 frag_PixelizeMask (vertexOutput i) : SV_TARGET
+            {
+            	float3 nDir = TransformObjectToWorldNormal(i.nDirOS).xyz;
+            	float3 posWS = TransformObjectToWorld(i.posOS).xyz;
+	            float isOrtho = UNITY_MATRIX_P[3][3];
+            	float rawDepth;
+            	
+            	#ifdef IS_ORTH_CAM
+            		//float linearEyeDepth = distance(_WorldSpaceCameraPos.xyz,posWS.xyz);
+            		float linearEyeDepth = LinearEyeDepth(posWS,unity_MatrixV);
+            		rawDepth = 1-(linearEyeDepth - _ProjectionParams.y) / (_ProjectionParams.z - _ProjectionParams.y);
+            		return half4(1,rawDepth,0,0);
+            	#else
+            		float linearEyeDepth = TransformObjectToHClip(i.posOS).w;
+            		rawDepth = (rcp(linearEyeDepth)-_ZBufferParams.w)/_ZBufferParams.z;
+            	#endif
+
+            	return half4(1,rawDepth,0,0);
             }
             
             ENDHLSL

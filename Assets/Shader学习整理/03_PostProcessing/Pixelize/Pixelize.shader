@@ -26,6 +26,7 @@ Shader "URP/PostProcessing/Pixelize"
             #define DOWN_SAMPLE_VALUE 0
 
             #pragma shader_feature IS_ORTH_CAM
+            #pragma shader_feature ENABLE_POINT
 
            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
@@ -88,6 +89,8 @@ Shader "URP/PostProcessing/Pixelize"
                 float mask = 0;
                 float pixelRawDepth = rawDepth;
                 float pixelMaskRawDepth = maskRawDepth;
+
+                float2 realSampleUV = float2(0,0);
                 
                 float2 lastSampleUV = screenPos;
                 UNITY_LOOP
@@ -103,11 +106,15 @@ Shader "URP/PostProcessing/Pixelize"
                         
                         if (sampleClearObjectMask_Reverse<0.1f)
                         {
+                            realSampleUV+=lastSampleUV;
+                            
                             pixelizeColor.rgb += SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp,lastSampleUV);
                             pixelizeColor.a += 0.8;
                         }
                         else
                         {
+                            realSampleUV+=sampleUV;
+                            
                             lastSampleUV = sampleUV;
                             pixelizeColor.rgb += SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp,sampleUV);
                             pixelizeColor.a += 1;
@@ -121,10 +128,16 @@ Shader "URP/PostProcessing/Pixelize"
                 half4 albedo =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, screenPos);
                 pixelizeColor /= downSampleValue*downSampleValue;
                 mask /= downSampleValue*downSampleValue;
+                realSampleUV /= downSampleValue*downSampleValue;
+
                 
                 
                 float realPixelDepth = max(rawDepth,pixelRawDepth);
                 float realPixelMaskRawDepth = max(maskRawDepth,pixelMaskRawDepth);
+
+                #ifdef ENABLE_POINT
+                pixelizeColor = SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, realSampleUV);
+                #endif
                 
                 float clearObjectMask_Reverse = CalculateClearObjectMaskReverse(realPixelDepth,realPixelMaskRawDepth);
                 
@@ -136,11 +149,10 @@ Shader "URP/PostProcessing/Pixelize"
                 }
                 
                 
-                
                 float realMask = mask*pixelizeColor.a;
+                realMask = mask;
 
                 float edgePixelMask = 1-step(realMask,rawMask);
-                
                 
                 half3 finalRGB = lerp(albedo.rgb,pixelizeColor.rgb,realMask);
                 half4 result = half4(finalRGB,albedo.a);
