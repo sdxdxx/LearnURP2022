@@ -50,15 +50,15 @@ public class UGUI_CustomEffect_Editor : Editor
                 
                 if (t.EnableVertexColorMode)
                 {   
-                    t.GradientColor1 = EditorGUILayout.ColorField("渐变颜色1（左上）", t.GradientColor1);
-                    t.GradientColor2 = EditorGUILayout.ColorField("渐变颜色2（右上）", t.GradientColor2);
-                    t.GradientColor3 = EditorGUILayout.ColorField("渐变颜色3（左下）", t.GradientColor3);
-                    t.GradientColor4 = EditorGUILayout.ColorField("渐变颜色4（右下）", t.GradientColor4);
+                    t.GradientColor1 = EditorGUILayout.ColorField(new GUIContent("渐变颜色1（左上）"), t.GradientColor1,false,false,false);
+                    t.GradientColor2 = EditorGUILayout.ColorField(new GUIContent("渐变颜色2（右上）"), t.GradientColor2,false,false,false);
+                    t.GradientColor3 = EditorGUILayout.ColorField(new GUIContent("渐变颜色3（左下）"), t.GradientColor3,false,false,false);
+                    t.GradientColor4 = EditorGUILayout.ColorField(new GUIContent("渐变颜色4（右下）"), t.GradientColor4,false,false,false);
                 }
                 else
                 {
-                    t.GradientColor1 = EditorGUILayout.ColorField("渐变颜色1", t.GradientColor1);
-                    t.GradientColor2 = EditorGUILayout.ColorField("渐变颜色2", t.GradientColor2);
+                    t.GradientColor1 = EditorGUILayout.ColorField(new GUIContent("渐变颜色1"), t.GradientColor1,false,false,false);
+                    t.GradientColor2 = EditorGUILayout.ColorField(new GUIContent("渐变颜色2"), t.GradientColor2,false,false,false);
                     t.GradientRange = EditorGUILayout.Slider("渐变范围", t.GradientRange, 0.0f, 1.0f);
                     t.GradientSmoothRange = EditorGUILayout.Slider("渐变平滑范围", t.GradientSmoothRange, 0.0f, 1.0f);
                     t.GradientRotation = EditorGUILayout.Slider("渐变旋转", t.GradientRotation, 0.0f, 1.0f);
@@ -123,15 +123,15 @@ public class UGUI_CustomEffect_Editor : Editor
                 //t.EnableVertexColorMode = EditorGUILayout.Toggle("Enable Vertex Color Mode", t.EnableVertexColorMode);
                 if (t.EnableVertexColorMode)
                 {
-                    t.GradientColor1 = EditorGUILayout.ColorField("Gradient Color 1 (Left Top)", t.GradientColor1);
-                    t.GradientColor2 = EditorGUILayout.ColorField("Gradient Color 2 (Right Top)", t.GradientColor2);
-                    t.GradientColor3 = EditorGUILayout.ColorField("Gradient Color 3 (Left Bottom)", t.GradientColor3);
-                    t.GradientColor4 = EditorGUILayout.ColorField("Gradient Color 4 (Right Bottom)", t.GradientColor4);
+                    t.GradientColor1 = EditorGUILayout.ColorField(new GUIContent("Gradient Color 1 (Left Top)"), t.GradientColor1,false,false,false);
+                    t.GradientColor2 = EditorGUILayout.ColorField(new GUIContent("Gradient Color 2 (Right Top)"), t.GradientColor2,false,false,false);
+                    t.GradientColor3 = EditorGUILayout.ColorField(new GUIContent("Gradient Color 3 (Left Bottom)"), t.GradientColor3,false,false,false);
+                    t.GradientColor4 = EditorGUILayout.ColorField(new GUIContent("Gradient Color 4 (Right Bottom)"), t.GradientColor4,false,false,false);
                 }
                 else
                 {
-                    t.GradientColor1 = EditorGUILayout.ColorField("Gradient Color 1", t.GradientColor1);
-                    t.GradientColor2 = EditorGUILayout.ColorField("Gradient Color 2", t.GradientColor2);
+                    t.GradientColor1 = EditorGUILayout.ColorField(new GUIContent("Gradient Color 1"), t.GradientColor1,false,false,false);
+                    t.GradientColor2 = EditorGUILayout.ColorField(new GUIContent("Gradient Color 2"), t.GradientColor2,false,false,false);
                     t.GradientRange = EditorGUILayout.Slider("Gradient Range", t.GradientRange, 0.0f, 1.0f);
                     t.GradientSmoothRange = EditorGUILayout.Slider("Gradient Smooth Range", t.GradientSmoothRange, 0.0f, 1.0f);
                     t.GradientRotation = EditorGUILayout.Slider("Gradient Rotation", t.GradientRotation, 0.0f, 1.0f);

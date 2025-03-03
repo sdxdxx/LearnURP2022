@@ -285,12 +285,12 @@ using UnityEngine.UI;
                     var v5 = m_VetexList[i + 4];
                     var v6 = m_VetexList[i + 5];
                     
-                    v1.color = GradientColor1;
-                    v2.color = GradientColor2;
-                    v3.color = GradientColor4;
-                    v4.color = GradientColor4;
-                    v5.color = GradientColor3;
-                    v6.color = GradientColor1;
+                    v1.color = CopyColorRGB(v1.color, GradientColor1);
+                    v2.color = CopyColorRGB(v2.color, GradientColor2);
+                    v3.color = CopyColorRGB(v3.color, GradientColor4);
+                    v4.color = CopyColorRGB(v4.color, GradientColor4);
+                    v5.color = CopyColorRGB(v5.color, GradientColor3);
+                    v6.color = CopyColorRGB(v6.color, GradientColor1);
                 
                     // 应用设置后的UIVertex
                     m_VetexList[i] = v1;
@@ -500,6 +500,11 @@ using UnityEngine.UI;
             float temp1 = _Max(p1, p2, p3);
             float temp2 = _Max(p4, p5, p6);
             return Mathf.Max(temp1, temp2);
+        }
+        
+        private Color CopyColorRGB( Color oldColor, Color newColor)
+        {
+            return new Color(newColor.r, newColor.g, newColor.b, oldColor.a);
         }
  }
  

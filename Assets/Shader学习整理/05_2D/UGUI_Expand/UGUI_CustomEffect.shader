@@ -205,7 +205,8 @@ Shader "URP/2D/UGUI/CustomEffect"
 
             half4 UnlitFragment(Varyings i) : SV_Target
             {
-                half4 mainTex = i.color * SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,i.uv.xy)*IsInRect(i.uv.xy,i.original_uv_MinAndMax);
+                half4 mainTex = SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,i.uv.xy)*IsInRect(i.uv.xy,i.original_uv_MinAndMax);
+                mainTex.rgb *= i.color.rgb;
                 
                 #ifdef _IsText
                 mainTex.rgb = i.color.rgb;
@@ -264,7 +265,7 @@ Shader "URP/2D/UGUI/CustomEffect"
 
                 
                 float underLineMask = step(5.0,i.uv.z);
-                result.a = max(underLineMask,result.a);
+                result.a = max(underLineMask,result.a)*i.color.a;
                 result.rgb = lerp(result.rgb,_UnderlineColor.rgb,underLineMask);
                 
                 
