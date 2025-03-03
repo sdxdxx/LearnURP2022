@@ -30,6 +30,7 @@ public class PixelizeFeature : ScriptableRendererFeature
         private RTHandle depthTarget;
         private RTHandle maskRTHandle;
         private RTHandle tempRTHandle;
+        private RTHandle testRTHandle;
 
         //自定义Pass的构造函数(用于传参)
         public CustomRenderPass(Settings settings)
@@ -42,10 +43,12 @@ public class PixelizeFeature : ScriptableRendererFeature
             material = CoreUtils.CreateEngineMaterial(shader);//根据传入的Shader创建material;
         }
 
-        public void GetTempRT(ref RTHandle temp, in RenderingData data)
+        public void GetTempRT(ref RTHandle temp, in RenderingData data, int downSampleValue)
         {
             RenderTextureDescriptor desc = data.cameraData.cameraTargetDescriptor;
             desc.depthBufferBits = 0; //这步很重要！！！
+            desc.height = desc.height / (int)Mathf.Pow(2, downSampleValue);
+            desc.width = desc.width / (int)Mathf.Pow(2, downSampleValue);
             RenderingUtils.ReAllocateIfNeeded(ref temp, desc);//使用该函数申请一张与相机大小一致的TempRT;
         }
 
@@ -61,8 +64,8 @@ public class PixelizeFeature : ScriptableRendererFeature
             depthTarget = renderingData.cameraData.renderer.cameraDepthTargetHandle;
             ConfigureInput(ScriptableRenderPassInput.Color); //确认传入的参数类型为Color
             
-            GetTempRT(ref tempRTHandle,this.renderingData);//获取与摄像机大小一致的临时RT
-            GetTempRT(ref maskRTHandle,this.renderingData);
+            GetTempRT(ref tempRTHandle,this.renderingData,0);//获取与摄像机大小一致的临时RT
+            GetTempRT(ref maskRTHandle,this.renderingData,0);
             ConfigureTarget(maskRTHandle,depthTarget);
             ConfigureClear(ClearFlag.All, Color.black);
         }
@@ -93,6 +96,9 @@ public class PixelizeFeature : ScriptableRendererFeature
             pixelizeVolume = stack.GetComponent<PixelizeVolume>();//从栈中获取到Volume
             material.SetColor("_BaseColor", pixelizeVolume.ColorChange.value);//将材质颜色设置为volume中的值
             material.SetInt("_DownSampleValue", pixelizeVolume.DownSampleValue.value);
+            material.SetFloat("_Contrast",pixelizeVolume.Contrast.value);
+            material.SetFloat("_Saturation",pixelizeVolume.Saturation.value);
+            material.SetFloat("_PointIntensity",pixelizeVolume.PointIntensity.value);
 
             if (pixelizeVolume.EnablePoint.value)
             {
@@ -101,6 +107,15 @@ public class PixelizeFeature : ScriptableRendererFeature
             else
             {
                 material.DisableKeyword("ENABLE_POINT");
+            }
+
+            if (pixelizeVolume.EnableContrastAndSaturation.value)
+            {
+                material.EnableKeyword("ENABLE_CONTRAST_AND_SATURATION");
+            }
+            else
+            {
+                material.DisableKeyword("ENABLE_CONTRAST_AND_SATURATION");
             }
             
             
@@ -147,6 +162,7 @@ public class PixelizeFeature : ScriptableRendererFeature
         {
             tempRTHandle?.Release();//如果tempRTHandle没被释放的话，会被释放
             maskRTHandle?.Release();
+            testRTHandle?.Release();
         }
     }
 

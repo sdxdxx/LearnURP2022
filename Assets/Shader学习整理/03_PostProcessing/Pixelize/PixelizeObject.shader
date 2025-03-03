@@ -212,7 +212,6 @@ Shader "URP/PixelizeObject"
 				}
 
             	half3 FinalRGB = mainColor+additionalColor;
-            	
             	half4 result = half4(FinalRGB,1.0);
             	
                 return result;
@@ -258,7 +257,7 @@ Shader "URP/PixelizeObject"
             vertexOutput vert_outline (vertexInput v)
             {
                 vertexOutput o;
-                o.pos = TransformObjectToHClip(v.vertex.xyz+v.normal* _OutlineWidth * 0.1);
+                o.pos = TransformObjectToHClip(v.vertex.xyz+v.color* _OutlineWidth * 0.1);
                 //float3 positionWS = TransformObjectToWorld(v.vertex.xyz);
                 return o;
             }
@@ -296,7 +295,7 @@ Shader "URP/PixelizeObject"
              vertexOutput vert_PixelizeMask (vertexInput v)
             {
                 vertexOutput o;
-            	v.vertex.xyz = v.vertex.xyz+v.normal* _OutlineWidth * 0.1;
+            	v.vertex.xyz = v.vertex.xyz+v.color* _OutlineWidth * 0.1;
             	float4 posCS = TransformObjectToHClip(v.vertex.xyz);
             	o.screenPos = ComputeScreenPos(posCS);
                 o.pos = posCS;
