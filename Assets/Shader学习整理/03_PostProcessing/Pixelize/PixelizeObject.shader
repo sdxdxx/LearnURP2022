@@ -8,6 +8,7 @@ Shader "URP/PixelizeObject"
     	_Metallic("Metallic",Range(0,1)) = 0
     	_OutlineColor("Outline Color",Color) = (0.0,0.0,0.0,0.0)
         _OutlineWidth("Outline Width",Range(0,5)) = 1
+    	_SobelValue("Sobel Value",Range(0,3)) = 1
     }
     
     SubShader
@@ -50,6 +51,7 @@ Shader "URP/PixelizeObject"
             float _Metallic;
             half4 _OutlineColor;
             float _OutlineWidth;
+            float _SobelValue;
             //----------变量声明结束-----------
             CBUFFER_END
 
@@ -316,13 +318,12 @@ Shader "URP/PixelizeObject"
             		//float linearEyeDepth = distance(_WorldSpaceCameraPos.xyz,posWS.xyz);
             		float linearEyeDepth = LinearEyeDepth(posWS,unity_MatrixV);
             		rawDepth = 1-(linearEyeDepth - _ProjectionParams.y) / (_ProjectionParams.z - _ProjectionParams.y);
-            		return half4(1,rawDepth,0,0);
             	#else
             		float linearEyeDepth = TransformObjectToHClip(i.posOS).w;
             		rawDepth = (rcp(linearEyeDepth)-_ZBufferParams.w)/_ZBufferParams.z;
             	#endif
 
-            	return half4(1,rawDepth,0,0);
+            	return half4(1,rawDepth,_SobelValue,0);
             }
             
             ENDHLSL
