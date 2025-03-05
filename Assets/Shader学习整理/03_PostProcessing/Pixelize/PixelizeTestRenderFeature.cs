@@ -66,6 +66,8 @@ public class PixelizeTestFeature : ScriptableRendererFeature
             
             GetTempRT(ref tempRTHandle,this.renderingData,0);//获取与摄像机大小一致的临时RT
             GetTempRT(ref maskRTHandle,this.renderingData,0);
+            GetTempRT(ref testRTHandle,this.renderingData,0);
+            
             ConfigureTarget(maskRTHandle,depthTarget);
             ConfigureClear(ClearFlag.All, Color.black);
         }
@@ -143,6 +145,7 @@ public class PixelizeTestFeature : ScriptableRendererFeature
                     
                     Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle);
                     Blitter.BlitCameraTexture(cmd,tempRTHandle,cameraColorRTHandle,material,0);//写入渲染命令进CommandBuffer
+                    //Blitter.BlitCameraTexture(cmd,testRTHandle,cameraColorRTHandle,material,1);//写入渲染命令进CommandBuffer
                 }
                 
             }

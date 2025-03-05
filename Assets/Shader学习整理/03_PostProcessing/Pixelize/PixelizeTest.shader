@@ -219,17 +219,16 @@ Shader "URP/PostProcessing/PixelizeTest"
                 }
                 
                 float realMask = mask*pixelizeColor.a;
+            	
                 half3 samplePixelizeColorRGB = SAMPLE_TEXTURE2D(_BlitTexture, sampler_PointClamp, realSampleUV);
                 #ifndef  ENABLE_POINT
-               float pixelizeObjectSobelValue = SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,realSampleUV).b;
-                float sobel = step(0.9,CalculateSobelEdge(realSampleUV,pixelizeObjectSobelValue*3000));
                 samplePixelizeColorRGB = pixelizeColor.rgb*(1-_PointIntensity)+samplePixelizeColorRGB*_PointIntensity;
-                edgePixelMask = max(edgePixelMask,sobel);
                 pixelizeColor.rgb = lerp(samplePixelizeColorRGB,pixelizeColor.rgb,edgePixelMask);
                 #else
                 samplePixelizeColorRGB = pixelizeColor.rgb*(1-_PointIntensity)+samplePixelizeColorRGB*_PointIntensity;
                 pixelizeColor.rgb = samplePixelizeColorRGB;
                 #endif
+                
                 
                 
                 #ifdef ENABLE_CONTRAST_AND_SATURATION

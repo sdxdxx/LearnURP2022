@@ -192,8 +192,8 @@ Shader "URP/Cartoon/SimpleCartoon"
                 float diffuseGreyMask = 1-diffuseDarkMask-diffuseLightMask;//中部
                 
                 half3 Diffuse = albedo*(_DarkColor*diffuseDarkMask+diffuseGreyMask*_GreyColor+_LightColor*diffuseLightMask);
-            	half3 Specular = _SpecularIntensity*pow(max(0,dot(nDir,hDir)),_SpecularPow)*_SpecularColor;
-                Specular = smoothstep(_RangeSpecular-_SmoothSpecular,_RangeSpecular,Specular);
+            	half3 Specular = _SpecularIntensity*pow(max(0,dot(nDir,hDir)),_SpecularPow);
+                Specular = smoothstep(_RangeSpecular-_SmoothSpecular,_RangeSpecular,Specular)*_SpecularColor;
                 
                 half3 FinalRGB = lerp(1,matcap,_MatCapLerp)*Diffuse;//Matcap+Diffuse
                 FinalRGB = saturate(FinalRGB+Specular);//添加高光
@@ -267,6 +267,12 @@ Shader "URP/Cartoon/SimpleCartoon"
 	        Name "PixelizeMask"
 
         	Tags{"LightMode" = "PixelizeMask"}
+        	
+        	Stencil
+            {
+                Ref [_ID]
+                Comp NotEqual
+            }
 	        
         	ZWrite On
         	ZTest LEqual
@@ -302,6 +308,7 @@ Shader "URP/Cartoon/SimpleCartoon"
                 float3 nDirOS : TEXCOORD1;
                 float3 posOS : TEXCOORD2;
             	float4 screenPos : TEXCOORD3;
+            	float3 originalPosOS : TEXCOORD4;
             };
 
             half4 _OutlineColor;
@@ -310,11 +317,12 @@ Shader "URP/Cartoon/SimpleCartoon"
              vertexOutput vert_PixelizeMask (vertexInput v)
             {
                 vertexOutput o;
+             	o.originalPosOS = v.vertex.xyz;
             	v.vertex.xyz = v.vertex.xyz+v.color* _OutlineWidth * 0.1;
             	float4 posCS = TransformObjectToHClip(v.vertex.xyz);
             	o.screenPos = ComputeScreenPos(posCS);
                 o.pos = posCS;
-                o.nDirOS = v.normal;
+                o.nDirOS = v.color;
                 o.uv = v.uv;
                 o.posOS = v.vertex.xyz;
                 return o;
@@ -322,9 +330,10 @@ Shader "URP/Cartoon/SimpleCartoon"
 
             half4 frag_PixelizeMask (vertexOutput i) : SV_TARGET
             {
-            	float3 nDir = TransformObjectToWorldNormal(i.nDirOS).xyz;
+            	float3 nDirWS = TransformObjectToWorldNormal(i.nDirOS).xyz;
             	float3 posWS = TransformObjectToWorld(i.posOS).xyz;
-	            float isOrtho = UNITY_MATRIX_P[3][3];
+            	float3 vDirWS = normalize(_WorldSpaceCameraPos.xyz-posWS.xyz);
+            	
             	float rawDepth;
             	
             	#ifdef IS_ORTH_CAM
@@ -336,7 +345,7 @@ Shader "URP/Cartoon/SimpleCartoon"
             		rawDepth = (rcp(linearEyeDepth)-_ZBufferParams.w)/_ZBufferParams.z;
             	#endif
 
-            	return half4(1,rawDepth,_SobelValue,0);
+            	return half4(rawDepth,1,0,0);
             }
             
             ENDHLSL

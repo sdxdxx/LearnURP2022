@@ -36,9 +36,8 @@ Shader "URP/PostProcessing/Pixelize"
             
             //----------贴图声明开始-----------
             TEXTURE2D(_PixelizeMask);
-            SAMPLER(sampler_PixelizeMask);
             TEXTURE2D(_CameraDepthTexture);
-            SAMPLER(sampler_CameraDepthTexture);
+            TEXTURE2D(_SobelTex);
             //----------贴图声明结束-----------
             
             CBUFFER_START(UnityPerMaterial)
@@ -51,6 +50,7 @@ Shader "URP/PostProcessing/Pixelize"
             float _Contrast;
             float _Saturation;
             float _PointIntensity;
+            float _DitherIntensity;
             //----------变量声明结束-----------
             CBUFFER_END
 
@@ -117,6 +117,150 @@ Shader "URP/PostProcessing/Pixelize"
                 return clearObjectMask_Reverse;
             }
 
+            static half dither[16] =
+            {
+                0.0, 0.5, 0.125, 0.625,
+                0.75, 0.25, 0.875, 0.375,
+                0.187, 0.687, 0.0625, 0.562,
+                0.937, 0.437, 0.812, 0.312
+            };
+            
+            half4 frag (Varyings input) : SV_TARGET
+            {
+                //计算采样参数
+                float downSampleValue = pow(2,_DownSampleValue);
+                float2 screenPos = input.texcoord.xy;
+                
+                float2 pixelPos = screenPos*_ScreenParams.xy;
+                float2 downSamplePixelPos = floor(pixelPos/downSampleValue);//向下取整
+
+                //3D 像素空间采样（以世界坐标为原点，视角空间的三维向量作起始值的空间） https://zhuanlan.zhihu.com/p/661504887
+                float2 size = floor(_ScreenParams.xy/downSampleValue);
+                float4 worldOriginToScreenPos1= ComputeScreenPos(TransformWorldToHClip(float3(0,0,0)));
+                float2 worldOriginToScreenPos2= worldOriginToScreenPos1.xy/worldOriginToScreenPos1.w;
+                float2 realSampleUV = (floor((screenPos-worldOriginToScreenPos2)*size)+0.5)/size+worldOriginToScreenPos2;
+                
+                //计算当前像素深度值和遮罩
+                float4 pixelizeObjectParam = SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,screenPos);
+                float rawMask = 1-pixelizeObjectParam.a;
+                float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, screenPos).r;
+                float maskRawDepth = pixelizeObjectParam.r;
+                
+                half4 pixelizeColor = SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp,screenPos);
+                float mask = 0;
+                float sobel = 0;
+                float pixelRawDepth = rawDepth;
+                float pixelMaskRawDepth = maskRawDepth;
+
+                float2 ditherUV = fmod(downSamplePixelPos, 4);
+                float jitter = dither[ditherUV.x * 4 + ditherUV.y]*1.5;
+                
+                float2 lastSampleUV = screenPos;
+                UNITY_LOOP
+                for (int i = 0; i<downSampleValue; i++)
+                {
+                    UNITY_LOOP
+                    for (int j = 0; j<downSampleValue;j++)
+                    {
+                        int2 samplePixelPos = downSamplePixelPos*downSampleValue+float2(i,j);
+                        float2 sampleUV = (samplePixelPos)/_ScreenParams.xy;
+                        
+                        float sampleRawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, sampleUV).r;
+                        float sampleMaskRawDepth = SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,sampleUV).r;
+                        float sampleClearObjectMask_Reverse = CalculateClearObjectMaskReverse(sampleRawDepth,sampleMaskRawDepth);
+                        
+                        if (sampleClearObjectMask_Reverse<0.1f)
+                        {
+                            pixelizeColor.rgb += SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp,lastSampleUV);
+                            pixelizeColor.a += 0.8;
+                        }
+                        else
+                        {
+                            lastSampleUV = sampleUV;
+                            pixelizeColor.rgb += SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp,sampleUV);
+                            pixelizeColor.a += 1;
+                        }
+                        pixelRawDepth = max(pixelRawDepth,SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, lastSampleUV).r);
+                        pixelMaskRawDepth = max(pixelMaskRawDepth,SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,lastSampleUV).r);
+                        sobel+=SAMPLE_TEXTURE2D(_SobelTex,sampler_PointClamp,lastSampleUV);
+                        mask += 1-SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,sampleUV).a;
+                    }
+                }
+
+                
+                half4 albedo =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, screenPos);
+                pixelizeColor /= downSampleValue*downSampleValue;
+                sobel /= downSampleValue*downSampleValue;
+                mask /= downSampleValue*downSampleValue;
+                
+                float realPixelDepth = max(rawDepth,pixelRawDepth);
+                float realPixelMaskRawDepth = max(maskRawDepth,pixelMaskRawDepth);
+                
+                float clearObjectMask_Reverse = CalculateClearObjectMaskReverse(realPixelDepth,realPixelMaskRawDepth);
+
+                float edgePixelMask = step(0.0001,mask)*step(mask,0.9);
+                
+                mask = step(0.001f,mask)*clearObjectMask_Reverse;
+                
+                if (_DownSampleValue == 0 )
+                {
+                    mask = rawMask;
+                }
+                
+                float realMask = mask*pixelizeColor.a;
+
+                half3 samplePixelizeColorRGB = SAMPLE_TEXTURE2D(_BlitTexture, sampler_PointClamp, realSampleUV);
+                samplePixelizeColorRGB = pixelizeColor.rgb*(1-_PointIntensity)+samplePixelizeColorRGB*_PointIntensity;
+                
+                #ifdef  ENABLE_POINT
+                pixelizeColor.rgb = samplePixelizeColorRGB;
+                #else
+                pixelizeColor.rgb = lerp(samplePixelizeColorRGB,pixelizeColor.rgb,edgePixelMask);
+                #endif
+                
+                #ifdef ENABLE_CONTRAST_AND_SATURATION
+                pixelizeColor.rgb = GetContrast(pixelizeColor.rgb,_Contrast);
+                pixelizeColor.rgb = GetSaturation(pixelizeColor.rgb,_Saturation);
+                #endif
+                
+                half3 finalRGB = lerp(albedo.rgb,pixelizeColor.rgb,realMask);
+                
+                half4 result = half4(finalRGB,albedo.a);
+
+                return result;
+            }
+            
+            ENDHLSL
+        }
+
+       //soble
+        pass
+        {
+            HLSLPROGRAM
+
+            #pragma vertex Vert
+            #pragma fragment frag
+
+            #pragma shader_feature IS_ORTH_CAM
+            #pragma shader_feature ENABLE_POINT
+            #pragma shader_feature ENABLE_CONTRAST_AND_SATURATION
+
+           #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+           #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+           #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+            #include  "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
+            
+            //----------贴图声明开始-----------
+            TEXTURE2D(_PixelizeMask);
+            SAMPLER(sampler_PixelizeMask);
+            //----------贴图声明结束-----------
+            
+            //Remap
+            float remap(float original_value, float original_min, float original_max, float new_min, float new_max)
+             {
+               return new_min + (((original_value - original_min) / (original_max - original_min)) * (new_max - new_min));
+             }
+
             float CalculateSobelEdge(float2 screenPos, float size)
             {
                 float3 lum = float3(0.2125,0.7154,0.0721);//转化为luminance亮度值
@@ -146,104 +290,13 @@ Shader "URP/PostProcessing/Pixelize"
             
             half4 frag (Varyings input) : SV_TARGET
             {
-                //计算采样参数
-                int downSampleValue = pow(2,_DownSampleValue);
                 float2 screenPos = input.texcoord.xy;
-                
-                int2 pixelPos = round(screenPos*_ScreenParams.xy);
-                int2 downSamplePixelPos = int2(pixelPos.x/downSampleValue,pixelPos.y/downSampleValue);
-                
                 //计算当前像素深度值和遮罩
                 float4 pixelizeObjectParam = SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,screenPos);
-                float rawMask = 1-pixelizeObjectParam.a;
-                float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, screenPos).r;
-                float maskRawDepth = pixelizeObjectParam.g;
-                
-                half4 pixelizeColor = SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp,screenPos);
-                float mask = 0;
-                float pixelRawDepth = rawDepth;
-                float pixelMaskRawDepth = maskRawDepth;
-
-                float2 realSampleUV = float2(0,0);
-                
-                float2 lastSampleUV = screenPos;
-                float sobelTest = 0;
-                UNITY_LOOP
-                for (int i = 0; i<downSampleValue; i++)
-                {
-                    UNITY_LOOP
-                    for (int j = 0; j<downSampleValue;j++)
-                    {
-                        float2 sampleUV = (downSamplePixelPos*downSampleValue+float2(i,j))/_ScreenParams.xy;
-                        float sampleRawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, sampleUV).r;
-                        float sampleMaskRawDepth = SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,sampleUV).g;
-                        float sampleClearObjectMask_Reverse = CalculateClearObjectMaskReverse(sampleRawDepth,sampleMaskRawDepth);
-                        
-                        if (sampleClearObjectMask_Reverse<0.1f)
-                        {
-                            realSampleUV+=lastSampleUV;
-                            pixelizeColor.rgb += SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp,lastSampleUV);
-                            pixelizeColor.a += 0.8;
-                        }
-                        else
-                        {
-                            realSampleUV+=sampleUV;
-                            
-                            lastSampleUV = sampleUV;
-                            pixelizeColor.rgb += SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp,sampleUV);
-                            pixelizeColor.a += 1;
-                        }
-                        pixelRawDepth = max(pixelRawDepth,SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, lastSampleUV).r);
-                        pixelMaskRawDepth = max(pixelMaskRawDepth,SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,lastSampleUV).g);
-                        mask += 1-SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,sampleUV).a;
-                    }
-                }
-                
-                half4 albedo =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, screenPos);
-                pixelizeColor /= downSampleValue*downSampleValue;
-                mask /= downSampleValue*downSampleValue;
-                realSampleUV /= downSampleValue*downSampleValue;
-                
-                float realPixelDepth = max(rawDepth,pixelRawDepth);
-                float realPixelMaskRawDepth = max(maskRawDepth,pixelMaskRawDepth);
-                
-                float clearObjectMask_Reverse = CalculateClearObjectMaskReverse(realPixelDepth,realPixelMaskRawDepth);
-
-                float edgePixelMask = step(0.0001,mask)*step(mask,0.9);
-                
-                mask = step(0.001f,mask)*clearObjectMask_Reverse;
-                
-                if (_DownSampleValue == 0 )
-                {
-                    mask = rawMask;
-                }
-                
-                float realMask = mask*pixelizeColor.a;
-                half3 samplePixelizeColorRGB = SAMPLE_TEXTURE2D(_BlitTexture, sampler_PointClamp, realSampleUV);
-                #ifndef  ENABLE_POINT
-               float pixelizeObjectSobelValue = SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,realSampleUV).b;
-                float sobel = step(0.9,CalculateSobelEdge(realSampleUV,pixelizeObjectSobelValue*3000));
-                samplePixelizeColorRGB = pixelizeColor.rgb*(1-_PointIntensity)+samplePixelizeColorRGB*_PointIntensity;
-                edgePixelMask = max(edgePixelMask,sobel);
-                pixelizeColor.rgb = lerp(samplePixelizeColorRGB,pixelizeColor.rgb,edgePixelMask);
-                #else
-                samplePixelizeColorRGB = pixelizeColor.rgb*(1-_PointIntensity)+samplePixelizeColorRGB*_PointIntensity;
-                pixelizeColor.rgb = samplePixelizeColorRGB;
-                #endif
-                
-                
-                #ifdef ENABLE_CONTRAST_AND_SATURATION
-                pixelizeColor.rgb = GetContrast(pixelizeColor.rgb,_Contrast);
-                pixelizeColor.rgb = GetSaturation(pixelizeColor.rgb,_Saturation);
-                #endif
-                
-                half3 finalRGB = lerp(albedo.rgb,pixelizeColor.rgb,realMask);
-                
-                half4 result = half4(finalRGB,albedo.a);
-
+            	float sobel = CalculateSobelEdge(screenPos,500)*(1-pixelizeObjectParam.a).xxx;
+            	half4 result = half4(sobel.xxx,1.0);
                 return result;
             }
-            
             ENDHLSL
         }
     }

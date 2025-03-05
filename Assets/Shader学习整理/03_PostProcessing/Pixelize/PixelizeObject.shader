@@ -310,6 +310,7 @@ Shader "URP/PixelizeObject"
             half4 frag_PixelizeMask (vertexOutput i) : SV_TARGET
             {
             	float3 nDir = TransformObjectToWorldNormal(i.nDirOS).xyz;
+            	float3 nDirVS = mul(UNITY_MATRIX_V, float4(nDir, 0.0)).xyz;
             	float3 posWS = TransformObjectToWorld(i.posOS).xyz;
 	            float isOrtho = UNITY_MATRIX_P[3][3];
             	float rawDepth;
@@ -323,7 +324,7 @@ Shader "URP/PixelizeObject"
             		rawDepth = (rcp(linearEyeDepth)-_ZBufferParams.w)/_ZBufferParams.z;
             	#endif
 
-            	return half4(1,rawDepth,_SobelValue,0);
+            	return half4(rawDepth,1,_SobelValue,0);
             }
             
             ENDHLSL

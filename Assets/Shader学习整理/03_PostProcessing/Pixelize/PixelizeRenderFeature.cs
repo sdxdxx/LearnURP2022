@@ -66,6 +66,7 @@ public class PixelizeFeature : ScriptableRendererFeature
             
             GetTempRT(ref tempRTHandle,this.renderingData,0);//获取与摄像机大小一致的临时RT
             GetTempRT(ref maskRTHandle,this.renderingData,0);
+            GetTempRT(ref testRTHandle,this.renderingData,0);
             ConfigureTarget(maskRTHandle,depthTarget);
             ConfigureClear(ClearFlag.All, Color.black);
         }
@@ -99,6 +100,7 @@ public class PixelizeFeature : ScriptableRendererFeature
             material.SetFloat("_Contrast",pixelizeVolume.Contrast.value);
             material.SetFloat("_Saturation",pixelizeVolume.Saturation.value);
             material.SetFloat("_PointIntensity",pixelizeVolume.PointIntensity.value);
+            material.SetFloat("_DitherIntensity",pixelizeVolume.DitherIntensity.value);
 
             if (pixelizeVolume.EnablePoint.value)
             {
@@ -142,7 +144,9 @@ public class PixelizeFeature : ScriptableRendererFeature
                     Shader.SetGlobalTexture("_PixelizeMask",maskRTHandle);
                     
                     Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle);
-                    Blitter.BlitCameraTexture(cmd,tempRTHandle,cameraColorRTHandle,material,0);//写入渲染命令进CommandBuffer
+                    Blitter.BlitCameraTexture(cmd,tempRTHandle,testRTHandle,material,1);
+                    material.SetTexture("_SobelTex",testRTHandle);
+                    Blitter.BlitCameraTexture(cmd,tempRTHandle,cameraColorRTHandle,material,0);
                 }
                 
             }
