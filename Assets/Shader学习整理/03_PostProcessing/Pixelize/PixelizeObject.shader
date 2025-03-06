@@ -30,7 +30,11 @@ Shader "URP/Cartoon/PixelizeObject"
         [Header(Outline)]
         _OutlineColor("Outline Color",Color) = (0.0,0.0,0.0,0.0)
         _OutlineWidth("Outline Width",Range(0,5)) = 1
-    	[Int]_ID("Mask ID", Range(0,254)) = 100
+    	
+    	[Header(DownSample)]
+    	[IntRange]_DownSampleValue("Down Sample Value",Range(0,5)) = 0
+        _DownSampleBias("Down Sample Bias",Range(0,5)) = 0
+    	[IntRange]_ID("Mask ID", Range(0,254)) = 100
     	
     	_InlineWidth("Inline Width Control",Range(0,1)) = 0
     }
@@ -66,6 +70,8 @@ Shader "URP/Cartoon/PixelizeObject"
             float _RangeSpecular;
             float _SmoothSpecular;
             float _InlineWidth;
+			int _DownSampleValue;
+			float _DownSampleBias;
             //----------变量声明结束-----------
             CBUFFER_END
 
@@ -388,6 +394,29 @@ Shader "URP/Cartoon/PixelizeObject"
                return new_min + (((original_value - original_min) / (original_max - original_min)) * (new_max - new_min));
              }
 
+            float CalculateClearObjectMaskReverse(float RawDepth, float MaskRawDepth)
+            {
+                float rawDepth = RawDepth;
+                float maskRawDepth = MaskRawDepth;
+                float linear01Depth = 0;
+                float mask01Depth = 0;
+                float bias = 0;
+
+                #ifdef IS_ORTH_CAM
+                    linear01Depth = 1-rawDepth;//lerp(0, _ProjectionParams.z, rawDepth);
+                    mask01Depth = 1-maskRawDepth;
+                    bias = 0.009;
+                #else
+                    linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
+                    mask01Depth = Linear01Depth(maskRawDepth,_ZBufferParams);
+                    bias = 0.04;
+                #endif
+
+                float clearObjectMask_Reverse = step(mask01Depth,linear01Depth+bias);
+
+                return clearObjectMask_Reverse;
+            }
+
              struct vertexInput
             {
                 float4 vertex : POSITION;
@@ -406,6 +435,7 @@ Shader "URP/Cartoon/PixelizeObject"
             };
 
             TEXTURE2D(_PixelizeMask);
+            TEXTURE2D(_PixelizeObjectMask);
             SAMPLER(sampler_PixelizeMask);
             TEXTURE2D(_CameraOpaqueTexture);
             SAMPLER(sampler_CameraOpaqueTexture);
@@ -416,7 +446,7 @@ Shader "URP/Cartoon/PixelizeObject"
              vertexOutput vert_Pixelize (vertexInput v)
             {
                 vertexOutput o;
-            	v.vertex.xyz = v.vertex.xyz+v.color* _OutlineWidth * 0.1;;
+            	v.vertex.xyz = v.vertex.xyz+v.color* _OutlineWidth * 0.1+v.color*_DownSampleBias*0.1;
             	float4 posCS = TransformObjectToHClip(v.vertex.xyz);
             	o.screenPos = ComputeScreenPos(posCS);
                 o.pos = posCS;
@@ -430,34 +460,34 @@ Shader "URP/Cartoon/PixelizeObject"
             {
             	float2 screenPos = i.screenPos.xy/i.screenPos.w;
             	
-            	float3 nDirWS = TransformObjectToWorldNormal(i.nDirOS).xyz;
-            	float3 nDirVS = mul(UNITY_MATRIX_V, float4(nDirWS, 0.0)).xyz;
-            	float3 posWS = TransformObjectToWorld(i.posOS).xyz;
-            	float3 vDirWS = GetWorldSpaceNormalizeViewDir(posWS);
-
-            	float downSampleValue = pow(2,3);
+            	float downSampleValue = pow(2,_DownSampleValue);
             	float2 size = floor(_ScreenParams.xy/downSampleValue);
                 //float3 originPoint = float3(0,0,0);
             	float3 originPoint = TransformObjectToWorld(float3(0,0,0));
                 float4 worldOriginToScreenPos1= ComputeScreenPos(TransformWorldToHClip(originPoint));
                 float2 worldOriginToScreenPos2= worldOriginToScreenPos1.xy/worldOriginToScreenPos1.w;
                 float2 realSampleUV = (floor((screenPos-worldOriginToScreenPos2)*size)+0.5)/size+worldOriginToScreenPos2;
-                half3 samplePixelizeColorRGB = SAMPLE_TEXTURE2D(_CameraOpaqueTexture, sampler_PointClamp, realSampleUV);
-            	float4 pixelizeMask = SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,screenPos);
-            	float reverseClearObjectMask = pixelizeMask.g;
-            	float inlineMask = SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,realSampleUV).r;
-            	half3 grabTex = SAMPLE_TEXTURE2D(_CameraOpaqueTexture,sampler_CameraOpaqueTexture,screenPos);
+
+            	float4 pixelizeObjectParam = SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp,realSampleUV);
+            	float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, realSampleUV).r;
+                float maskRawDepth = pixelizeObjectParam.r;
+            	float clearObjectMask_Reverse = CalculateClearObjectMaskReverse(rawDepth,maskRawDepth);
             	
-            	float nDotv = dot(nDirWS,vDirWS);
+            	if (clearObjectMask_Reverse<0.00001f)
+	            {
+		            discard;
+	            }
+            	
+                half3 samplePixelizeColorRGB = SAMPLE_TEXTURE2D(_CameraOpaqueTexture, sampler_PointClamp, realSampleUV);
+            	
+            	half3 grabTex = SAMPLE_TEXTURE2D(_CameraOpaqueTexture,sampler_CameraOpaqueTexture,screenPos);
 
-            	float fresnel =saturate(1-max(0,nDotv));
-
-            	half3 finalRGB = lerp(grabTex,samplePixelizeColorRGB,reverseClearObjectMask);
-            	finalRGB = lerp(finalRGB,grabTex,inlineMask);
+            	//float4 pixelizeObjectParam = SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp,screenPos);
+            	//return step(pixelizeObjectParam.a,1-0.0000001);
+            	
+            	half3 finalRGB = samplePixelizeColorRGB;
             	half4 result = half4(finalRGB,1.0); 
 				return result;
-            	
-            	return half4(0,_InlineWidth,0,1);
             }
             
             ENDHLSL

@@ -33,7 +33,7 @@ MonoBehaviour:
     m_Value: 0.2
   EnablePoint:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
   PointIntensity:
     m_OverrideState: 1
     m_Value: 1

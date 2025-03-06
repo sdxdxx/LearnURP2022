@@ -124,7 +124,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c479f785cdeb2ec408548562a80d2ff7, type: 3}
   m_Name: PixelizeFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     renderPassEvent: 400
     pixelizeObjectLayer:
@@ -227,11 +227,11 @@ MonoBehaviour:
   - {fileID: 4910406226321685812}
   - {fileID: -3768913323404907122}
   - {fileID: -1058645822831110439}
+  - {fileID: -4608446406019584251}
   - {fileID: -1976716827555561739}
   - {fileID: 4115091042566621598}
   - {fileID: 5375380266536543113}
-  - {fileID: -4608446406019584251}
-  m_RendererFeatureMap: adc0de57c6d2eee5d7c237a8a6a61b4cbeb84ddb1c055f8d48b3ff2b16d55de0e6d587b442c35ccc51e642729de87eac01595dabf62b1d43f090451f1e26cea3343dc546724425448ead36094d21b2cbd95633ab3bef4ef1f57e03b8844a91e49e49932280bd1b3989238e57df2f994a05efc60a69820bc0
+  m_RendererFeatureMap: adc0de57c6d2eee5d7c237a8a6a61b4cbeb84ddb1c055f8d48b3ff2b16d55de0e6d587b442c35ccc51e642729de87eac01595dabf62b1d43f090451f1e26cea3343dc546724425448ead36094d21b2cbd95633ab3bef4ef105efc60a69820bc0f57e03b8844a91e49e49932280bd1b3989238e57df2f994a
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}

@@ -109,6 +109,8 @@ Material:
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
+    - _DownSampleBias: 0.5
+    - _DownSampleValue: 3.55
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EnvironmentReflections: 1
@@ -116,6 +118,7 @@ Material:
     - _Glossiness: 0
     - _GlossyReflections: 0
     - _ID: 30
+    - _InlineWidth: 0
     - _MatCapLerp: 1
     - _Metallic: 0
     - _OcclusionStrength: 1

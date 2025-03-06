@@ -27,14 +27,35 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _MatCap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _DownSampleBias: 0.3
+    - _DownSampleValue: 0
+    - _ID: 100
+    - _InlineWidth: 0
+    - _MatCapLerp: 1
     - _Metallic: 0
     - _OutlineWidth: 1
+    - _RangeDark: 0.3
+    - _RangeLight: 0.7
+    - _RangeSpecular: 0.9
+    - _SmoothDark: 0
+    - _SmoothLight: 0
+    - _SmoothSpecular: 0
     - _Smoothness: 0
     - _SobelValue: 0.17
+    - _SpecularIntensity: 1
+    - _SpecularPow: 50
     - _TestFloat: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 0.94533795, b: 0, a: 1}
+    - _DarkColor: {r: 0, g: 0, b: 0, a: 1}
+    - _GreyColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+    - _LightColor: {r: 1, g: 1, b: 1, a: 1}
     - _OutlineColor: {r: 0, g: 0, b: 0, a: 0}
+    - _SpecularColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
