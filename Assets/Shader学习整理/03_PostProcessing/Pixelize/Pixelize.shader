@@ -160,9 +160,7 @@ Shader "URP/PostProcessing/Pixelize"
 
                 float2 ditherUV = fmod(downSamplePixelPos, 4);
                 float jitter = dither[ditherUV.x * 4 + ditherUV.y]*1.5;
-
-               // float test = CalculateClearObjectMaskReverse(rawDepth,maskRawDepth);
-                //return test;
+                
                 
                 float2 lastSampleUV = screenPos;
                 UNITY_LOOP
@@ -206,7 +204,7 @@ Shader "URP/PostProcessing/Pixelize"
                 float realPixelMaskRawDepth = max(maskRawDepth,pixelMaskRawDepth);
                 
                 float clearObjectMask_Reverse = CalculateClearObjectMaskReverse(realPixelDepth,realPixelMaskRawDepth);
-
+                
                 float edgePixelMask = step(0.0001,mask)*step(mask,0.9);
                 
                 mask = step(0.001f,mask)*clearObjectMask_Reverse;

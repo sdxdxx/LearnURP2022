@@ -223,7 +223,7 @@ Shader "URP/Cartoon/PixelizeObject"
                 Ref [_ID]
                 Comp NotEqual
             }
-            //ZWrite On
+            ZWrite On
             Cull Front
             
             HLSLPROGRAM
@@ -309,6 +309,7 @@ Shader "URP/Cartoon/PixelizeObject"
                 float3 nDirOS : TEXCOORD1;
                 float3 posOS : TEXCOORD2;
             	float4 screenPos : TEXCOORD3;
+            	float3 realPosOS : TEXCOORD4;
             };
 
             TEXTURE2D(_PixelizeObjectMask);
@@ -320,13 +321,14 @@ Shader "URP/Cartoon/PixelizeObject"
              vertexOutput vert_PixelizeMask (vertexInput v)
             {
                 vertexOutput o;
-            	v.vertex.xyz = v.vertex.xyz+v.color* _OutlineWidth * 0.1;;
+            	v.vertex.xyz = v.vertex.xyz+v.color* _OutlineWidth * 0.1;
             	float4 posCS = TransformObjectToHClip(v.vertex.xyz);
             	o.screenPos = ComputeScreenPos(posCS);
                 o.pos = posCS;
                 o.nDirOS = v.color;
                 o.uv = v.uv;
                 o.posOS = v.vertex.xyz;
+             	o.realPosOS  = v.vertex.xyz + v.color* _DownSampleBias * 0.1;
                 return o;
             }
 
@@ -334,20 +336,22 @@ Shader "URP/Cartoon/PixelizeObject"
             {
             	float2 screenPos = i.screenPos.xy/i.screenPos.w;
             	
-            	float3 nDirWS = TransformObjectToWorldNormal(i.nDirOS).xyz;
-            	float3 nDirVS = mul(UNITY_MATRIX_V, float4(nDirWS, 0.0)).xyz;
+            	//float3 nDirWS = TransformObjectToWorldNormal(i.nDirOS).xyz;
+            	//float3 nDirVS = mul(UNITY_MATRIX_V, float4(nDirWS, 0.0)).xyz;
             	float3 posWS = TransformObjectToWorld(i.posOS).xyz;
-            	float3 vDirWS = GetWorldSpaceNormalizeViewDir(posWS);
+            	float3 posWS_Expand = TransformObjectToWorld(i.realPosOS).xyz;
+            	//float3 vDirWS = GetWorldSpaceNormalizeViewDir(posWS);
             	
-            	float nDotv = dot(nDirWS,vDirWS);
-
-            	float fresnel =saturate(1-max(0,nDotv));
             	
             	float rawDepth;
+
+            	float expandLinearEyeDepth = LinearEyeDepth(posWS_Expand,unity_MatrixV);
+            	float expandRawDepth = 1-(expandLinearEyeDepth - _ProjectionParams.y) / (_ProjectionParams.z - _ProjectionParams.y);
             	
             	#ifdef IS_ORTH_CAM
             		//float linearEyeDepth = distance(_WorldSpaceCameraPos.xyz,posWS.xyz);
             		float linearEyeDepth = LinearEyeDepth(posWS,unity_MatrixV);
+            		
             		rawDepth = 1-(linearEyeDepth - _ProjectionParams.y) / (_ProjectionParams.z - _ProjectionParams.y);
             	#else
             		float linearEyeDepth = TransformObjectToHClip(i.posOS).w;
@@ -365,7 +369,7 @@ Shader "URP/Cartoon/PixelizeObject"
             	float id = _ID;
             	id = id/255.0;
             	//return half4(rawDepth,_InlineWidth,0,id);
-            	return float4(rawDepth,realSampleUV,id);
+            	return float4(rawDepth,expandRawDepth,0,id);
             }
             
             ENDHLSL
@@ -375,6 +379,7 @@ Shader "URP/Cartoon/PixelizeObject"
         {
 	        Name "PixelizePass"
 
+	        ZWrite Off
         	Tags{"LightMode" = "PixelizePass"}
 	        
             HLSLPROGRAM
@@ -468,16 +473,17 @@ Shader "URP/Cartoon/PixelizeObject"
                 float2 worldOriginToScreenPos2= worldOriginToScreenPos1.xy/worldOriginToScreenPos1.w;
                 float2 realSampleUV = (floor((screenPos-worldOriginToScreenPos2)*size)+0.5)/size+worldOriginToScreenPos2;
 
-            	float4 pixelizeObjectParam = SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp,realSampleUV);
-            	float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, realSampleUV).r;
-                float maskRawDepth = pixelizeObjectParam.r;
-            	float clearObjectMask_Reverse = CalculateClearObjectMaskReverse(rawDepth,maskRawDepth);
-            	
-            	if (clearObjectMask_Reverse<0.00001f)
-	            {
-		            discard;
-	            }
-            	
+            	float4 pixelizeObjectParam = SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp,screenPos);
+            	float4 realPixelizeObjectParam = SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp,realSampleUV);
+            	float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, screenPos).r;
+            	float realRawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, realSampleUV).r;
+            	float maskRawDepth = pixelizeObjectParam.r;
+                float realMaskRawDepth = realPixelizeObjectParam.r;
+            	float clearObjectMask_Reverse = CalculateClearObjectMaskReverse(rawDepth,realMaskRawDepth);
+            	float realClearObjectMask_Reverse = CalculateClearObjectMaskReverse(realRawDepth,maskRawDepth);
+            	//return realClearObjectMask_Reverse;
+
+            	float tempClearObjectMask_Reverse = CalculateClearObjectMaskReverse(rawDepth,realMaskRawDepth);
                 half3 samplePixelizeColorRGB = SAMPLE_TEXTURE2D(_CameraOpaqueTexture, sampler_PointClamp, realSampleUV);
             	
             	half3 grabTex = SAMPLE_TEXTURE2D(_CameraOpaqueTexture,sampler_CameraOpaqueTexture,screenPos);
@@ -485,7 +491,7 @@ Shader "URP/Cartoon/PixelizeObject"
             	//float4 pixelizeObjectParam = SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp,screenPos);
             	//return step(pixelizeObjectParam.a,1-0.0000001);
             	
-            	half3 finalRGB = samplePixelizeColorRGB;
+            	half3 finalRGB = lerp(grabTex,samplePixelizeColorRGB,clearObjectMask_Reverse);
             	half4 result = half4(finalRGB,1.0); 
 				return result;
             }
