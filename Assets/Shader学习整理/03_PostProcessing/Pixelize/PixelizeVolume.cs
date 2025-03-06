@@ -12,5 +12,5 @@ public class PixelizeVolume : VolumeComponent
     public FloatParameter Saturation = new FloatParameter(0f, true);
     public BoolParameter EnablePoint = new BoolParameter(false,true);
     public ClampedFloatParameter PointIntensity= new ClampedFloatParameter(0f, 0f,1f,true);
-    public ClampedFloatParameter DitherIntensity = new ClampedFloatParameter(0f, 0f, 10f, true);
+    public ClampedFloatParameter InlineWidth = new ClampedFloatParameter(0f, 0f, 1f, true);
 }

@@ -8,7 +8,7 @@ public class PixelizeFeature : ScriptableRendererFeature
     [System.Serializable]
      public class Settings
     {
-        public RenderPassEvent renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
+        public RenderPassEvent renderPassEvent = RenderPassEvent.AfterRenderingSkybox;
         public LayerMask pixelizeObjectLayer;
     }
      
@@ -39,7 +39,7 @@ public class PixelizeFeature : ScriptableRendererFeature
             shaderTagsList.Add(new ShaderTagId("PixelizeMask"));
             
             Shader shader = Shader.Find("URP/PostProcessing/Pixelize");
-            renderPassEvent = settings.renderPassEvent; //传入设置的渲染事件顺序(renderPassEvent在基类ScriptableRenderPass中)
+            renderPassEvent = settings.renderPassEvent+1; //传入设置的渲染事件顺序(renderPassEvent在基类ScriptableRenderPass中)
             material = CoreUtils.CreateEngineMaterial(shader);//根据传入的Shader创建material;
         }
 
@@ -100,7 +100,7 @@ public class PixelizeFeature : ScriptableRendererFeature
             material.SetFloat("_Contrast",pixelizeVolume.Contrast.value);
             material.SetFloat("_Saturation",pixelizeVolume.Saturation.value);
             material.SetFloat("_PointIntensity",pixelizeVolume.PointIntensity.value);
-            material.SetFloat("_DitherIntensity",pixelizeVolume.DitherIntensity.value);
+            material.SetFloat("_InlineWidth",pixelizeVolume.InlineWidth.value);
 
             if (pixelizeVolume.EnablePoint.value)
             {
@@ -137,15 +137,13 @@ public class PixelizeFeature : ScriptableRendererFeature
                     depthParams.depthState = depthState;
                     */
                 
-                    SortingCriteria sortingCriteria = SortingCriteria.CommonOpaque;
-                    var draw = CreateDrawingSettings(shaderTagsList, ref renderingData, sortingCriteria);
-                    context.DrawRenderers(renderingData.cullResults, ref draw, ref filtering);
+                    //SortingCriteria sortingCriteria = SortingCriteria.CommonOpaque;
+                    //var draw = CreateDrawingSettings(shaderTagsList, ref renderingData, sortingCriteria);
+                    //context.DrawRenderers(renderingData.cullResults, ref draw, ref filtering);
                 
-                    Shader.SetGlobalTexture("_PixelizeMask",maskRTHandle);
+                    //Shader.SetGlobalTexture("_PixelizeMask",maskRTHandle);
                     
                     Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle);
-                    Blitter.BlitCameraTexture(cmd,tempRTHandle,testRTHandle,material,1);
-                    material.SetTexture("_SobelTex",testRTHandle);
                     Blitter.BlitCameraTexture(cmd,tempRTHandle,cameraColorRTHandle,material,0);
                 }
                 

@@ -37,9 +37,9 @@ MonoBehaviour:
   PointIntensity:
     m_OverrideState: 1
     m_Value: 1
-  DitherIntensity:
+  InlineWidth:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 0.75
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -54,7 +54,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   components:
   - {fileID: -8129784936654650814}
-  - {fileID: 456849291699596545}
 --- !u!114 &456849291699596545
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -68,6 +67,7 @@ MonoBehaviour:
   m_Name: PixelizeTestVolume
   m_EditorClassIdentifier: 
   active: 0
+  <displayName>k__BackingField: 
   EnablePixelizer:
     m_OverrideState: 1
     m_Value: 0
@@ -76,7 +76,11 @@ MonoBehaviour:
     m_Value: 3
   ColorChange:
     m_OverrideState: 1
-    m_Value: {r: 1, g: 1, b: 1, a: 1}
+    m_Value:
+      r: 1
+      g: 1
+      b: 1
+      a: 1
   EnableContrastAndSaturation:
     m_OverrideState: 1
     m_Value: 0

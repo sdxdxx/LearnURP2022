@@ -21,7 +21,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: TestCartoonPixelize 2
-  m_Shader: {fileID: 4800000, guid: 4b881c64b88ee3d40a289a10889f7f59, type: 3}
+  m_Shader: {fileID: 4800000, guid: 719979a9f2723144f85ade830dd8e11d, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -115,7 +115,7 @@ Material:
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
-    - _ID: 100
+    - _ID: 50
     - _MatCapLerp: 1
     - _Metallic: 0
     - _OcclusionStrength: 1

@@ -30,7 +30,7 @@ Shader "URP/Cartoon/SimpleCartoon"
         [Header(Outline)]
         _OutlineColor("Outline Color",Color) = (0.0,0.0,0.0,0.0)
         _OutlineWidth("Outline Width",Range(0,5)) = 1
-    	[Int]_ID("Mask ID", Range(0,255)) = 100
+    	[Int]_ID("Mask ID", Range(0,254)) = 100
     	
     	_SobelValue("Sobel Value",Range(0,3)) = 1
     }
@@ -68,12 +68,15 @@ Shader "URP/Cartoon/SimpleCartoon"
             float _SobelValue;
             //----------变量声明结束-----------
             CBUFFER_END
+
+         TEXTURE2D(_CameraDepthTexture);
+		 SAMPLER(sampler_CameraDepthTexture);
          ENDHLSL
     	
     	//解决深度引动模式Depth Priming Mode问题
-        //UsePass "Universal Render Pipeline/Unlit/DepthOnly"
-        //UsePass "Universal Render Pipeline/Unlit/DepthNormalsOnly"
-
+        UsePass "Universal Render Pipeline/Unlit/DepthOnly"
+        UsePass "Universal Render Pipeline/Unlit/DepthNormalsOnly"
+        
          pass
         {
             Tags { "LightMode" = "UniversalForward" }
@@ -202,7 +205,7 @@ Shader "URP/Cartoon/SimpleCartoon"
             
             ENDHLSL
         }
-        
+
         //Outline
         pass
         {
@@ -262,93 +265,5 @@ Shader "URP/Cartoon/SimpleCartoon"
             ENDHLSL
         }
         
-        Pass
-        {
-	        Name "PixelizeMask"
-
-        	Tags{"LightMode" = "PixelizeMask"}
-        	
-        	Stencil
-            {
-                Ref [_ID]
-                Comp NotEqual
-            }
-	        
-        	ZWrite On
-        	ZTest LEqual
-            HLSLPROGRAM
-            
-            #pragma vertex vert_PixelizeMask
-            #pragma fragment frag_PixelizeMask
-
-            #pragma shader_feature IS_ORTH_CAM
-
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
-
-            //Remap
-            float remap(float original_value, float original_min, float original_max, float new_min, float new_max)
-             {
-               return new_min + (((original_value - original_min) / (original_max - original_min)) * (new_max - new_min));
-             }
-
-             struct vertexInput
-            {
-                float4 vertex : POSITION;
-                float3 normal : NORMAL;
-            	float3 color : COLOR;
-                float2 uv : TEXCOORD0;
-            };
-
-            struct vertexOutput
-            {
-                float4 pos : SV_POSITION;
-                float2 uv : TEXCOORD0;
-                float3 nDirOS : TEXCOORD1;
-                float3 posOS : TEXCOORD2;
-            	float4 screenPos : TEXCOORD3;
-            	float3 originalPosOS : TEXCOORD4;
-            };
-
-            half4 _OutlineColor;
-            float _OutlineWidth;
-            
-             vertexOutput vert_PixelizeMask (vertexInput v)
-            {
-                vertexOutput o;
-             	o.originalPosOS = v.vertex.xyz;
-            	v.vertex.xyz = v.vertex.xyz+v.color* _OutlineWidth * 0.1;
-            	float4 posCS = TransformObjectToHClip(v.vertex.xyz);
-            	o.screenPos = ComputeScreenPos(posCS);
-                o.pos = posCS;
-                o.nDirOS = v.color;
-                o.uv = v.uv;
-                o.posOS = v.vertex.xyz;
-                return o;
-            }
-
-            half4 frag_PixelizeMask (vertexOutput i) : SV_TARGET
-            {
-            	float3 nDirWS = TransformObjectToWorldNormal(i.nDirOS).xyz;
-            	float3 posWS = TransformObjectToWorld(i.posOS).xyz;
-            	float3 vDirWS = normalize(_WorldSpaceCameraPos.xyz-posWS.xyz);
-            	
-            	float rawDepth;
-            	
-            	#ifdef IS_ORTH_CAM
-            		//float linearEyeDepth = distance(_WorldSpaceCameraPos.xyz,posWS.xyz);
-            		float linearEyeDepth = LinearEyeDepth(posWS,unity_MatrixV);
-            		rawDepth = 1-(linearEyeDepth - _ProjectionParams.y) / (_ProjectionParams.z - _ProjectionParams.y);
-            	#else
-            		float linearEyeDepth = TransformObjectToHClip(i.posOS).w;
-            		rawDepth = (rcp(linearEyeDepth)-_ZBufferParams.w)/_ZBufferParams.z;
-            	#endif
-
-            	return half4(rawDepth,1,0,0);
-            }
-            
-            ENDHLSL
-        }
     }
 }

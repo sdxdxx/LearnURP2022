@@ -1,14 +1,38 @@
-Shader "URP/PixelizeObject"
+Shader "URP/Cartoon/PixelizeObject"
 {
     Properties
     {
+        [Header(Tint)]
         _BaseColor("Base Color",Color) = (1.0,1.0,1.0,1.0)
+        
         _MainTex("MainTex",2D) = "white"{}
-    	_Smoothness("Smoothness",Range(0,1)) = 0
-    	_Metallic("Metallic",Range(0,1)) = 0
-    	_OutlineColor("Outline Color",Color) = (0.0,0.0,0.0,0.0)
+        
+        [Header(MatCap)]
+        _MatCap("Mat Cap",2D) = "white"{}
+        _MatCapLerp("MatCapLerp",Range(0,1)) = 1
+        
+         [Header(Diffuse)]
+        _RangeDark("Range Dark",Range(0,1)) = 0.3
+        _SmoothDark("Smooth Dark",Range(0,0.2)) = 0
+        _RangeLight("Range Light",Range(0,1)) = 0.7
+        _SmoothLight("Smooth Light",Range(0,0.2)) = 0
+        _LightColor("Light Color",Color) = (1,1,1,1)
+        _GreyColor("Grey Color",Color) = (0.5,0.5,0.5,1)
+        _DarkColor("Dark Color",Color) = (0,0,0,1)
+        
+        [Header(Specular)]
+        _SpecularIntensity("Specular Intensity",Range(0,1)) = 1
+        _SpecularPow("Specular Power",Range(0.1,200)) = 50
+        _SpecularColor("Specular Color",Color) = (1,1,1,1)
+        _RangeSpecular("Range Specular",Range(0,1)) = 0.9
+        _SmoothSpecular("Smooth Specular",Range(0,0.2)) = 0
+        
+        [Header(Outline)]
+        _OutlineColor("Outline Color",Color) = (0.0,0.0,0.0,0.0)
         _OutlineWidth("Outline Width",Range(0,5)) = 1
-    	_SobelValue("Sobel Value",Range(0,3)) = 1
+    	[Int]_ID("Mask ID", Range(0,254)) = 100
+    	
+    	_InlineWidth("Inline Width Control",Range(0,1)) = 0
     }
     
     SubShader
@@ -19,12 +43,59 @@ Shader "URP/PixelizeObject"
             "RenderPipeline" = "UniversalPipeline"
         }
          
-        HLSLINCLUDE
-            
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+         HLSLINCLUDE
+         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+        #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+         CBUFFER_START(UnityPerMaterial)
+            //----------变量声明开始-----------
+            half4 _BaseColor;
+            half4 _LightColor;
+            half4 _GreyColor;
+            half4 _DarkColor;
+            float _RangeDark;
+            float _RangeLight;
+            float _SmoothDark;
+            float _SmoothLight;
+            float _MatCapLerp;
+            float4 _MainTex_ST;
 
+            float _SpecularIntensity;
+            float _SpecularPow;
+            half4 _SpecularColor;
+            float _RangeSpecular;
+            float _SmoothSpecular;
+            float _InlineWidth;
+            //----------变量声明结束-----------
+            CBUFFER_END
+
+         TEXTURE2D(_CameraDepthTexture);
+		 SAMPLER(sampler_CameraDepthTexture);
+         ENDHLSL
+    	
+    	//解决深度引动模式Depth Priming Mode问题
+        UsePass "Universal Render Pipeline/Unlit/DepthOnly"
+        UsePass "Universal Render Pipeline/Unlit/DepthNormalsOnly"
+        
+         pass
+        {
+            Tags { "LightMode" = "UniversalForward" }
+            
+            Stencil
+            {
+                Ref [_ID]
+                Comp Always
+                Pass Replace
+            }
+            Cull Back
+            
+            ZWrite On
+            
+            HLSLPROGRAM
+
+            #pragma vertex vert
+            #pragma fragment frag
+            
             // 主光源和阴影
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
@@ -33,123 +104,191 @@ Shader "URP/PixelizeObject"
             // 多光源和阴影
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
             #pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
-
-    		#define kDielectricSpec half4(0.04, 0.04, 0.04, 1.0 - 0.04)
             
             //----------贴图声明开始-----------
             TEXTURE2D(_MainTex);//定义贴图
             SAMPLER(sampler_MainTex);//定义采样器
-            TEXTURE2D(_CameraDepthTexture);
-            SAMPLER(sampler_CameraDepthTexture);
+            TEXTURE2D(_MatCap);
+            SAMPLER(sampler_MatCap);
+            
+            //----------贴图声明结束-----------
+            
+            
+
+            //Remap
+            float remap(float original_value, float original_min, float original_max, float new_min, float new_max)
+             {
+               return new_min + (((original_value - original_min) / (original_max - original_min)) * (new_max - new_min));
+             }
+            
+
+            struct vertexInput
+            {
+                float4 vertex : POSITION;
+                float3 normal : NORMAL;
+                float2 uv : TEXCOORD0;
+            };
+
+            struct vertexOutput
+            {
+                float4 pos : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                float3 nDirWS : TEXCOORD1;
+                float3 posWS : TEXCOORD2;
+            };
+
+            vertexOutput vert (vertexInput v)
+            {
+                vertexOutput o;
+                o.pos = TransformObjectToHClip(v.vertex.xyz);
+                o.nDirWS = TransformObjectToWorldNormal(v.normal);
+                o.uv = v.uv*_MainTex_ST.xy+_MainTex_ST.zw;
+                float3 positionWS = TransformObjectToWorld(v.vertex.xyz);
+                o.posWS = positionWS;
+                return o;
+            }
+
+            float CalculateDiffuseLightResult(float3 nDir, float3 lDir, float lightRadience, float shadow)
+            {
+                float nDotl = dot(nDir,lDir);
+                float lambert = max(0,nDotl);
+                float halfLambert = nDotl*0.5+0.5;
+                half3 result = lambert*shadow*lightRadience;
+                return result;
+            }
+            
+            half4 frag (vertexOutput i) : SV_TARGET
+            {
+                float4 shadowCoord = TransformWorldToShadowCoord(i.posWS);
+                Light mainLight = GetMainLight(shadowCoord);
+                float3 nDir= i.nDirWS;
+                float3 lDir = mainLight.direction;
+                float3 vDir = normalize(_WorldSpaceCameraPos.xyz - i.posWS.xyz);
+                float3 hDir = normalize(lDir+vDir);
+
+                float3 nDirVS = TransformWorldToViewDir(i.nDirWS);
+                half3 matcap = SAMPLE_TEXTURE2D(_MatCap,sampler_MatCap,abs(nDirVS.xy*0.5+0.5)).rgb;
+
+                half4 mainTex = SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,i.uv*_MainTex_ST.xy+_MainTex_ST.zw);
+                half4 albedo = _BaseColor*mainTex;
+                
+                float mainLightRadiance = mainLight.distanceAttenuation;
+                float mainDiffuse = CalculateDiffuseLightResult(nDir,lDir,mainLightRadiance,mainLight.shadowAttenuation);
+
+                uint lightCount = GetAdditionalLightsCount();
+            	float additionalDiffuse = half3(0,0,0);
+            	float additionalSpecular = half3(0,0,0);
+				for (uint lightIndex = 0; lightIndex < lightCount; lightIndex++)
+				{
+				    Light additionalLight = GetAdditionalLight(lightIndex, i.posWS, 1);
+					half3 additionalLightColor = additionalLight.color;
+					float3 additionalLightDir = additionalLight.direction;
+					// 光照衰减和阴影系数
+                    float additionalLightRadiance =  additionalLight.distanceAttenuation;
+					float perDiffuse = CalculateDiffuseLightResult(nDir,additionalLightDir,additionalLightRadiance,additionalLight.shadowAttenuation);
+				    additionalDiffuse += perDiffuse;
+				}
+
+                float diffuse = mainDiffuse+additionalDiffuse;
+                float diffuseDarkMask = 1-smoothstep(_RangeDark-_SmoothDark,_RangeDark,diffuse);//暗部
+                float diffuseLightMask = smoothstep(_RangeLight-_SmoothLight,_RangeLight,diffuse);//亮部
+                float diffuseGreyMask = 1-diffuseDarkMask-diffuseLightMask;//中部
+                
+                half3 Diffuse = albedo*(_DarkColor*diffuseDarkMask+diffuseGreyMask*_GreyColor+_LightColor*diffuseLightMask);
+            	half3 Specular = _SpecularIntensity*pow(max(0,dot(nDir,hDir)),_SpecularPow);
+                Specular = smoothstep(_RangeSpecular-_SmoothSpecular,_RangeSpecular,Specular)*_SpecularColor;
+                
+                half3 FinalRGB = lerp(1,matcap,_MatCapLerp)*Diffuse;//Matcap+Diffuse
+                FinalRGB = saturate(FinalRGB+Specular);//添加高光
+                return half4(FinalRGB,1.0);
+            }
+            
+            ENDHLSL
+        }
+
+        //Outline
+        pass
+        {
+            Name "Outline"
+            Tags { "LightMode" = "SRPDefaultUnlit" }
+            
+           Stencil
+            {
+                Ref [_ID]
+                Comp NotEqual
+            }
+            //ZWrite On
+            Cull Front
+            
+            HLSLPROGRAM
+
+            #pragma vertex vert
+            #pragma fragment frag
+            
+            //----------贴图声明开始-----------
             //----------贴图声明结束-----------
             
             CBUFFER_START(UnityPerMaterial)
             //----------变量声明开始-----------
-            half4 _BaseColor;
-            float4 _MainTex_ST;
-            float _Smoothness;
-            float _Metallic;
             half4 _OutlineColor;
             float _OutlineWidth;
-            float _SobelValue;
             //----------变量声明结束-----------
             CBUFFER_END
 
-            float3 fresnelSchlickRoughness(float cosTheta, float3 F0, float roughness)
-			 {
-			 return F0 + (max(float3(1 ,1, 1) * (1 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
-			}
-
-            float3 FresnelLerp (half3 F0, half3 F90, half cosA)
-			{
-			    half t = Pow4 (1 - cosA);   // FAST WAY
-			    return lerp (F0, F90, t);
-			}
-
-            half3 CalculatePBRResult(float3 nDir, float3 lDir, float3 vDir, half3 MainTex, half3 lightCol, float smoothness, float metallic, float shadow)
+            struct vertexInput
             {
-				float3 hDir = normalize(vDir+lDir);
+                float4 vertex : POSITION;
+                float3 normal : NORMAL;
+                float3 color : COLOR;
+            };
 
-				float nDotl = max(saturate(dot(nDir,lDir)),0.000001);
-				float nDotv = max(saturate(dot(nDir,vDir)),0.000001);
-				float hDotv = max(saturate(dot(vDir,hDir)),0.000001);
-				float hDotl = max(saturate(dot(lDir,hDir)),0.000001);
-				float nDoth = max(saturate(dot(nDir,hDir)),0.000001);
-            	
-				//粗糙度一家
-				float perceptualRoughness = 1 - smoothness;//粗糙度
-				float roughness = perceptualRoughness * perceptualRoughness;//粗糙度二次方
-				float squareRoughness = roughness * roughness;//粗糙度四次方
+            struct vertexOutput
+            {
+                float4 pos : SV_POSITION;
+                float3 nDirWS : TEXCOORD1;
+            };
 
-				//直接光镜面反射部分
+            vertexOutput vert (vertexInput v)
+            {
+                vertexOutput o;
+                o.pos = TransformObjectToHClip(v.vertex.xyz+v.color* _OutlineWidth * 0.1);
+                o.nDirWS = TransformObjectToWorldNormal(v.color);
+                float3 positionWS = TransformObjectToWorld(v.vertex.xyz);
+                return o;
+            }
 
-				//法线分布函数NDF
-				float lerpSquareRoughness = pow(lerp(0.002,1,roughness),2);
-				//Unity把roughness lerp到了0.002,
-				//目的是保证在smoothness为0表面完全光滑时也会留有一点点高光
-
-				float D = lerpSquareRoughness / (pow((pow(dot(nDir,hDir),2)*(lerpSquareRoughness-1)+1),2)*PI);
-
-				//几何(遮蔽)函数
-				float kInDirectLight = pow(roughness+1,2)/8;
-				float kInIBL = pow(roughness,2)/2;//IBL：间接光照
-				float Gleft = nDotl / lerp(nDotl,1,kInDirectLight);
-				float Gright = nDotv / lerp(nDotv,1,kInIBL);
-				float G = Gleft*Gright;
-
-				float3 Albedo = MainTex;
-            	
-				//菲涅尔方程
-				float3 F0 = lerp(kDielectricSpec.rgb, Albedo, metallic);//使用Unity内置函数计算平面基础反射率
-				float3 F = F0 + (1 - F0) *pow((1-hDotv),5);
-
-
-				 float3 SpecularResult = (D*G*F)/(4*nDotv*nDotl);
-
-				//因为之前少给漫反射除了一个PI，为保证漫反射和镜面反射比例所以多乘一个PI
-				float3 specColor = SpecularResult * lightCol * nDotl * PI;
-				 
-				//直接光漫反射部分
-				//漫反射系数
-				float kd = (1-F)*(1-metallic);
-
-				float3 diffColor = kd*Albedo*lightCol*nDotl;//此处为了达到和Unity相近的渲染效果也不去除这个PI
-
-				 float3 DirectLightResult = diffColor + specColor;
-
-				//间接光漫反射
-				half3 ambient_contrib = SampleSH(nDir);//反射探针接收
-
-				float3 ambient = 0.03 * Albedo;
-
-				float3 iblDiffuse = max(half3(0, 0, 0), ambient.rgb + ambient_contrib);
-				float3 Flast = fresnelSchlickRoughness(max(nDotv, 0.0), F0, roughness);
-				 float kdLast = (1 - Flast) * (1 - metallic);
-
-				float3 iblDiffuseResult = iblDiffuse * kdLast * Albedo;
-
-				//间接光镜面反射
-				float mip_roughness = perceptualRoughness * (1.7 - 0.7 * perceptualRoughness);
-				float3 reflectVec = reflect(-vDir, nDir);
-
-				half mip = mip_roughness * UNITY_SPECCUBE_LOD_STEPS;
-				half4 rgbm =  SAMPLE_TEXTURECUBE_LOD(unity_SpecCube0,samplerunity_SpecCube0, reflectVec, mip);
-
-				float3 iblSpecular = DecodeHDREnvironment(rgbm, unity_SpecCube0_HDR);
-
-				float surfaceReduction = 1.0 / (roughness*roughness + 1.0); //Liner空间
-				//float surfaceReduction = 1.0 - 0.28*roughness*perceptualRoughness; //Gamma空间
-
-				float oneMinusReflectivity = 1 - max(max(SpecularResult.r, SpecularResult.g), SpecularResult.b);
-				float grazingTerm = saturate(smoothness + (1 - oneMinusReflectivity));
-				float4 IndirectResult = float4(iblDiffuse * kdLast * Albedo + iblSpecular * surfaceReduction * FresnelLerp(F0, grazingTerm, nDotv), 1);
-            	
-            	float3 result_RBR = DirectLightResult*shadow + IndirectResult*lightCol;
-
-            	return  result_RBR;
+            half4 frag (vertexOutput i) : SV_TARGET
+            {
+                return _OutlineColor;
             }
             
-            struct vertexInput
+            ENDHLSL
+        }
+        
+        Pass
+        {
+	        Name "PixelizeMask"
+
+        	Tags{"LightMode" = "PixelizeMask"}
+	        
+            HLSLPROGRAM
+            
+            #pragma vertex vert_PixelizeMask
+            #pragma fragment frag_PixelizeMask
+
+            #pragma shader_feature IS_ORTH_CAM
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+
+            //Remap
+            float remap(float original_value, float original_min, float original_max, float new_min, float new_max)
+             {
+               return new_min + (((original_value - original_min) / (original_max - original_min)) * (new_max - new_min));
+             }
+
+             struct vertexInput
             {
                 float4 vertex : POSITION;
                 float3 normal : NORMAL;
@@ -166,153 +305,38 @@ Shader "URP/PixelizeObject"
             	float4 screenPos : TEXCOORD3;
             };
 
-            vertexOutput vert (vertexInput v)
-            {
-                vertexOutput o;
-            	float4 posCS = TransformObjectToHClip(v.vertex.xyz);
-            	o.screenPos = ComputeScreenPos(posCS);
-                o.pos = posCS;
-                o.nDirOS = v.normal;
-                o.uv = v.uv*_MainTex_ST.xy+_MainTex_ST.zw;
-                o.posOS = v.vertex.xyz;
-                return o;
-            }
-
-             half4 frag (vertexOutput i) : SV_TARGET
-            {
-
-            	float3 posWS = TransformObjectToWorld(i.posOS);
-                float4 shadowCoord = TransformWorldToShadowCoord(posWS);
-            	
-            	
-                Light mainLight = GetMainLight(shadowCoord);
-                half3 mainLightColor = mainLight.color;
-            	float3 mainLightDir = mainLight.direction;
-            	float mainLightShadow = MainLightRealtimeShadow(shadowCoord);
-
-            	float3 nDir = TransformObjectToWorldNormal(i.nDirOS);//空间转换在像素着色器完成效果会更好，不会出现顶点网格，但性能消耗增大
-            	float3 vDir = normalize(_WorldSpaceCameraPos.xyz - posWS.xyz);
-            	
-            	half4 albedo = SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,i.uv)*_BaseColor;
-
-            	float metallic = _Metallic;
-            	float smothness = _Smoothness-0.01;
-
-            	float3 mainLightRadiance = mainLight.color * mainLight.distanceAttenuation;
-            	half3 mainColor = CalculatePBRResult(nDir,mainLightDir,vDir,albedo.rgb,mainLightRadiance,smothness,metallic,mainLightShadow);
-
-            	uint lightCount = GetAdditionalLightsCount();
-            	half3 additionalColor = half3(0,0,0);
-				for (uint lightIndex = 0; lightIndex < lightCount; lightIndex++)
-				{
-				    Light additionalLight = GetAdditionalLight(lightIndex, posWS, 1);
-					half3 additionalLightColor = additionalLight.color;
-					float3 additionalLightDir = additionalLight.direction;
-					// 光照衰减和阴影系数
-                    float3 additionalLightRadiance = additionalLight.color * additionalLight.distanceAttenuation;
-				    additionalColor += CalculatePBRResult(nDir,additionalLightDir,vDir,albedo.rgb,additionalLightRadiance,smothness,metallic,additionalLight.shadowAttenuation);
-				}
-
-            	half3 FinalRGB = mainColor+additionalColor;
-            	half4 result = half4(FinalRGB,1.0);
-            	
-                return result;
-            }
+            TEXTURE2D(_PixelizeObjectMask);
+            SAMPLER(sampler_PixelizeMask);
+            half4 _OutlineColor;
+            float _OutlineWidth;
+            int _ID;
             
-        ENDHLSL
-         
-		//解决深度引动模式Depth Priming Mode问题
-        UsePass "Universal Render Pipeline/Unlit/DepthOnly"
-        UsePass "Universal Render Pipeline/Lit/DepthNormals"
-        
-         pass
-        {
-        	Tags { "LightMode" = "UniversalForward" }
-        	Cull Back
-        	ZWrite On
-        	
-            HLSLPROGRAM
-            
-            #pragma vertex vert
-            #pragma fragment frag
-            
-            ENDHLSL
-        }
-
-		//Outline
-        pass
-        {
-            Name "Outline"
-            Tags { "LightMode" = "SRPDefaultUnlit" }
-            Cull Front
-            HLSLPROGRAM
-
-            #pragma vertex vert_outline
-            #pragma fragment frag_outline
-            
-            
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
-            
-            
-            vertexOutput vert_outline (vertexInput v)
-            {
-                vertexOutput o;
-                o.pos = TransformObjectToHClip(v.vertex.xyz+v.color* _OutlineWidth * 0.1);
-                //float3 positionWS = TransformObjectToWorld(v.vertex.xyz);
-                return o;
-            }
-
-            half4 frag_outline (vertexOutput i) : SV_TARGET
-            {
-                return _OutlineColor;
-            }
-            
-            ENDHLSL
-        }
-
-		pass
-        {
-	        Name "PixelizeMask"
-
-        	Tags{"LightMode" = "PixelizeMask"}
-	        
-        	ZWrite On
-        	ZTest LEqual
-            HLSLPROGRAM
-            
-            #pragma vertex vert_PixelizeMask
-            #pragma fragment frag_PixelizeMask
-
-            #pragma shader_feature IS_ORTH_CAM
-
-            //Remap
-            float remap(float original_value, float original_min, float original_max, float new_min, float new_max)
-             {
-               return new_min + (((original_value - original_min) / (original_max - original_min)) * (new_max - new_min));
-             }
-            
-
              vertexOutput vert_PixelizeMask (vertexInput v)
             {
                 vertexOutput o;
-            	v.vertex.xyz = v.vertex.xyz+v.color* _OutlineWidth * 0.1;
+            	v.vertex.xyz = v.vertex.xyz+v.color* _OutlineWidth * 0.1;;
             	float4 posCS = TransformObjectToHClip(v.vertex.xyz);
             	o.screenPos = ComputeScreenPos(posCS);
                 o.pos = posCS;
-                o.nDirOS = v.normal;
-                o.uv = v.uv*_MainTex_ST.xy+_MainTex_ST.zw;
+                o.nDirOS = v.color;
+                o.uv = v.uv;
                 o.posOS = v.vertex.xyz;
                 return o;
             }
 
-            half4 frag_PixelizeMask (vertexOutput i) : SV_TARGET
+            float4 frag_PixelizeMask (vertexOutput i) : SV_TARGET
             {
-            	float3 nDir = TransformObjectToWorldNormal(i.nDirOS).xyz;
-            	float3 nDirVS = mul(UNITY_MATRIX_V, float4(nDir, 0.0)).xyz;
+            	float2 screenPos = i.screenPos.xy/i.screenPos.w;
+            	
+            	float3 nDirWS = TransformObjectToWorldNormal(i.nDirOS).xyz;
+            	float3 nDirVS = mul(UNITY_MATRIX_V, float4(nDirWS, 0.0)).xyz;
             	float3 posWS = TransformObjectToWorld(i.posOS).xyz;
-	            float isOrtho = UNITY_MATRIX_P[3][3];
+            	float3 vDirWS = GetWorldSpaceNormalizeViewDir(posWS);
+            	
+            	float nDotv = dot(nDirWS,vDirWS);
+
+            	float fresnel =saturate(1-max(0,nDotv));
+            	
             	float rawDepth;
             	
             	#ifdef IS_ORTH_CAM
@@ -324,12 +348,119 @@ Shader "URP/PixelizeObject"
             		rawDepth = (rcp(linearEyeDepth)-_ZBufferParams.w)/_ZBufferParams.z;
             	#endif
 
-            	return half4(rawDepth,1,_SobelValue,0);
+            	float downSampleValue = pow(2,3);
+            	float2 size = floor(_ScreenParams.xy/downSampleValue);
+            	//float3 originPoint = TransformObjectToWorld(float3(0,0,0));
+            	float3 originPoint = float3(0,0,0);
+                float4 worldOriginToScreenPos1= ComputeScreenPos(TransformWorldToHClip(originPoint));
+                float2 worldOriginToScreenPos2= worldOriginToScreenPos1.xy/worldOriginToScreenPos1.w;
+                float2 realSampleUV = (floor((screenPos-worldOriginToScreenPos2)*size)+0.5)/size+worldOriginToScreenPos2;
+            	
+            	float id = _ID;
+            	id = id/255.0;
+            	//return half4(rawDepth,_InlineWidth,0,id);
+            	return float4(rawDepth,realSampleUV,id);
             }
             
             ENDHLSL
         }
 
+		Pass
+        {
+	        Name "PixelizePass"
 
+        	Tags{"LightMode" = "PixelizePass"}
+	        
+            HLSLPROGRAM
+            
+            #pragma vertex vert_Pixelize
+            #pragma fragment frag_Pixelize
+
+            #pragma shader_feature IS_ORTH_CAM
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+
+            //Remap
+            float remap(float original_value, float original_min, float original_max, float new_min, float new_max)
+             {
+               return new_min + (((original_value - original_min) / (original_max - original_min)) * (new_max - new_min));
+             }
+
+             struct vertexInput
+            {
+                float4 vertex : POSITION;
+                float3 normal : NORMAL;
+            	float3 color : COLOR;
+                float2 uv : TEXCOORD0;
+            };
+
+            struct vertexOutput
+            {
+                float4 pos : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                float3 nDirOS : TEXCOORD1;
+                float3 posOS : TEXCOORD2;
+            	float4 screenPos : TEXCOORD3;
+            };
+
+            TEXTURE2D(_PixelizeMask);
+            SAMPLER(sampler_PixelizeMask);
+            TEXTURE2D(_CameraOpaqueTexture);
+            SAMPLER(sampler_CameraOpaqueTexture);
+            half4 _OutlineColor;
+            float _OutlineWidth;
+            int _ID;
+            
+             vertexOutput vert_Pixelize (vertexInput v)
+            {
+                vertexOutput o;
+            	v.vertex.xyz = v.vertex.xyz+v.color* _OutlineWidth * 0.1;;
+            	float4 posCS = TransformObjectToHClip(v.vertex.xyz);
+            	o.screenPos = ComputeScreenPos(posCS);
+                o.pos = posCS;
+                o.nDirOS = v.color;
+                o.uv = v.uv;
+                o.posOS = v.vertex.xyz;
+                return o;
+            }
+
+            half4 frag_Pixelize (vertexOutput i) : SV_TARGET
+            {
+            	float2 screenPos = i.screenPos.xy/i.screenPos.w;
+            	
+            	float3 nDirWS = TransformObjectToWorldNormal(i.nDirOS).xyz;
+            	float3 nDirVS = mul(UNITY_MATRIX_V, float4(nDirWS, 0.0)).xyz;
+            	float3 posWS = TransformObjectToWorld(i.posOS).xyz;
+            	float3 vDirWS = GetWorldSpaceNormalizeViewDir(posWS);
+
+            	float downSampleValue = pow(2,3);
+            	float2 size = floor(_ScreenParams.xy/downSampleValue);
+                //float3 originPoint = float3(0,0,0);
+            	float3 originPoint = TransformObjectToWorld(float3(0,0,0));
+                float4 worldOriginToScreenPos1= ComputeScreenPos(TransformWorldToHClip(originPoint));
+                float2 worldOriginToScreenPos2= worldOriginToScreenPos1.xy/worldOriginToScreenPos1.w;
+                float2 realSampleUV = (floor((screenPos-worldOriginToScreenPos2)*size)+0.5)/size+worldOriginToScreenPos2;
+                half3 samplePixelizeColorRGB = SAMPLE_TEXTURE2D(_CameraOpaqueTexture, sampler_PointClamp, realSampleUV);
+            	float4 pixelizeMask = SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,screenPos);
+            	float reverseClearObjectMask = pixelizeMask.g;
+            	float inlineMask = SAMPLE_TEXTURE2D(_PixelizeMask,sampler_PointClamp,realSampleUV).r;
+            	half3 grabTex = SAMPLE_TEXTURE2D(_CameraOpaqueTexture,sampler_CameraOpaqueTexture,screenPos);
+            	
+            	float nDotv = dot(nDirWS,vDirWS);
+
+            	float fresnel =saturate(1-max(0,nDotv));
+
+            	half3 finalRGB = lerp(grabTex,samplePixelizeColorRGB,reverseClearObjectMask);
+            	finalRGB = lerp(finalRGB,grabTex,inlineMask);
+            	half4 result = half4(finalRGB,1.0); 
+				return result;
+            	
+            	return half4(0,_InlineWidth,0,1);
+            }
+            
+            ENDHLSL
+        }
     }
 }
