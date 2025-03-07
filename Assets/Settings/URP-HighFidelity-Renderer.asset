@@ -93,7 +93,7 @@ MonoBehaviour:
   m_Name: GrabDepthRF
   m_EditorClassIdentifier: 
   m_Active: 0
-  m_RenderEvent: 500
+  m_RenderEvent: 600
 --- !u!114 &-1976716827555561739
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -342,7 +342,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eea18e62c3cfbd44aa2f00bc4bbe5498, type: 3}
   m_Name: OutlineRenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     renderPassEvent: 550
     outlineLayer:

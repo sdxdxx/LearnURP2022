@@ -110,8 +110,8 @@ Material:
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
-    - _DownSampleBias: 0.4
-    - _DownSampleValue: 3.55
+    - _DownSampleBias: 0.95
+    - _DownSampleValue: 2
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EnableObjectCenterPoint: 1

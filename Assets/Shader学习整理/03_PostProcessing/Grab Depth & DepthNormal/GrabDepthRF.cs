@@ -22,7 +22,8 @@ public class GrabDepthRF : ScriptableRendererFeature {
         m_ScriptablePass.Setup(renderer.cameraDepthTargetHandle);
     }
 
-    bool ShouldRender(in RenderingData data) {
+    bool ShouldRender(in RenderingData data) 
+    {
         if (data.cameraData.cameraType != CameraType.Game) {
             return false;
         }
@@ -34,17 +35,19 @@ public class GrabDepthRF : ScriptableRendererFeature {
     }
 }
 
-
-public class GrabDepthPass : ScriptableRenderPass {
+public class GrabDepthPass : ScriptableRenderPass 
+{
     ProfilingSampler m_Sampler = new("GrabDepthPass");
     RTHandle _cameraDepth;
     RTHandle _GrabDepthTex;
     Material m_Mat;
 
-    public void OnCreate() {
+    public void OnCreate() 
+    {
         m_Mat = CoreUtils.CreateEngineMaterial("Hidden/Universal Render Pipeline/CopyDepth");
     }
-    public void Setup(RTHandle cameraDepth) {
+    public void Setup(RTHandle cameraDepth) 
+    {
         _cameraDepth = cameraDepth;
     }
     public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData) 

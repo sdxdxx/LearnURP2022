@@ -167,7 +167,6 @@ public class PixelizeFeature : ScriptableRendererFeature
             testRTHandle?.Release();
         }
     }
-
     //-------------------------------------------------------------------------------------------------------
     private CustomRenderPass m_ScriptablePass;
     public Settings settings = new Settings();
