@@ -197,7 +197,7 @@ public class PixelizeObject : ScriptableRendererFeature
         {
             filtering = new FilteringSettings(RenderQueueRange.all, settings.layerMask);//设置过滤器
             shaderTagsList.Add(new ShaderTagId("PixelizeObjectMaskPass"));
-            renderPassEvent = pixelizeObjectRenderPassEvent;
+            renderPassEvent = pixelizeObjectClearCartoonRenderPassEvent;
         }
 
         public void GetTempRT(ref RTHandle temp, in RenderingData data)
@@ -362,7 +362,7 @@ public class PixelizeObject : ScriptableRendererFeature
         //自定义Pass的构造函数(用于传参)
         public PixelizeObjectGrabPass()
         {
-            renderPassEvent = pixelizeObjectRenderPassEvent;
+            renderPassEvent = pixelizeObjectClearCartoonRenderPassEvent;
         }
 
         public void GetTempRT(ref RTHandle temp, in RenderingData data)
@@ -480,6 +480,15 @@ public class PixelizeObject : ScriptableRendererFeature
                 return;
             }
             
+            if (Camera.main.orthographic)
+            {
+                Shader.EnableKeyword("IS_ORTH_CAM");
+            }
+            else
+            {
+                Shader.DisableKeyword("IS_ORTH_CAM");
+            }
+            
             CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);//获得一个为ProfilerTag的CommandBuffer
             
             //性能分析器(自带隐式垃圾回收),之后可以在FrameDebugger中查看
@@ -511,9 +520,9 @@ public class PixelizeObject : ScriptableRendererFeature
     }
     
     //-------------------------------------------------------------------------------------------------------
-    private PixelizeObjectDepthPass pixelizeObjectDepthPass;
     private ClearBackGroundObjectGrabPass clearBackGroundObjectGrabPass;
     private PixelizeObjectCartoonPass pixelizeObjectCartoonPass;
+    private PixelizeObjectDepthPass pixelizeObjectDepthPass;
     private PixelizeObjectGrabPass pixelizeObjectGrabPass;
     private PixelizeObjectMaskPass pixelizeObjectMaskPass;
     private PixelizeObjectPass pixelizeObjectPass;

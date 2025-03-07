@@ -36,6 +36,7 @@ Shader "URP/PostProcessing/Pixelize"
             //----------贴图声明开始-----------
             TEXTURE2D(_PixelizeObjectMask);
             TEXTURE2D(_CameraDepthTexture);
+            TEXTURE2D(_DepthTexForPixelizeObject);
             TEXTURE2D(_SobelTex);
             //----------贴图声明结束-----------
             
