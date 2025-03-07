@@ -45,6 +45,7 @@ Shader "URP/Cartoon/PixelizeObject"
         {
             "RenderType" = "Opaque"
             "RenderPipeline" = "UniversalPipeline"
+        	"Queue" = "AlphaTest"
         }
          
          HLSLINCLUDE
@@ -83,9 +84,11 @@ Shader "URP/Cartoon/PixelizeObject"
         UsePass "Universal Render Pipeline/Unlit/DepthOnly"
         UsePass "Universal Render Pipeline/Unlit/DepthNormalsOnly"
         
-         pass
+        //Cartoon Rendering
+        Pass
         {
             Tags { "LightMode" = "UniversalForward" }
+            
             
             Stencil
             {
@@ -93,6 +96,7 @@ Shader "URP/Cartoon/PixelizeObject"
                 Comp Always
                 Pass Replace
             }
+            
             Cull Back
             
             ZWrite On
@@ -213,16 +217,18 @@ Shader "URP/Cartoon/PixelizeObject"
         }
 
         //Outline
-        pass
+        Pass
         {
             Name "Outline"
             Tags { "LightMode" = "SRPDefaultUnlit" }
+            
             
            Stencil
             {
                 Ref [_ID]
                 Comp NotEqual
             }
+            
             ZWrite On
             Cull Front
             
@@ -271,6 +277,7 @@ Shader "URP/Cartoon/PixelizeObject"
             ENDHLSL
         }
         
+       //PixelizeMask
         Pass
         {
 	        Name "PixelizeMask"
@@ -309,7 +316,6 @@ Shader "URP/Cartoon/PixelizeObject"
                 float3 nDirOS : TEXCOORD1;
                 float3 posOS : TEXCOORD2;
             	float4 screenPos : TEXCOORD3;
-            	float3 realPosOS : TEXCOORD4;
             };
 
             TEXTURE2D(_PixelizeObjectMask);
@@ -328,58 +334,39 @@ Shader "URP/Cartoon/PixelizeObject"
                 o.nDirOS = v.color;
                 o.uv = v.uv;
                 o.posOS = v.vertex.xyz;
-             	o.realPosOS  = v.vertex.xyz + v.color* _DownSampleBias * 0.1;
                 return o;
             }
 
             float4 frag_PixelizeMask (vertexOutput i) : SV_TARGET
             {
             	float2 screenPos = i.screenPos.xy/i.screenPos.w;
-            	
-            	//float3 nDirWS = TransformObjectToWorldNormal(i.nDirOS).xyz;
-            	//float3 nDirVS = mul(UNITY_MATRIX_V, float4(nDirWS, 0.0)).xyz;
             	float3 posWS = TransformObjectToWorld(i.posOS).xyz;
-            	float3 posWS_Expand = TransformObjectToWorld(i.realPosOS).xyz;
-            	//float3 vDirWS = GetWorldSpaceNormalizeViewDir(posWS);
-            	
             	
             	float rawDepth;
-
-            	float expandLinearEyeDepth = LinearEyeDepth(posWS_Expand,unity_MatrixV);
-            	float expandRawDepth = 1-(expandLinearEyeDepth - _ProjectionParams.y) / (_ProjectionParams.z - _ProjectionParams.y);
             	
             	#ifdef IS_ORTH_CAM
             		//float linearEyeDepth = distance(_WorldSpaceCameraPos.xyz,posWS.xyz);
             		float linearEyeDepth = LinearEyeDepth(posWS,unity_MatrixV);
-            		
             		rawDepth = 1-(linearEyeDepth - _ProjectionParams.y) / (_ProjectionParams.z - _ProjectionParams.y);
             	#else
             		float linearEyeDepth = TransformObjectToHClip(i.posOS).w;
             		rawDepth = (rcp(linearEyeDepth)-_ZBufferParams.w)/_ZBufferParams.z;
             	#endif
-
-            	float downSampleValue = pow(2,3);
-            	float2 size = floor(_ScreenParams.xy/downSampleValue);
-            	//float3 originPoint = TransformObjectToWorld(float3(0,0,0));
-            	float3 originPoint = float3(0,0,0);
-                float4 worldOriginToScreenPos1= ComputeScreenPos(TransformWorldToHClip(originPoint));
-                float2 worldOriginToScreenPos2= worldOriginToScreenPos1.xy/worldOriginToScreenPos1.w;
-                float2 realSampleUV = (floor((screenPos-worldOriginToScreenPos2)*size)+0.5)/size+worldOriginToScreenPos2;
             	
             	float id = _ID;
             	id = id/255.0;
-            	//return half4(rawDepth,_InlineWidth,0,id);
-            	return float4(rawDepth,expandRawDepth,0,id);
+            	return float4(rawDepth,0,0,id);
             }
             
             ENDHLSL
         }
 
+		//PixelizePass
 		Pass
         {
 	        Name "PixelizePass"
 
-	        ZWrite Off
+	        ZWrite On
         	Tags{"LightMode" = "PixelizePass"}
 	        
             HLSLPROGRAM
@@ -447,6 +434,11 @@ Shader "URP/Cartoon/PixelizeObject"
             half4 _OutlineColor;
             float _OutlineWidth;
             int _ID;
+
+            half3 GetGray (half3 inColor)
+            {
+	            return dot (inColor , half3 (0.299,0.587,0.114));
+            }
             
              vertexOutput vert_Pixelize (vertexInput v)
             {
@@ -461,9 +453,9 @@ Shader "URP/Cartoon/PixelizeObject"
                 return o;
             }
 
-            half4 frag_Pixelize (vertexOutput i) : SV_TARGET
+            half4 frag_Pixelize (vertexOutput input) : SV_TARGET
             {
-            	float2 screenPos = i.screenPos.xy/i.screenPos.w;
+            	float2 screenPos = input.screenPos.xy/input.screenPos.w;
             	
             	float downSampleValue = pow(2,_DownSampleValue);
             	float2 size = floor(_ScreenParams.xy/downSampleValue);
@@ -475,23 +467,48 @@ Shader "URP/Cartoon/PixelizeObject"
 
             	float4 pixelizeObjectParam = SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp,screenPos);
             	float4 realPixelizeObjectParam = SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp,realSampleUV);
+            	float rawMask = step(pixelizeObjectParam.a,1-0.0000001);
             	float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, screenPos).r;
             	float realRawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, realSampleUV).r;
             	float maskRawDepth = pixelizeObjectParam.r;
                 float realMaskRawDepth = realPixelizeObjectParam.r;
             	float clearObjectMask_Reverse = CalculateClearObjectMaskReverse(rawDepth,realMaskRawDepth);
             	float realClearObjectMask_Reverse = CalculateClearObjectMaskReverse(realRawDepth,maskRawDepth);
-            	//return realClearObjectMask_Reverse;
-
-            	float tempClearObjectMask_Reverse = CalculateClearObjectMaskReverse(rawDepth,realMaskRawDepth);
-                half3 samplePixelizeColorRGB = SAMPLE_TEXTURE2D(_CameraOpaqueTexture, sampler_PointClamp, realSampleUV);
             	
-            	half3 grabTex = SAMPLE_TEXTURE2D(_CameraOpaqueTexture,sampler_CameraOpaqueTexture,screenPos);
+            	if ( realClearObjectMask_Reverse<0.5)
+            	{
+            		float2 sampleUVPerBias = downSampleValue/_ScreenParams;
 
-            	//float4 pixelizeObjectParam = SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp,screenPos);
-            	//return step(pixelizeObjectParam.a,1-0.0000001);
+            		float2 bias[4] = {float2(0,1),float2(1,0),float2(0,-1),float2(-1,0)};
+            		
+            		UNITY_LOOP
+            		for (int i = 0; i<4; i++)
+            		{
+            			float2 realSampleUVBias = realSampleUV + bias[i]*sampleUVPerBias;
+            			float4 realPixelizeObjectParam_Bias = SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp,realSampleUVBias);
+            			float realRawDepth_Bias = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, realSampleUVBias).r;
+            			float realMaskRawDepth_Bias = realPixelizeObjectParam_Bias.r;
+            			float realClearObjectMask_Reverse_Bias = CalculateClearObjectMaskReverse(realRawDepth_Bias,realMaskRawDepth_Bias);
+            			
+			            if (realClearObjectMask_Reverse_Bias)
+			            {
+			            	realSampleUV = realSampleUVBias;
+			            	break;
+			            }
+            		}
+            	}
+
+            	half3 samplePixelizeColorRGB = SAMPLE_TEXTURE2D(_CameraOpaqueTexture, sampler_PointClamp, realSampleUV);
+            	
+            	half3 grabTex = SAMPLE_TEXTURE2D(_CameraOpaqueTexture,sampler_CameraOpaqueTexture,screenPos);//像素化之前所有物体（包括背景）的图
+            	
+            	//TODO: 利用这个遮罩在绘制像素物体之前抓取一个背景图，将遮罩白色的部分替换成背景图
+            	float clearObjectBackGroundMask =  rawMask-clearObjectMask_Reverse*rawMask;
+
+            	
             	
             	half3 finalRGB = lerp(grabTex,samplePixelizeColorRGB,clearObjectMask_Reverse);
+            	
             	half4 result = half4(finalRGB,1.0); 
 				return result;
             }

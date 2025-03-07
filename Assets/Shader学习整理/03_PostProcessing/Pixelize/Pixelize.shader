@@ -101,20 +101,20 @@ Shader "URP/PostProcessing/Pixelize"
                 return clearObjectMask_Reverse;
             }
 
-            float CalculateMaskSobelEdge(float2 screenPos, float size)
+            float CalculateSobelEdge(float2 screenPos, float size)
             {
                 float3 lum = float3(0.2125,0.7154,0.0721);//转化为luminance亮度值
 			    //获取当前点的周围的点
 			    //并与luminance点积，求出亮度值（黑白图）
-			    float mc00 = dot(SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp, screenPos-float2(1,1)/size).aaa, lum);
-			    float mc10 = dot(SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp, screenPos-float2(0,1)/size).aaa, lum);
-			    float mc20 = dot(SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp, screenPos-float2(-1,1)/size).aaa, lum);
-			    float mc01 = dot(SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp, screenPos-float2(1,0)/size).aaa, lum);
-			    float mc11mc = dot(SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp, screenPos).aaa, lum);
-			    float mc21 = dot(SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp, screenPos-float2(-1,0)/size).aaa, lum);
-			    float mc02 = dot(SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp, screenPos-float2(1,-1)/size).aaa, lum);
-			    float mc12 = dot(SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp, screenPos-float2(0,-1)/size).aaa, lum);
-			    float mc22 = dot(SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp, screenPos-float2(-1,-1)/size).aaa, lum);
+			    float mc00 = dot(SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp, screenPos-float2(1,1)/size).rgb, lum);
+			    float mc10 = dot(SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp, screenPos-float2(0,1)/size).rgb, lum);
+			    float mc20 = dot(SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp, screenPos-float2(-1,1)/size).rgb, lum);
+			    float mc01 = dot(SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp, screenPos-float2(1,0)/size).rgb, lum);
+			    float mc11mc = dot(SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp, screenPos).rgb, lum);
+			    float mc21 = dot(SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp, screenPos-float2(-1,0)/size).rgb, lum);
+			    float mc02 = dot(SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp, screenPos-float2(1,-1)/size).rgb, lum);
+			    float mc12 = dot(SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp, screenPos-float2(0,-1)/size).rgb, lum);
+			    float mc22 = dot(SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp, screenPos-float2(-1,-1)/size).rgb, lum);
 			    //根据过滤器矩阵求出GX水平和GY垂直的灰度值
 			    float GX = -1 * mc00 + mc20 + -2 * mc01 + 2 * mc21 - mc02 + mc22;
 			    float GY = mc00 + 2 * mc10 + mc20 - mc02 - 2 * mc12 - mc22;
@@ -127,14 +127,6 @@ Shader "URP/PostProcessing/Pixelize"
 			    c = length(float2(GX,GY));//length的内部算法就是灰度公式的算法，欧几里得长度
                 return c;
             }
-
-            static half dither[16] =
-            {
-                0.0, 0.5, 0.125, 0.625,
-                0.75, 0.25, 0.875, 0.375,
-                0.187, 0.687, 0.0625, 0.562,
-                0.937, 0.437, 0.812, 0.312
-            };
             
             half4 frag (Varyings input) : SV_TARGET
             {
@@ -148,7 +140,6 @@ Shader "URP/PostProcessing/Pixelize"
                 //计算当前像素深度值和遮罩
                 float4 pixelizeObjectParam = SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp,screenPos);
             	float rawMask = step(pixelizeObjectParam.a,1-0.0000001);
-                float sobel = CalculateMaskSobelEdge(screenPos,lerp(2000,500,_InlineWidth))*rawMask;
             	
                 float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, screenPos).r;
                 float maskRawDepth = pixelizeObjectParam.r;
@@ -157,10 +148,6 @@ Shader "URP/PostProcessing/Pixelize"
                 float mask = 0;
                 float pixelRawDepth = rawDepth;
                 float pixelMaskRawDepth = maskRawDepth;
-
-                float2 ditherUV = fmod(downSamplePixelPos, 4);
-                float jitter = dither[ditherUV.x * 4 + ditherUV.y]*1.5;
-                
                 
                 float2 lastSampleUV = screenPos;
                 UNITY_LOOP
@@ -189,7 +176,6 @@ Shader "URP/PostProcessing/Pixelize"
                         }
                         pixelRawDepth = max(pixelRawDepth,SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, lastSampleUV).r);
                         pixelMaskRawDepth = max(pixelMaskRawDepth,SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp,lastSampleUV).r);
-                        sobel+=SAMPLE_TEXTURE2D(_SobelTex,sampler_PointClamp,lastSampleUV);
                         mask += 1-SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp,sampleUV).a;
                     }
                 }
@@ -197,7 +183,6 @@ Shader "URP/PostProcessing/Pixelize"
                 
                 half4 albedo =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, screenPos);
                 pixelizeColor /= downSampleValue*downSampleValue;
-                sobel /= downSampleValue*downSampleValue;
                 mask /= downSampleValue*downSampleValue;
                 
                 float realPixelDepth = max(rawDepth,pixelRawDepth);
@@ -214,7 +199,6 @@ Shader "URP/PostProcessing/Pixelize"
                     mask = rawMask;
                 }
                 
-                //float realMask = mask*pixelizeColor.a;
                 float realMask = mask*step(0.999,pixelizeColor.a);
 
                  //3D 像素空间采样（以世界坐标为原点，视角空间的三维向量作起始值的空间） https://zhuanlan.zhihu.com/p/661504887
@@ -224,7 +208,6 @@ Shader "URP/PostProcessing/Pixelize"
                 float2 realSampleUV = (floor((screenPos-worldOriginToScreenPos2)*size)+0.5)/size+worldOriginToScreenPos2;
                 half3 samplePixelizeColorRGB = SAMPLE_TEXTURE2D(_BlitTexture, sampler_PointClamp, realSampleUV);
                 samplePixelizeColorRGB = pixelizeColor.rgb*(1-_PointIntensity)+samplePixelizeColorRGB*_PointIntensity;
-                //return half4(samplePixelizeColorRGB,1.0);
                 #ifdef  ENABLE_POINT
                 pixelizeColor.rgb = samplePixelizeColorRGB;
                 #else

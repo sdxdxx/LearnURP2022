@@ -20,7 +20,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: TestCartoonPixelize
+  m_Name: TestCartoonPixelize 5
   m_Shader: {fileID: 4800000, guid: 719979a9f2723144f85ade830dd8e11d, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -109,7 +109,7 @@ Material:
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
-    - _DownSampleBias: 0.01
+    - _DownSampleBias: 0.25
     - _DownSampleValue: 3.55
     - _DstBlend: 0
     - _DstBlendAlpha: 0
@@ -117,16 +117,16 @@ Material:
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
-    - _ID: 100
+    - _ID: 121
     - _InlineWidth: 0
     - _MatCapLerp: 1
     - _Metallic: 0
     - _OcclusionStrength: 1
-    - _OutlineWidth: 0
+    - _OutlineWidth: 0.96
     - _Parallax: 0.005
     - _QueueOffset: 0
-    - _RangeDark: 0.31
-    - _RangeLight: 0.82
+    - _RangeDark: 0.173
+    - _RangeLight: 0.68
     - _RangeSpecular: 0.9
     - _ReceiveShadows: 1
     - _SmoothDark: 0.2
@@ -134,9 +134,9 @@ Material:
     - _SmoothSpecular: 0
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
-    - _SobelValue: 3
+    - _SobelValue: 0.26
     - _SpecularHighlights: 1
-    - _SpecularIntensity: 1
+    - _SpecularIntensity: 0
     - _SpecularPow: 50
     - _SrcBlend: 1
     - _SrcBlendAlpha: 1
@@ -144,11 +144,11 @@ Material:
     - _WorkflowMode: 1
     - _ZWrite: 1
     m_Colors:
-    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _BaseColor: {r: 0.49411768, g: 0.13725491, b: 0.9568628, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _DarkColor: {r: 0, g: 0, b: 0, a: 1}
+    - _DarkColor: {r: 0.5031446, g: 0.5031446, b: 0.5031446, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _GreyColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+    - _GreyColor: {r: 0.7411765, g: 0.7411765, b: 0.7411765, a: 1}
     - _LightColor: {r: 1, g: 1, b: 1, a: 1}
     - _OutlineColor: {r: 0, g: 0, b: 0, a: 0}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
