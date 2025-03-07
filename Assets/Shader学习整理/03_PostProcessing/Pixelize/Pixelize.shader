@@ -23,7 +23,6 @@ Shader "URP/PostProcessing/Pixelize"
 
             #pragma vertex Vert
             #pragma fragment frag
-            #define DOWN_SAMPLE_VALUE 0
 
             #pragma shader_feature IS_ORTH_CAM
             #pragma shader_feature ENABLE_POINT

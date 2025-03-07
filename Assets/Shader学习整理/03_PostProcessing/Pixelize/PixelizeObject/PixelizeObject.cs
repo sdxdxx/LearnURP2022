@@ -11,8 +11,173 @@ public class PixelizeObject : ScriptableRendererFeature
     {
         public LayerMask layerMask;
     }
+     private static readonly RenderPassEvent pixelizeObjectClearCartoonRenderPassEvent = RenderPassEvent.AfterRenderingTransparents;
+     private static readonly RenderPassEvent pixelizeObjectRenderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
+     private static readonly RenderPassEvent clearObjectRenderPassEvent = RenderPassEvent.AfterRenderingTransparents;
      
-     //自定义的Pass
+     //ClearObjectGrabPass
+    class ClearBackGroundObjectGrabPass : ScriptableRenderPass
+    {
+        private RenderingData renderingData;
+        
+        //定义一个 ProfilingSampler 方便设置在FrameDebugger里查看
+        private const string ProfilerTag = "ClearBackGroundObjectGrabPass";
+        private ProfilingSampler m_ProfilingSampler = new("ClearBackGroundObjectGrabPass");
+        
+        private RTHandle cameraColorRTHandle;
+        private RTHandle depthTarget;
+        
+        private RTHandle tempRTHandle;
+
+        //自定义Pass的构造函数(用于传参)
+        public ClearBackGroundObjectGrabPass()
+        {
+            renderPassEvent = clearObjectRenderPassEvent;
+        }
+
+        public void GetTempRT(ref RTHandle temp, in RenderingData data)
+        {
+            RenderTextureDescriptor desc = data.cameraData.cameraTargetDescriptor;
+            
+            desc.depthBufferBits = 0; //这步很重要！！！
+
+            RenderingUtils.ReAllocateIfNeeded(ref temp, desc);//使用该函数申请一张与相机大小一致的TempRT;
+        }
+
+        public void Setup(RTHandle cameraColor, RenderingData data)
+        {
+            cameraColorRTHandle = cameraColor;
+            renderingData = data;
+        }
+        
+        //此方法由渲染器在渲染相机之前调用
+        public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
+        {
+            depthTarget = renderingData.cameraData.renderer.cameraDepthTargetHandle;
+            GetTempRT(ref tempRTHandle,renderingData);
+            ConfigureInput(ScriptableRenderPassInput.Color); //确认传入的参数类型为Color
+            ConfigureTarget(tempRTHandle);
+        }
+        
+        //执行传递。这是自定义渲染发生的地方
+        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
+        {
+            if (this.renderingData.cameraData.cameraType != CameraType.Game)
+            {
+                return;
+            }
+            
+            CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);//获得一个为ProfilerTag的CommandBuffer
+            
+            //性能分析器(自带隐式垃圾回收),之后可以在FrameDebugger中查看
+            using (new ProfilingScope(cmd, m_ProfilingSampler))
+            {
+                //确保执行前清空
+                context.ExecuteCommandBuffer(cmd);
+                cmd.Clear();
+                
+                Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle);
+                cmd.SetGlobalTexture("_GrabTexForClearObject",tempRTHandle);
+            }
+            
+            context.ExecuteCommandBuffer(cmd);//执行CommandBuffer
+            cmd.Clear();
+            CommandBufferPool.Release(cmd);//释放CommandBuffer
+        }
+        
+        //在完成渲染相机时调用
+        public override void OnCameraCleanup(CommandBuffer cmd)
+        {
+            
+        }
+        
+        public void OnDispose() 
+        {
+            tempRTHandle?.Release();
+        }
+    }
+    
+    //PixelizeObjectCartoonPass
+    class PixelizeObjectCartoonPass : ScriptableRenderPass
+    {
+        private RenderingData renderingData;
+        FilteringSettings filtering;
+        private List<ShaderTagId> shaderTagsList = new List<ShaderTagId>();
+        
+        //定义一个 ProfilingSampler 方便设置在FrameDebugger里查看
+        private const string ProfilerTag = "PixelizeObjectCartoonPass";
+        private ProfilingSampler m_ProfilingSampler = new("PixelizeObjectCartoonPass");
+        
+
+        private RTHandle cameraColorRTHandle;
+        private RTHandle depthTarget;
+
+        //自定义Pass的构造函数(用于传参)
+        public PixelizeObjectCartoonPass(Settings settings)
+        {
+            filtering = new FilteringSettings(RenderQueueRange.all);//设置过滤器
+            shaderTagsList.Add(new ShaderTagId("PixelizeObjectCartoonPass"));
+            shaderTagsList.Add(new ShaderTagId("PixelizeObjectOutlinePass"));
+            renderPassEvent = pixelizeObjectClearCartoonRenderPassEvent;
+        }
+
+        public void GetTempRT(ref RTHandle temp, in RenderingData data)
+        {
+            RenderTextureDescriptor desc = data.cameraData.cameraTargetDescriptor;
+            
+            desc.depthBufferBits = 0; //这步很重要！！！
+
+            RenderingUtils.ReAllocateIfNeeded(ref temp, desc);//使用该函数申请一张与相机大小一致的TempRT;
+        }
+
+        public void Setup(RTHandle cameraColor, RenderingData data)
+        {
+            cameraColorRTHandle = cameraColor;
+            renderingData = data;
+        }
+        
+        //此方法由渲染器在渲染相机之前调用
+        public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
+        {
+            depthTarget = renderingData.cameraData.renderer.cameraDepthTargetHandle;
+            ConfigureInput(ScriptableRenderPassInput.Color); //确认传入的参数类型为Color
+        }
+        
+        //执行传递。这是自定义渲染发生的地方
+        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
+        {
+            
+            CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);//获得一个为ProfilerTag的CommandBuffer
+            
+            //性能分析器(自带隐式垃圾回收),之后可以在FrameDebugger中查看
+            using (new ProfilingScope(cmd, m_ProfilingSampler))
+            {
+                // Ensure we flush our command-buffer before we render...
+                context.ExecuteCommandBuffer(cmd);
+                cmd.Clear();
+                SortingCriteria sortingCriteria = SortingCriteria.CommonOpaque;
+                var draw = CreateDrawingSettings(shaderTagsList, ref renderingData, sortingCriteria);
+                context.DrawRenderers(renderingData.cullResults, ref draw, ref filtering);
+            }
+            
+            context.ExecuteCommandBuffer(cmd);//执行CommandBuffer
+            cmd.Clear();
+            CommandBufferPool.Release(cmd);//释放CommandBuffer
+        }
+        
+        //在完成渲染相机时调用
+        public override void OnCameraCleanup(CommandBuffer cmd)
+        {
+            
+        }
+        
+        public void OnDispose() 
+        {
+            
+        }
+    }
+     
+     //PixelizeObjectMaskPass
     class PixelizeObjectMaskPass : ScriptableRenderPass
     {
         private RenderingData renderingData;
@@ -31,8 +196,8 @@ public class PixelizeObject : ScriptableRendererFeature
         public PixelizeObjectMaskPass(Settings settings)
         {
             filtering = new FilteringSettings(RenderQueueRange.all, settings.layerMask);//设置过滤器
-            shaderTagsList.Add(new ShaderTagId("PixelizeMask"));
-            renderPassEvent = RenderPassEvent.AfterRenderingSkybox;
+            shaderTagsList.Add(new ShaderTagId("PixelizeObjectMaskPass"));
+            renderPassEvent = pixelizeObjectRenderPassEvent;
         }
 
         public void GetTempRT(ref RTHandle temp, in RenderingData data)
@@ -99,7 +264,89 @@ public class PixelizeObject : ScriptableRendererFeature
         }
     }
     
-     //自定义的Pass
+    //PixelizeObjectGrabPass
+    class PixelizeObjectGrabPass : ScriptableRenderPass
+    {
+        private RenderingData renderingData;
+        
+        //定义一个 ProfilingSampler 方便设置在FrameDebugger里查看
+        private const string ProfilerTag = "PixelizeObjectGrabPass";
+        private ProfilingSampler m_ProfilingSampler = new("PixelizeObjectGrabPass");
+        
+        private RTHandle cameraColorRTHandle;
+        private RTHandle depthTarget;
+        
+        private RTHandle tempRTHandle;
+
+        //自定义Pass的构造函数(用于传参)
+        public PixelizeObjectGrabPass()
+        {
+            renderPassEvent = pixelizeObjectRenderPassEvent;
+        }
+
+        public void GetTempRT(ref RTHandle temp, in RenderingData data)
+        {
+            RenderTextureDescriptor desc = data.cameraData.cameraTargetDescriptor;
+            
+            desc.depthBufferBits = 0; //这步很重要！！！
+
+            RenderingUtils.ReAllocateIfNeeded(ref temp, desc);//使用该函数申请一张与相机大小一致的TempRT;
+        }
+
+        public void Setup(RTHandle cameraColor, RenderingData data)
+        {
+            cameraColorRTHandle = cameraColor;
+            renderingData = data;
+        }
+        
+        //此方法由渲染器在渲染相机之前调用
+        public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
+        {
+            depthTarget = renderingData.cameraData.renderer.cameraDepthTargetHandle;
+            GetTempRT(ref tempRTHandle,renderingData);
+            ConfigureInput(ScriptableRenderPassInput.Color); //确认传入的参数类型为Color
+            ConfigureTarget(tempRTHandle);
+        }
+        
+        //执行传递。这是自定义渲染发生的地方
+        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
+        {
+            if (this.renderingData.cameraData.cameraType != CameraType.Game)
+            {
+                return;
+            }
+            
+            CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);//获得一个为ProfilerTag的CommandBuffer
+            
+            //性能分析器(自带隐式垃圾回收),之后可以在FrameDebugger中查看
+            using (new ProfilingScope(cmd, m_ProfilingSampler))
+            {
+                //确保执行前清空
+                context.ExecuteCommandBuffer(cmd);
+                cmd.Clear();
+                
+                Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle);
+                cmd.SetGlobalTexture("_GrabTexForPixelizeObject",tempRTHandle);
+            }
+            
+            context.ExecuteCommandBuffer(cmd);//执行CommandBuffer
+            cmd.Clear();
+            CommandBufferPool.Release(cmd);//释放CommandBuffer
+        }
+        
+        //在完成渲染相机时调用
+        public override void OnCameraCleanup(CommandBuffer cmd)
+        {
+            
+        }
+        
+        public void OnDispose() 
+        {
+            tempRTHandle?.Release();
+        }
+    }
+    
+     //PixelizeObjectPass
     class PixelizeObjectPass : ScriptableRenderPass
     {
         private RenderingData renderingData;
@@ -109,18 +356,17 @@ public class PixelizeObject : ScriptableRendererFeature
         //定义一个 ProfilingSampler 方便设置在FrameDebugger里查看
         private const string ProfilerTag = "PixelizeObjectPass";
         private ProfilingSampler m_ProfilingSampler = new("PixelizeObjectPass");
+        
 
         private RTHandle cameraColorRTHandle;
         private RTHandle depthTarget;
-        private RTHandle tempRTHandle;
-        private RTHandle maskRTHandle;
 
         //自定义Pass的构造函数(用于传参)
         public PixelizeObjectPass(Settings settings)
         {
             filtering = new FilteringSettings(RenderQueueRange.all, settings.layerMask);//设置过滤器
-            shaderTagsList.Add(new ShaderTagId("PixelizePass"));
-            renderPassEvent = RenderPassEvent.AfterRenderingSkybox+2;
+            shaderTagsList.Add(new ShaderTagId("PixelizeObjectPass"));
+            renderPassEvent = pixelizeObjectRenderPassEvent;
         }
 
         public void GetTempRT(ref RTHandle temp, in RenderingData data)
@@ -161,7 +407,6 @@ public class PixelizeObject : ScriptableRendererFeature
                 // Ensure we flush our command-buffer before we render...
                 context.ExecuteCommandBuffer(cmd);
                 cmd.Clear();
-                
                 SortingCriteria sortingCriteria = SortingCriteria.CommonOpaque;
                 var draw = CreateDrawingSettings(shaderTagsList, ref renderingData, sortingCriteria);
                 context.DrawRenderers(renderingData.cullResults, ref draw, ref filtering);
@@ -180,12 +425,14 @@ public class PixelizeObject : ScriptableRendererFeature
         
         public void OnDispose() 
         {
-            maskRTHandle?.Release();
-            tempRTHandle?.Release();
+            
         }
     }
-
+    
     //-------------------------------------------------------------------------------------------------------
+    private ClearBackGroundObjectGrabPass clearBackGroundObjectGrabPass;
+    private PixelizeObjectCartoonPass pixelizeObjectCartoonPass;
+    private PixelizeObjectGrabPass pixelizeObjectGrabPass;
     private PixelizeObjectMaskPass pixelizeObjectMaskPass;
     private PixelizeObjectPass pixelizeObjectPass;
     public Settings settings = new Settings();
@@ -193,6 +440,9 @@ public class PixelizeObject : ScriptableRendererFeature
     //初始化时调用
     public override void Create()
     {
+        clearBackGroundObjectGrabPass = new ClearBackGroundObjectGrabPass();
+        pixelizeObjectCartoonPass = new PixelizeObjectCartoonPass(settings);
+        pixelizeObjectGrabPass = new PixelizeObjectGrabPass();
         pixelizeObjectMaskPass = new PixelizeObjectMaskPass(settings);
         pixelizeObjectPass = new PixelizeObjectPass(settings);
     }
@@ -200,6 +450,9 @@ public class PixelizeObject : ScriptableRendererFeature
     //每帧调用,将pass添加进流程
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
     {
+        renderer.EnqueuePass(clearBackGroundObjectGrabPass);
+        renderer.EnqueuePass(pixelizeObjectCartoonPass);
+        renderer.EnqueuePass(pixelizeObjectGrabPass);
         renderer.EnqueuePass(pixelizeObjectMaskPass);
         renderer.EnqueuePass(pixelizeObjectPass);
     }
@@ -207,6 +460,9 @@ public class PixelizeObject : ScriptableRendererFeature
     //每帧调用,渲染目标初始化后的回调。这允许在创建并准备好目标后从渲染器访问目标
     public override void SetupRenderPasses(ScriptableRenderer renderer, in RenderingData renderingData)
     {
+        clearBackGroundObjectGrabPass.Setup(renderer.cameraColorTargetHandle,renderingData);
+        pixelizeObjectCartoonPass.Setup(renderer.cameraColorTargetHandle,renderingData);
+        pixelizeObjectGrabPass.Setup(renderer.cameraColorTargetHandle,renderingData);
         pixelizeObjectMaskPass.Setup(renderer.cameraColorTargetHandle,renderingData);//可以理解为传入GameView_RenderTarget的句柄和相机渲染数据（相机渲染数据用于创建TempRT）
         pixelizeObjectPass.Setup(renderer.cameraColorTargetHandle,renderingData);
     }
@@ -214,6 +470,9 @@ public class PixelizeObject : ScriptableRendererFeature
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
+        clearBackGroundObjectGrabPass.OnDispose();
+        pixelizeObjectCartoonPass.OnDispose();
+        pixelizeObjectGrabPass.OnDispose();
         pixelizeObjectMaskPass.OnDispose();
         pixelizeObjectPass.OnDispose();
     }

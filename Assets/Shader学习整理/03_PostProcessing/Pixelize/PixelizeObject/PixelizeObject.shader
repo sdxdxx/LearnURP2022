@@ -30,13 +30,12 @@ Shader "URP/Cartoon/PixelizeObject"
         [Header(Outline)]
         _OutlineColor("Outline Color",Color) = (0.0,0.0,0.0,0.0)
         _OutlineWidth("Outline Width",Range(0,5)) = 1
+    	[IntRange]_ID("Mask ID", Range(0,254)) = 100
     	
     	[Header(DownSample)]
     	[IntRange]_DownSampleValue("Down Sample Value",Range(0,5)) = 0
         _DownSampleBias("Down Sample Bias",Range(0,5)) = 0
-    	[IntRange]_ID("Mask ID", Range(0,254)) = 100
-    	
-    	_InlineWidth("Inline Width Control",Range(0,1)) = 0
+    	[Toggle(_EnableObjectCenterPoint)]_EnableObjectCenterPoint("Enable Object Center Point",float) = 0.0
     }
     
     SubShader
@@ -45,7 +44,7 @@ Shader "URP/Cartoon/PixelizeObject"
         {
             "RenderType" = "Opaque"
             "RenderPipeline" = "UniversalPipeline"
-        	"Queue" = "AlphaTest"
+        	"Queue" = "Transparent+100"
         }
          
          HLSLINCLUDE
@@ -70,7 +69,7 @@ Shader "URP/Cartoon/PixelizeObject"
             half4 _SpecularColor;
             float _RangeSpecular;
             float _SmoothSpecular;
-            float _InlineWidth;
+
 			int _DownSampleValue;
 			float _DownSampleBias;
             //----------变量声明结束-----------
@@ -87,8 +86,7 @@ Shader "URP/Cartoon/PixelizeObject"
         //Cartoon Rendering
         Pass
         {
-            Tags { "LightMode" = "UniversalForward" }
-            
+            Tags { "LightMode" = "PixelizeObjectCartoonPass" }
             
             Stencil
             {
@@ -123,15 +121,12 @@ Shader "URP/Cartoon/PixelizeObject"
             
             //----------贴图声明结束-----------
             
-            
-
             //Remap
             float remap(float original_value, float original_min, float original_max, float new_min, float new_max)
              {
                return new_min + (((original_value - original_min) / (original_max - original_min)) * (new_max - new_min));
              }
             
-
             struct vertexInput
             {
                 float4 vertex : POSITION;
@@ -215,13 +210,12 @@ Shader "URP/Cartoon/PixelizeObject"
             
             ENDHLSL
         }
-
+        
         //Outline
         Pass
         {
             Name "Outline"
-            Tags { "LightMode" = "SRPDefaultUnlit" }
-            
+            Tags { "LightMode" = "PixelizeObjectOutlinePass" }
             
            Stencil
             {
@@ -277,12 +271,12 @@ Shader "URP/Cartoon/PixelizeObject"
             ENDHLSL
         }
         
-       //PixelizeMask
+       //PixelizeObjectMask
         Pass
         {
-	        Name "PixelizeMask"
+	        Name "PixelizeObjectMaskPass"
 
-        	Tags{"LightMode" = "PixelizeMask"}
+        	Tags{"LightMode" = "PixelizeObjectMaskPass"}
 	        
             HLSLPROGRAM
             
@@ -361,13 +355,13 @@ Shader "URP/Cartoon/PixelizeObject"
             ENDHLSL
         }
 
-		//PixelizePass
+		//PixelizeObjectPass
 		Pass
         {
-	        Name "PixelizePass"
+	        Name "PixelizeObjectPass"
 
 	        ZWrite On
-        	Tags{"LightMode" = "PixelizePass"}
+        	Tags{"LightMode" = "PixelizeObjectPass"}
 	        
             HLSLPROGRAM
             
@@ -375,6 +369,7 @@ Shader "URP/Cartoon/PixelizeObject"
             #pragma fragment frag_Pixelize
 
             #pragma shader_feature IS_ORTH_CAM
+            #pragma shader_feature _EnableObjectCenterPoint
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
@@ -397,11 +392,13 @@ Shader "URP/Cartoon/PixelizeObject"
                 #ifdef IS_ORTH_CAM
                     linear01Depth = 1-rawDepth;//lerp(0, _ProjectionParams.z, rawDepth);
                     mask01Depth = 1-maskRawDepth;
-                    bias = 0.009;
+             		//bias = 0.009;
+             		bias = 0;
                 #else
                     linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
                     mask01Depth = Linear01Depth(maskRawDepth,_ZBufferParams);
                     bias = 0.04;
+                    //bias = 0;
                 #endif
 
                 float clearObjectMask_Reverse = step(mask01Depth,linear01Depth+bias);
@@ -426,19 +423,12 @@ Shader "URP/Cartoon/PixelizeObject"
             	float4 screenPos : TEXCOORD3;
             };
 
-            TEXTURE2D(_PixelizeMask);
+            TEXTURE2D(_GrabTexForClearObject);
             TEXTURE2D(_PixelizeObjectMask);
-            SAMPLER(sampler_PixelizeMask);
-            TEXTURE2D(_CameraOpaqueTexture);
-            SAMPLER(sampler_CameraOpaqueTexture);
+            TEXTURE2D(_GrabTexForPixelizeObject);
             half4 _OutlineColor;
             float _OutlineWidth;
             int _ID;
-
-            half3 GetGray (half3 inColor)
-            {
-	            return dot (inColor , half3 (0.299,0.587,0.114));
-            }
             
              vertexOutput vert_Pixelize (vertexInput v)
             {
@@ -459,8 +449,12 @@ Shader "URP/Cartoon/PixelizeObject"
             	
             	float downSampleValue = pow(2,_DownSampleValue);
             	float2 size = floor(_ScreenParams.xy/downSampleValue);
-                //float3 originPoint = float3(0,0,0);
-            	float3 originPoint = TransformObjectToWorld(float3(0,0,0));
+
+            	float3 originPoint = float3(0,0,0);
+            	#ifdef _EnableObjectCenterPoint
+            		originPoint = TransformObjectToWorld(float3(0,0,0));
+            	#endif
+            	
                 float4 worldOriginToScreenPos1= ComputeScreenPos(TransformWorldToHClip(originPoint));
                 float2 worldOriginToScreenPos2= worldOriginToScreenPos1.xy/worldOriginToScreenPos1.w;
                 float2 realSampleUV = (floor((screenPos-worldOriginToScreenPos2)*size)+0.5)/size+worldOriginToScreenPos2;
@@ -468,6 +462,7 @@ Shader "URP/Cartoon/PixelizeObject"
             	float4 pixelizeObjectParam = SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp,screenPos);
             	float4 realPixelizeObjectParam = SAMPLE_TEXTURE2D(_PixelizeObjectMask,sampler_PointClamp,realSampleUV);
             	float rawMask = step(pixelizeObjectParam.a,1-0.0000001);
+            	float realRawMask = step(realPixelizeObjectParam.a,1-0.0000001);
             	float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, screenPos).r;
             	float realRawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, realSampleUV).r;
             	float maskRawDepth = pixelizeObjectParam.r;
@@ -477,7 +472,7 @@ Shader "URP/Cartoon/PixelizeObject"
             	
             	if ( realClearObjectMask_Reverse<0.5)
             	{
-            		float2 sampleUVPerBias = downSampleValue/_ScreenParams;
+            		float2 sampleUVPerBias = downSampleValue.xx/_ScreenParams.xy;
 
             		float2 bias[4] = {float2(0,1),float2(1,0),float2(0,-1),float2(-1,0)};
             		
@@ -497,17 +492,16 @@ Shader "URP/Cartoon/PixelizeObject"
 			            }
             		}
             	}
-
-            	half3 samplePixelizeColorRGB = SAMPLE_TEXTURE2D(_CameraOpaqueTexture, sampler_PointClamp, realSampleUV);
             	
-            	half3 grabTex = SAMPLE_TEXTURE2D(_CameraOpaqueTexture,sampler_CameraOpaqueTexture,screenPos);//像素化之前所有物体（包括背景）的图
+            	half3 grabTex_Background = SAMPLE_TEXTURE2D(_GrabTexForClearObject,sampler_PointClamp,screenPos);//像素化之前不包括像素化物体的背景图
+            	half3 samplePixelizeColorRGB = SAMPLE_TEXTURE2D(_GrabTexForPixelizeObject, sampler_PointClamp, realSampleUV);
+            	half3 grabTex = SAMPLE_TEXTURE2D(_GrabTexForPixelizeObject,sampler_PointClamp,screenPos);//像素化之前所有物体（包括背景）的图
             	
             	//TODO: 利用这个遮罩在绘制像素物体之前抓取一个背景图，将遮罩白色的部分替换成背景图
-            	float clearObjectBackGroundMask =  rawMask-clearObjectMask_Reverse*rawMask;
+            	//float clearObjectBackGroundMask =  rawMask-clearObjectMask_Reverse*rawMask;
 
-            	
-            	
-            	half3 finalRGB = lerp(grabTex,samplePixelizeColorRGB,clearObjectMask_Reverse);
+            	float mask = realRawMask*clearObjectMask_Reverse;
+            	half3 finalRGB = lerp(grabTex_Background,samplePixelizeColorRGB,mask);
             	
             	half4 result = half4(finalRGB,1.0); 
 				return result;

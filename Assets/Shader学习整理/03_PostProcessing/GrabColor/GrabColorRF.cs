@@ -35,7 +35,8 @@ public class GrabColorRF : ScriptableRendererFeature
 }
 
 
-public class GrabColorPass : ScriptableRenderPass {
+public class GrabColorPass : ScriptableRenderPass 
+{
     ProfilingSampler m_Sampler = new("GrabColorPass");
     public Material material;
     RTHandle _cameraColor;

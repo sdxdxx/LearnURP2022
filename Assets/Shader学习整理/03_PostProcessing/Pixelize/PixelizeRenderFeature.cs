@@ -36,7 +36,7 @@ public class PixelizeFeature : ScriptableRendererFeature
         public CustomRenderPass(Settings settings)
         {
             filtering = new FilteringSettings(RenderQueueRange.all, settings.pixelizeObjectLayer);//设置过滤器
-            shaderTagsList.Add(new ShaderTagId("PixelizeMask"));
+            shaderTagsList.Add(new ShaderTagId("PixelizeObjectMaskPass"));
             
             Shader shader = Shader.Find("URP/PostProcessing/Pixelize");
             renderPassEvent = settings.renderPassEvent+1; //传入设置的渲染事件顺序(renderPassEvent在基类ScriptableRenderPass中)

@@ -44,7 +44,7 @@ Shader "URP/RenderFeature/GrabColorRF"
             
             half4 frag (Varyings i) : SV_TARGET
             {
-                half4 albedo =  SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_PointClamp, i.texcoord).rgba;
+                half4 albedo =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_PointClamp, i.texcoord).rgba;
                 return albedo.rgba;
             }
             
