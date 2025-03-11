@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: URP_Cartoon_Coin
-  m_Shader: {fileID: 4800000, guid: e3d823d7e9979dc498c591fd42e1507c, type: 3}
+  m_Name: URP_PlaneCoin 1
+  m_Shader: {fileID: 4800000, guid: 5c791f9b741b3ef4ebdadbb4e705d804, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -24,16 +24,27 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: a841ee87d93832244a977132efd1924c, type: 3}
-        m_Scale: {x: 2, y: 2}
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MatCap:
         m_Texture: {fileID: 2800000, guid: 4b99f94dffd3ac040a228e71ca3d41b3, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _NormalMap:
+        m_Texture: {fileID: 2800000, guid: 074d323e63d8ac04aa089fc51b4122e0, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMapVS:
+        m_Texture: {fileID: 2800000, guid: 5dc4b2bc552393c43bb3697729f9148c, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ViewDirectionMap:
+        m_Texture: {fileID: 2800000, guid: 901bce3d32660b4468654f0185a23c2d, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _LossOfAccuracy: 0.75
     - _MatCapLerp: 0.65
     - _OutlineWidth: 0
     - _PainEffectIntensity: 0.179
@@ -45,7 +56,6 @@ Material:
     - _SmoothSpecular: 0.2
     - _SpecularIntensity: 0.595
     - _SpecularPow: 70
-    - _Test: 250
     m_Colors:
     - _BaseColor: {r: 1, g: 0.95091766, b: 0.553, a: 1}
     - _DarkColor: {r: 0.922, g: 0.6394516, b: 0, a: 1}

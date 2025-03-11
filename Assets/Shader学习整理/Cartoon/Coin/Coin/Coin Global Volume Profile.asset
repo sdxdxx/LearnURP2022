@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 23de4bf1a7bf4f947b83f4a5e362bcaf, type: 3}
   m_Name: PixelizeVolume
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   EnablePixelizer:
     m_OverrideState: 1
     m_Value: 0
@@ -22,6 +22,24 @@ MonoBehaviour:
   ColorChange:
     m_OverrideState: 1
     m_Value: {r: 1, g: 1, b: 1, a: 1}
+  EnableContrastAndSaturation:
+    m_OverrideState: 1
+    m_Value: 0
+  Contrast:
+    m_OverrideState: 1
+    m_Value: 0
+  Saturation:
+    m_OverrideState: 1
+    m_Value: 0
+  EnablePoint:
+    m_OverrideState: 1
+    m_Value: 0
+  PointIntensity:
+    m_OverrideState: 1
+    m_Value: 0
+  InlineWidth:
+    m_OverrideState: 1
+    m_Value: 0
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -78,7 +96,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6656cd53c35c923409218ad34ebc12ad, type: 3}
   m_Name: OutlineVolume
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   OutlineColor:
     m_OverrideState: 1
     m_Value: {r: 0, g: 0, b: 0, a: 1}

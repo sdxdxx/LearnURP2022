@@ -1,14 +1,16 @@
-Shader "URP/Cartoon/Coin"
+Shader "URP/Cartoon/PlaneCoin"
 {
     Properties
     {
+        [Header(NormalWS)]
+        _NormalMap("NormalMap_WS",2D) = "white"{}
+        _NormalMapVS("NormalMap_VS",2D) = "white"{}
+        
+        [Header(vDir)]
+        _ViewDirectionMap("ViewDirectionMap",2D) = "white"{}
+        
         [Header(Tint)]
         _BaseColor("Base Color",Color) = (1.0,1.0,1.0,1.0)
-        
-        [Header(PaintTex)]
-        _MainTex("MainTex",2D) = "white"{}
-        _PainEffectIntensity("Pain Effect Intensity",Range(0,1)) = 0.2
-        _LossOfAccuracy("Loss Of Accuracy",Range(0,1)) = 0.75
         
         [Header(MatCap)]
         _MatCap("Mat Cap",2D) = "white"{}
@@ -33,33 +35,24 @@ Shader "URP/Cartoon/Coin"
         [Header(Outline)]
         _OutlineColor("Outline Color",Color) = (0.0,0.0,0.0,0.0)
         _OutlineWidth("Outline Width",Range(0,5)) = 1
-        
     }
     
     SubShader
     {
          Tags
         {
-            "RenderType" = "Opaque"
+            "RenderType" = "Transparent"
             "RenderPipeline" = "UniversalPipeline"
+            "Queue" = "Transparent"
         }
     	
     	//解决深度引动模式Depth Priming Mode问题
-        UsePass "Universal Render Pipeline/Unlit/DepthOnly"
-        UsePass "Universal Render Pipeline/Unlit/DepthNormalsOnly"
+       // UsePass "Universal Render Pipeline/Unlit/DepthOnly"
+       // UsePass "Universal Render Pipeline/Lit/DepthNormals"
 
          pass
         {
-            Tags { "LightMode" = "UniversalForward" }
-            
-            Cull Back
-            Stencil 
-            {
-                Ref 0
-                Comp Always
-                Pass Replace
-            }
-            
+            Blend SrcAlpha OneMinusSrcAlpha
             HLSLPROGRAM
 
             #pragma vertex vert
@@ -69,28 +62,18 @@ Shader "URP/Cartoon/Coin"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
-
-            // 主光源和阴影
-            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
-            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
-            #pragma multi_compile _ _SHADOWS_SOFT
-
-            // 多光源和阴影
-            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
-            #pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
             
             //----------贴图声明开始-----------
-            TEXTURE2D(_MainTex);//定义贴图
-            SAMPLER(sampler_MainTex);//定义采样器
+            TEXTURE2D(_NormalMapVS);//定义贴图
+            TEXTURE2D(_NormalMap);//定义贴图
+            TEXTURE2D(_ViewDirectionMap);
             TEXTURE2D(_MatCap);
             SAMPLER(sampler_MatCap);
-            
             //----------贴图声明结束-----------
             
             CBUFFER_START(UnityPerMaterial)
             //----------变量声明开始-----------
             half4 _BaseColor;
-            float _PainEffectIntensity;
             half4 _LightColor;
             half4 _GreyColor;
             half4 _DarkColor;
@@ -99,14 +82,12 @@ Shader "URP/Cartoon/Coin"
             float _SmoothDark;
             float _SmoothLight;
             float _MatCapLerp;
-            float4 _MainTex_ST;
 
             float _SpecularIntensity;
             float _SpecularPow;
             half4 _SpecularColor;
             float _RangeSpecular;
             float _SmoothSpecular;
-            float _LossOfAccuracy;
             //----------变量声明结束-----------
             CBUFFER_END
 
@@ -138,7 +119,7 @@ Shader "URP/Cartoon/Coin"
                 vertexOutput o;
                 o.pos = TransformObjectToHClip(v.vertex.xyz);
                 o.nDirWS = TransformObjectToWorldNormal(v.normal);
-                o.uv = v.uv*_MainTex_ST.xy+_MainTex_ST.zw;
+                o.uv = v.uv;
                 float3 positionWS = TransformObjectToWorld(v.vertex.xyz);
                 o.posWS = positionWS;
                 o.nDirOS = v.normal;
@@ -158,25 +139,19 @@ Shader "URP/Cartoon/Coin"
             {
                 float4 shadowCoord = TransformWorldToShadowCoord(i.posWS);
                 Light mainLight = GetMainLight(shadowCoord);
-                float3 nDir= i.nDirWS;
+                float4 nDir = SAMPLE_TEXTURE2D(_NormalMap,sampler_PointClamp,i.uv);
+                float4 nDirVS = SAMPLE_TEXTURE2D(_NormalMapVS,sampler_PointClamp,i.uv);
+                nDirVS.xyz = nDirVS.xyz *2.0-1.0;
+                nDir.xyz = nDir.xyz*2.0-1.0;
                 float3 lDir = mainLight.direction;
-                float3 vDir = normalize(_WorldSpaceCameraPos.xyz - i.posWS.xyz);
-
-                //通过丧失精度做出油画质感
-                float lossOfAccuracy = (1-_LossOfAccuracy+0.01)*1000;
-                nDir = round(nDir*lossOfAccuracy);
-                nDir = nDir/lossOfAccuracy;
-                vDir = round(vDir*lossOfAccuracy*1.1);
-                vDir = vDir/lossOfAccuracy/1.1;
-                
+                float3 vDir = SAMPLE_TEXTURE2D(_ViewDirectionMap,sampler_LinearClamp,i.uv);
+                vDir = vDir*2.0 -1.0;
                 float3 hDir = normalize(lDir+vDir);
 
-                float3 nDirVS = TransformWorldToViewDir(nDir);
+                //float3 nDirVS = TransformWorldToViewDir(i.nDirWS);
                 half3 matcap = SAMPLE_TEXTURE2D(_MatCap,sampler_MatCap,abs(nDirVS.xy*0.5+0.5)).rgb;
-
-                float mainTex = SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,i.uv*_MainTex_ST.xy+_MainTex_ST.zw);
-                mainTex = remap(mainTex,0,1,1-_PainEffectIntensity,1);
-                half4 albedo = _BaseColor;
+                
+                half4 albedo =_BaseColor;
                 
                 float mainLightRadiance = mainLight.distanceAttenuation;
                 float mainDiffuse = CalculateDiffuseLightResult(nDir,lDir,mainLightRadiance,mainLight.shadowAttenuation);
@@ -205,116 +180,12 @@ Shader "URP/Cartoon/Coin"
                 Specular = smoothstep(_RangeSpecular-_SmoothSpecular,_RangeSpecular,Specular);
                 
                 half3 FinalRGB = lerp(1,matcap,_MatCapLerp)*Diffuse;//Matcap+Diffuse
-                FinalRGB = lerp(_GreyColor*matcap,FinalRGB,mainTex);//整体增加笔触质感
                 FinalRGB = saturate(FinalRGB+Specular);//添加高光
-                
-                return half4(FinalRGB,1.0);
+
+                float alpha = nDir.a;
+                return half4(FinalRGB,alpha);
             }
             
-            ENDHLSL
-        }
-        
-        //Outline
-        pass
-        {
-            Name "Outline"
-            Tags { "LightMode" = "SRPDefaultUnlit" }
-            Cull Front
-            
-            Stencil 
-            {
-                Ref 1
-                Comp NotEqual
-                Pass Keep
-            }
-            
-            HLSLPROGRAM
-
-            #pragma vertex vert
-            #pragma fragment frag
-            
-            
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
-            
-            //----------贴图声明开始-----------
-            //----------贴图声明结束-----------
-            
-            CBUFFER_START(UnityPerMaterial)
-            //----------变量声明开始-----------
-            half4 _OutlineColor;
-            float _OutlineWidth;
-            //----------变量声明结束-----------
-            CBUFFER_END
-
-            struct vertexInput
-            {
-                float4 vertex : POSITION;
-                float3 normal : NORMAL;
-                float3 color : COLOR;
-            };
-
-            struct vertexOutput
-            {
-                float4 pos : SV_POSITION;
-                float3 nDirWS : TEXCOORD1;
-            };
-
-            vertexOutput vert (vertexInput v)
-            {
-                vertexOutput o;
-                o.pos = TransformObjectToHClip(v.vertex.xyz+v.normal* _OutlineWidth * 0.1);
-                o.nDirWS = TransformObjectToWorldNormal(v.normal);
-                float3 positionWS = TransformObjectToWorld(v.vertex.xyz);
-                return o;
-            }
-
-            half4 frag (vertexOutput i) : SV_TARGET
-            {
-                return _OutlineColor;
-            }
-            
-            ENDHLSL
-        }
-        
-        
-        pass
-        {
-	        Name "OutlineMask"
-
-        	Tags{"LightMode" = "OutlineMask"}
-
-            HLSLPROGRAM
-
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            
-            #pragma vertex vert
-            #pragma fragment frag_OutlineMask
-
-             struct vertexInput
-            {
-                float4 vertex : POSITION;
-                float3 normal : NORMAL;
-                float3 color : COLOR;
-            };
-
-            struct vertexOutput
-            {
-                float4 pos : SV_POSITION;
-            };
-
-            vertexOutput vert (vertexInput v)
-            {
-                vertexOutput o;
-                o.pos = TransformObjectToHClip(v.vertex.xyz);
-                return o;
-            }
-
-            half4 frag_OutlineMask (vertexOutput i) : SV_TARGET
-            {
-            	return half4(1,1,1,1);
-            }
             ENDHLSL
         }
     }

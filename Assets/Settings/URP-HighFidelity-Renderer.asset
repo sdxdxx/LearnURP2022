@@ -76,7 +76,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b0dd1324ed513241bacf4f0212b7caa, type: 3}
   m_Name: CustomSSAORenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   settings:
     renderPassEvent: 550
     shader: {fileID: 4800000, guid: a0b6cf6fab284e640803448e49b54c14, type: 3}
@@ -342,7 +342,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eea18e62c3cfbd44aa2f00bc4bbe5498, type: 3}
   m_Name: OutlineRenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   settings:
     renderPassEvent: 550
     outlineLayer:
