@@ -208,14 +208,17 @@ public class AverageNormalsTool : EditorWindow
                     
                 MeshFilter curFilter = Selection.activeObject.GameObject().GetComponent<MeshFilter>();
                 SkinnedMeshRenderer curSkinned = Selection.activeObject.GameObject().GetComponent<SkinnedMeshRenderer>();
-
+                
+                
                 if (curFilter && !curSkinned)
                 {
+                    EditorUtility.SetDirty(curFilter.GameObject());
                     curFilter.sharedMesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
                 }
 
                 if (!curFilter && curSkinned)
                 {
+                    EditorUtility.SetDirty(curSkinned.GameObject());
                     curSkinned.sharedMesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
                 }
 

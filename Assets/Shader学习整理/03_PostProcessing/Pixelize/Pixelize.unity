@@ -221,7 +221,7 @@ Transform:
   m_GameObject: {fileID: 65898468}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -83.9, y: -14.4, z: -79.9}
+  m_LocalPosition: {x: -59.4, y: -14.4, z: -75.5}
   m_LocalScale: {x: 15.455248, y: 15.455248, z: 15.455248}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1049,7 +1049,7 @@ Transform:
   m_GameObject: {fileID: 896707110}
   serializedVersion: 2
   m_LocalRotation: {x: -0.27929115, y: -0.086559854, z: 0.77296805, w: 0.56304896}
-  m_LocalPosition: {x: -50.6, y: -22.5, z: -105.4}
+  m_LocalPosition: {x: -50.6, y: -22.5, z: -136.7}
   m_LocalScale: {x: 14, y: 14, z: 14}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1173,6 +1173,50 @@ MonoBehaviour:
   m_LightCookieSize: {x: 1, y: 1}
   m_LightCookieOffset: {x: 0, y: 0}
   m_SoftShadowQuality: 0
+--- !u!1 &1407163704
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1407163706}
+  - component: {fileID: 1407163705}
+  m_Layer: 0
+  m_Name: ProxyPixelizeCamera
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1407163705
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1407163704}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03fcf2dc13ac7a44790b30181ba34a07, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &1407163706
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1407163704}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -90.53523, y: -10.419074, z: -63.92047}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!21 &1722572746
 Material:
   serializedVersion: 8
@@ -1537,7 +1581,7 @@ Transform:
   m_GameObject: {fileID: 1803070989}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -73, y: -37.8, z: -349}
+  m_LocalPosition: {x: -32.2, y: -37.8, z: -349}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2042,3 +2086,4 @@ SceneRoots:
   - {fileID: 179627872}
   - {fileID: 2002229060}
   - {fileID: 584187941}
+  - {fileID: 1407163706}
