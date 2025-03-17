@@ -159,7 +159,6 @@ Shader "Custom/2D/Flash"
                 flashMask = SAMPLE_TEXTURE2D(_CustomMask, sampler_CustomMask, flashUV).a * _FlashIntensity;
                 #endif
                 flashMask *= smoothstep(_AlphaCullValue-0.1,_AlphaCullValue,mainTex.a);
-                 
                 
                 half3 FinalRGB;
                 #ifdef _EnableAddMode

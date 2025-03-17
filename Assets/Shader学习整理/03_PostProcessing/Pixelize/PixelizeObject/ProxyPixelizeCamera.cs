@@ -1,6 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Numerics;
+using Unity.Mathematics;
 using UnityEngine;
+using Matrix4x4 = UnityEngine.Matrix4x4;
+using Vector3 = UnityEngine.Vector3;
 
 public class ProxyPixelizeCamera : MonoBehaviour
 {
@@ -32,4 +36,14 @@ public class ProxyPixelizeCamera : MonoBehaviour
         float result = widthDistance/Screen.width;
         return result;
     }
+
+    /*
+    Matrix4x4 TransformToAnotherCoordinateSystem(float3 xAxis, float3 yAxis, float3 zAxis)
+    {
+        float3x3 tempMatrix = new float3x3(
+            xAxis.x, xAxis.y, xAxis.z,
+            yAxis., yAxis
+            zAxis);
+    }
+    */
 }

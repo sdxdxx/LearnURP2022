@@ -122,63 +122,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!21 &6293536
-Material:
-  serializedVersion: 8
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: URP/2D/UGUI/CustomEffect
-  m_Shader: {fileID: 4800000, guid: 0b2fe138676f44192b0798bea6d7b247, type: 3}
-  m_Parent: {fileID: 0}
-  m_ModifiedSerializedProperties: 0
-  m_ValidKeywords:
-  - _EnableOutline
-  m_InvalidKeywords: []
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_LockedProperties: 
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs:
-    - _AlphaTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _MainTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    m_Ints: []
-    m_Floats:
-    - PixelSnap: 0
-    - _EnableExternalAlpha: 0
-    - _EnableGradient: 0
-    - _EnableOutline: 0
-    - _EnableShadow: 0
-    - _EnableVertexColorMode: 0
-    - _GradientIntensity: 1
-    - _GradientRange: 0.5
-    - _GradientRotation: 0
-    - _GradientSmoothRange: 0.1
-    - _IsText: 0
-    - _OutlineWidth: 5.6
-    - _ShadowScale: 1
-    m_Colors:
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _Flip: {r: 1, g: 1, b: 1, a: 1}
-    - _GradientColor1: {r: 1, g: 0, b: 0, a: 1}
-    - _GradientColor2: {r: 0, g: 1, b: 0, a: 1}
-    - _OutlineColor: {r: 1, g: 1, b: 1, a: 1}
-    - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
-    - _ShadowColor: {r: 0, g: 0, b: 0, a: 1}
-    - _ShadowOffset: {r: 0, g: 0, b: 0, a: 0}
-  m_BuildTextureStacks: []
 --- !u!1 &517362203
 GameObject:
   m_ObjectHideFlags: 0
@@ -264,7 +207,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 6293536}
+  m_Material: {fileID: 595280519}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -290,6 +233,63 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 517362203}
   m_CullTransparentMesh: 1
+--- !u!21 &595280519
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: URP/2D/UGUI/CustomEffect
+  m_Shader: {fileID: 4800000, guid: 0b2fe138676f44192b0798bea6d7b247, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _EnableOutline
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _AlphaTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - PixelSnap: 0
+    - _EnableExternalAlpha: 0
+    - _EnableGradient: 0
+    - _EnableOutline: 0
+    - _EnableShadow: 0
+    - _EnableVertexColorMode: 0
+    - _GradientIntensity: 1
+    - _GradientRange: 0.5
+    - _GradientRotation: 0
+    - _GradientSmoothRange: 0.1
+    - _IsText: 0
+    - _OutlineWidth: 5.6
+    - _ShadowScale: 1
+    m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Flip: {r: 1, g: 1, b: 1, a: 1}
+    - _GradientColor1: {r: 1, g: 0, b: 0, a: 1}
+    - _GradientColor2: {r: 0, g: 1, b: 0, a: 1}
+    - _OutlineColor: {r: 1, g: 1, b: 1, a: 1}
+    - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
+    - _ShadowColor: {r: 0, g: 0, b: 0, a: 1}
+    - _ShadowOffset: {r: 0, g: 0, b: 0, a: 0}
+  m_BuildTextureStacks: []
 --- !u!1 &632762841
 GameObject:
   m_ObjectHideFlags: 0
@@ -358,67 +358,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!21 &901661055
-Material:
-  serializedVersion: 8
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: URP/2D/UGUI/CustomEffect
-  m_Shader: {fileID: 4800000, guid: 0b2fe138676f44192b0798bea6d7b247, type: 3}
-  m_Parent: {fileID: 0}
-  m_ModifiedSerializedProperties: 0
-  m_ValidKeywords:
-  - _EnableGradient
-  - _EnableOutline
-  - _EnableShadow
-  - _EnableVertexColorMode
-  - _IsText
-  m_InvalidKeywords: []
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_LockedProperties: 
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs:
-    - _AlphaTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _MainTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    m_Ints: []
-    m_Floats:
-    - PixelSnap: 0
-    - _EnableExternalAlpha: 0
-    - _EnableGradient: 0
-    - _EnableOutline: 0
-    - _EnableShadow: 0
-    - _EnableVertexColorMode: 0
-    - _GradientIntensity: 0
-    - _GradientRange: 1
-    - _GradientRotation: 0.462
-    - _GradientSmoothRange: 1
-    - _IsText: 0
-    - _OutlineWidth: 0.18
-    - _ShadowScale: 1
-    m_Colors:
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _Flip: {r: 1, g: 1, b: 1, a: 1}
-    - _GradientColor1: {r: 1, g: 0, b: 0, a: 1}
-    - _GradientColor2: {r: 0, g: 1, b: 0, a: 1}
-    - _OutlineColor: {r: 1, g: 1, b: 1, a: 1}
-    - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
-    - _ShadowColor: {r: 0, g: 0, b: 0, a: 1}
-    - _ShadowOffset: {r: 1, g: 1, b: 0, a: 0}
-  m_BuildTextureStacks: []
 --- !u!1 &1189889302
 GameObject:
   m_ObjectHideFlags: 0
@@ -430,7 +369,7 @@ GameObject:
   - component: {fileID: 1189889303}
   - component: {fileID: 1189889306}
   - component: {fileID: 1189889305}
-  - component: {fileID: 1189889304}
+  - component: {fileID: 1189889307}
   m_Layer: 5
   m_Name: Image
   m_TagString: Untagged
@@ -457,32 +396,6 @@ RectTransform:
   m_AnchoredPosition: {x: 266.9, y: 257.5}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1189889304
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1189889302}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fd1d4cefa72584a8f83392277ac35055, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  EnableDebugMode: 0
-  EnableAddMode: 1
-  EnableCustomMask: 0
-  CustomMask: {fileID: 0}
-  CustomMaskScale: 1
-  FlashWidth: 0.287
-  FlashSmooth: 0.654
-  FlashColor: {r: 1, g: 1, b: 1, a: 1}
-  FlashIntensity: 1
-  AlphaCullValue: 0
-  Angle: 0
-  Offset: 0.425
-  FlashTime: 10.2
-  DelayTime: 2.5
 --- !u!114 &1189889305
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -495,7 +408,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 1960068939}
+  m_Material: {fileID: 2100000, guid: f01b1409ba1fc9744bee87b635b81e8e, type: 2}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -521,6 +434,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1189889302}
   m_CullTransparentMesh: 1
+--- !u!114 &1189889307
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1189889302}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd1d4cefa72584a8f83392277ac35055, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1278416389
 GameObject:
   m_ObjectHideFlags: 0
@@ -639,6 +564,67 @@ MonoBehaviour:
   m_LightCookieSize: {x: 1, y: 1}
   m_LightCookieOffset: {x: 0, y: 0}
   m_SoftShadowQuality: 0
+--- !u!21 &1351999358
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: URP/2D/UGUI/CustomEffect
+  m_Shader: {fileID: 4800000, guid: 0b2fe138676f44192b0798bea6d7b247, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _EnableGradient
+  - _EnableOutline
+  - _EnableShadow
+  - _EnableVertexColorMode
+  - _IsText
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _AlphaTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - PixelSnap: 0
+    - _EnableExternalAlpha: 0
+    - _EnableGradient: 0
+    - _EnableOutline: 0
+    - _EnableShadow: 0
+    - _EnableVertexColorMode: 0
+    - _GradientIntensity: 0
+    - _GradientRange: 1
+    - _GradientRotation: 0.462
+    - _GradientSmoothRange: 1
+    - _IsText: 0
+    - _OutlineWidth: 0.18
+    - _ShadowScale: 1
+    m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Flip: {r: 1, g: 1, b: 1, a: 1}
+    - _GradientColor1: {r: 1, g: 0, b: 0, a: 1}
+    - _GradientColor2: {r: 0, g: 1, b: 0, a: 1}
+    - _OutlineColor: {r: 1, g: 1, b: 1, a: 1}
+    - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
+    - _ShadowColor: {r: 0, g: 0, b: 0, a: 1}
+    - _ShadowOffset: {r: 1, g: 1, b: 0, a: 0}
+  m_BuildTextureStacks: []
 --- !u!1 &1752564672
 GameObject:
   m_ObjectHideFlags: 0
@@ -689,7 +675,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 901661055}
+  m_Material: {fileID: 1351999358}
   m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -891,64 +877,6 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
---- !u!21 &1960068939
-Material:
-  serializedVersion: 8
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Custom/2D/Flash
-  m_Shader: {fileID: 4800000, guid: 1ce375f9a9200488c971cc9a5ff7609e, type: 3}
-  m_Parent: {fileID: 0}
-  m_ModifiedSerializedProperties: 0
-  m_ValidKeywords:
-  - _EnableAddMode
-  m_InvalidKeywords: []
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_LockedProperties: 
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs:
-    - _AlphaTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _CustomMask:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _MainTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    m_Ints: []
-    m_Floats:
-    - PixelSnap: 0
-    - _AlphaCullValue: 0
-    - _Angle: 0
-    - _CustomMaskScale: 1
-    - _DelayTime: 2.5
-    - _EnableAddMode: 1
-    - _EnableCustomMask: 0
-    - _EnableDebugMode: 0
-    - _EnableExternalAlpha: 0
-    - _FlashIntensity: 1
-    - _FlashTime: 10.2
-    - _Offset: 0.425
-    - _Smooth: 0.654
-    - _Width: 0.287
-    m_Colors:
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _FlashColor: {r: 1, g: 1, b: 1, a: 1}
-    - _Flip: {r: 1, g: 1, b: 1, a: 1}
-    - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
-  m_BuildTextureStacks: []
 --- !u!1 &2049864299
 GameObject:
   m_ObjectHideFlags: 0
