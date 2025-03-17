@@ -1,0 +1,86 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: URP_VFX_UniversalEffect
+  m_Shader: {fileID: 4800000, guid: ddb5df0331bfb41439e381f2f9d43a41, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _EnableDissolveMaskR
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _DissolveMask:
+        m_Texture: {fileID: 2800000, guid: 4b99f94dffd3ac040a228e71ca3d41b3, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DistortionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Mask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MaskExtra:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BlendDst: 10
+    - _BlendSrc: 5
+    - _CullMode: 2
+    - _CustomTime: 0
+    - _DissolveRange: 0
+    - _DissolveSmoothness: 0.239
+    - _DissolveWidth: 0.095
+    - _DistortionIntensity: 0
+    - _DistortionMapRotation: 0
+    - _EnableCustomTime: 0
+    - _EnableDissolve: 0
+    - _EnableDissolveCustomData: 0
+    - _EnableDissolveMaskDistortion: 0
+    - _EnableDissolveMaskPolarCoordinates: 0
+    - _EnableDissolveMaskR: 1
+    - _EnableDistortion: 0
+    - _EnableDistortionMapRotation: 0
+    - _EnableDistortionPolarCoordinates: 0
+    - _EnableExtraMask: 0
+    - _EnableExtraMaskR: 0
+    - _EnableMainTexDistortion: 0
+    - _EnableMainTexRotation: 0
+    - _EnableMaskR: 0
+    - _EnablePolarCoordinates: 0
+    - _EnableVerticalDissolve: 0
+    - _MainTexRotation: 0
+    - _PolarCoordinatesMovingSpeed: 0
+    - _PolarCoordinatesMovingSpeed_Distortion: 0
+    - _USpeed_Distortion: 0
+    - _USpeed_MainTex: 0
+    - _VSpeed_Distortion: 0
+    - _VSpeed_MainTex: 0
+    - _VerticalDissolveSmoothness: 0
+    - _VerticalDissolveThreshold: 0
+    m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _DissolveEdgeColor: {r: 1, g: 1, b: 1, a: 1}
+  m_BuildTextureStacks: []
