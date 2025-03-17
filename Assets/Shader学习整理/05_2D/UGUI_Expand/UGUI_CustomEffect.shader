@@ -37,7 +37,7 @@ Shader "URP/2D/UGUI/CustomEffect"
     {
         Tags
         {
-            "Queue" = "Transparent"
+            "Queue" = "Overlay"
             "RenderType" = "Transparent"
             "RenderPipeline" = "UniversalPipeline"
         }
