@@ -9,12 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 06d09f1401693f04a81e689a3c00a3f1, type: 3}
+  m_Script: {fileID: 11500000, guid: bf0f2278f580b4f4db1ad36610a28258, type: 3}
   m_Name: steppedAnimation
   m_EditorClassIdentifier: 
   SourceClips: []
+  FixRotationInterpolations: 1
   KeyframeMode: 0
-  KeyframeRate: 0
+  KeyframeRate: 15
   ManualKeyframeTimes: []
   ManualKeyframes: []
   SampleRate: 30
