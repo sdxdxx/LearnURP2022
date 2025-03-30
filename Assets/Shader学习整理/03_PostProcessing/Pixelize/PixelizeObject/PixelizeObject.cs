@@ -69,13 +69,13 @@ public class PixelizeObject : ScriptableRendererFeature
             
             CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);//获得一个为ProfilerTag的CommandBuffer
             
+            //确保执行前清空
+            context.ExecuteCommandBuffer(cmd);
+            cmd.Clear();
+            
             //性能分析器(自带隐式垃圾回收),之后可以在FrameDebugger中查看
             using (new ProfilingScope(cmd, m_ProfilingSampler))
             {
-                //确保执行前清空
-                context.ExecuteCommandBuffer(cmd);
-                cmd.Clear();
-                
                 Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle);
                 cmd.SetGlobalTexture("_GrabTexForClearObject",tempRTHandle);
             }
@@ -149,12 +149,13 @@ public class PixelizeObject : ScriptableRendererFeature
             
             CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);//获得一个为ProfilerTag的CommandBuffer
             
+            //确保执行前清空
+            context.ExecuteCommandBuffer(cmd);
+            cmd.Clear();
+            
             //性能分析器(自带隐式垃圾回收),之后可以在FrameDebugger中查看
             using (new ProfilingScope(cmd, m_ProfilingSampler))
             {
-                // Ensure we flush our command-buffer before we render...
-                context.ExecuteCommandBuffer(cmd);
-                cmd.Clear();
                 SortingCriteria sortingCriteria = SortingCriteria.CommonOpaque;
                 var draw = CreateDrawingSettings(shaderTagsList, ref renderingData, sortingCriteria);
                 context.DrawRenderers(renderingData.cullResults, ref draw, ref filtering);
@@ -230,13 +231,13 @@ public class PixelizeObject : ScriptableRendererFeature
             
             CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);//获得一个为ProfilerTag的CommandBuffer
             
+            //确保执行前清空
+            context.ExecuteCommandBuffer(cmd);
+            cmd.Clear();
+            
             //性能分析器(自带隐式垃圾回收),之后可以在FrameDebugger中查看
             using (new ProfilingScope(cmd, m_ProfilingSampler))
             {
-                // Ensure we flush our command-buffer before we render...
-                context.ExecuteCommandBuffer(cmd);
-                cmd.Clear();
-            
                 var depthParams = new RenderStateBlock(RenderStateMask.Depth);
                 DepthState depthState = new DepthState(writeEnabled: true, CompareFunction.LessEqual);
                 depthParams.depthState = depthState;
@@ -319,6 +320,11 @@ public class PixelizeObject : ScriptableRendererFeature
             }
 
             CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);
+            
+            //确保执行前清空
+            context.ExecuteCommandBuffer(cmd);
+            cmd.Clear();
+            
             using (new ProfilingScope(cmd, m_ProfilingSampler)) 
             {
                 //可以根据当前相机的AAlevel配置关键字
@@ -399,13 +405,13 @@ public class PixelizeObject : ScriptableRendererFeature
             
             CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);//获得一个为ProfilerTag的CommandBuffer
             
+            //确保执行前清空
+            context.ExecuteCommandBuffer(cmd);
+            cmd.Clear();
+            
             //性能分析器(自带隐式垃圾回收),之后可以在FrameDebugger中查看
             using (new ProfilingScope(cmd, m_ProfilingSampler))
             {
-                //确保执行前清空
-                context.ExecuteCommandBuffer(cmd);
-                cmd.Clear();
-                
                 Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle);
                 cmd.SetGlobalTexture("_GrabTexForPixelizeObject",tempRTHandle);
             }
@@ -491,12 +497,13 @@ public class PixelizeObject : ScriptableRendererFeature
             
             CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);//获得一个为ProfilerTag的CommandBuffer
             
+            //确保执行前清空
+            context.ExecuteCommandBuffer(cmd);
+            cmd.Clear();
+            
             //性能分析器(自带隐式垃圾回收),之后可以在FrameDebugger中查看
             using (new ProfilingScope(cmd, m_ProfilingSampler))
             {
-                // Ensure we flush our command-buffer before we render...
-                context.ExecuteCommandBuffer(cmd);
-                cmd.Clear();
                 SortingCriteria sortingCriteria = SortingCriteria.CommonOpaque;
                 var draw = CreateDrawingSettings(shaderTagsList, ref renderingData, sortingCriteria);
                 context.DrawRenderers(renderingData.cullResults, ref draw, ref filtering);
