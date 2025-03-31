@@ -486,15 +486,6 @@ public class PixelizeObject : ScriptableRendererFeature
                 return;
             }
             
-            if (Camera.main.orthographic)
-            {
-                Shader.EnableKeyword("IS_ORTH_CAM");
-            }
-            else
-            {
-                Shader.DisableKeyword("IS_ORTH_CAM");
-            }
-            
             CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);//获得一个为ProfilerTag的CommandBuffer
             
             //确保执行前清空

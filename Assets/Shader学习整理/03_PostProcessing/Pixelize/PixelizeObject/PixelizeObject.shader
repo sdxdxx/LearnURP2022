@@ -282,8 +282,7 @@ Shader "URP/Cartoon/PixelizeObject"
             
             #pragma vertex vert_PixelizeMask
             #pragma fragment frag_PixelizeMask
-
-            #pragma shader_feature IS_ORTH_CAM
+            
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
@@ -337,16 +336,19 @@ Shader "URP/Cartoon/PixelizeObject"
             	float3 posWS = TransformObjectToWorld(i.posOS).xyz;
             	
             	float rawDepth;
-            	
-            	#ifdef IS_ORTH_CAM
+
+            	//正交摄像机判断
+            	if (unity_OrthoParams.w > 0.5)
+            	{
             		//float linearEyeDepth = distance(_WorldSpaceCameraPos.xyz,posWS.xyz);
             		float linearEyeDepth = LinearEyeDepth(posWS,unity_MatrixV);
             		rawDepth = 1-(linearEyeDepth - _ProjectionParams.y) / (_ProjectionParams.z - _ProjectionParams.y);
-            	#else
-            		float linearEyeDepth = TransformObjectToHClip(i.posOS).w;
+            	}
+	            else
+	            {
+		            float linearEyeDepth = TransformObjectToHClip(i.posOS).w;
             		rawDepth = (rcp(linearEyeDepth)-_ZBufferParams.w)/_ZBufferParams.z;
-            	#endif
-            	
+	            }
             	float id = _ID;
             	id = id/255.0;
             	return float4(rawDepth,0,0,id);
@@ -367,8 +369,6 @@ Shader "URP/Cartoon/PixelizeObject"
             
             #pragma vertex vert_Pixelize
             #pragma fragment frag_Pixelize
-
-            #pragma shader_feature IS_ORTH_CAM
             #pragma shader_feature _EnableObjectCenterPoint
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
@@ -389,17 +389,21 @@ Shader "URP/Cartoon/PixelizeObject"
                 float mask01Depth = 0;
                 float bias = 0;
 
-                #ifdef IS_ORTH_CAM
-                    linear01Depth = 1-rawDepth;//lerp(0, _ProjectionParams.z, rawDepth);
+             	//正交摄像机判断
+                if (unity_OrthoParams.w > 0.5)
+                {
+	                linear01Depth = 1-rawDepth;//lerp(0, _ProjectionParams.z, rawDepth);
                     mask01Depth = 1-maskRawDepth;
              		//bias = 0.009;
              		bias = 0;
-                #else
-                    linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
+                }
+                else
+                {
+	                linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
                     mask01Depth = Linear01Depth(maskRawDepth,_ZBufferParams);
                     bias = 0.04;
                     //bias = 0;
-                #endif
+                }
 
                 float clearObjectMask_Reverse = step(mask01Depth,linear01Depth+bias);
 
