@@ -156,12 +156,12 @@ Shader "URP/Grass"
 
         TessellationControlPoint vert_Grass(vertexInputGrass v)
          {
-	         TessellationControlPoint o;
-             o.positionOS= v.vertex;
-             o.normalOS = v.normal;
-             o.tangentOS= v.tangent;
-         	o.texcoord = v.uv;
-            return o;
+	         TessellationControlPoint p;
+             p.positionOS= v.vertex;
+             p.normalOS = v.normal.xyz;
+             p.tangentOS= v.tangent;
+         	p.texcoord = v.uv;
+            return p;
         }
 
         vertexOutputGrass vert_Grass_Output (TessellationControlPoint v)
@@ -236,7 +236,7 @@ Shader "URP/Grass"
 			}
 			return f;
 		}
-        
+    	
 		//将顶点从重心空间转换到模型空间，插入顶点属性创建新的顶点
 		[domain("tri")]
 		vertexOutputGrass domain_Grass(TessellationFactors factors, OutputPatch<TessellationControlPoint, 3> patch, float3 barycentricCoordinates : SV_DomainLocation)
@@ -386,14 +386,14 @@ Shader "URP/Grass"
             	float3 nDir = facing > 0 ? i.normal : -i.normal;
    				float dayMask = smoothstep(0,1,_MainLightPosition.y);
    				float nightMask = smoothstep(0,1,-_MainLightPosition.y);
-   				float3 lDir =_MainLightPosition*dayMask + (-_MainLightPosition*nightMask);
+   				float3 lDir =_MainLightPosition.xyz*dayMask + (-_MainLightPosition.xyz*nightMask);
    				float nDotl = dot(nDir,lDir);
    				
    				float halfLambert = saturate(nDotl*0.5+0.5+_TranslucentGain);
 
    				float shadow = saturate(mainLight.shadowAttenuation+0.5);
 
-   				half3 FinalRGB = color*halfLambert*shadow;
+   				half3 FinalRGB = color.rgb*halfLambert*shadow;
 
             	half4 result = half4(FinalRGB,1.0);
             	
