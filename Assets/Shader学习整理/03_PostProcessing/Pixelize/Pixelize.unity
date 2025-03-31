@@ -211,7 +211,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 65898468}
-  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 4300000, guid: 2c633b024827f4fdb83db74779f4c0d7, type: 2}
 --- !u!4 &65898472
 Transform:
   m_ObjectHideFlags: 0
@@ -316,7 +316,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 179627868}
-  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 4300000, guid: 2c633b024827f4fdb83db74779f4c0d7, type: 2}
 --- !u!4 &179627872
 Transform:
   m_ObjectHideFlags: 0
@@ -637,7 +637,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 523843865}
-  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 4300000, guid: 2c633b024827f4fdb83db74779f4c0d7, type: 2}
 --- !u!4 &523843869
 Transform:
   m_ObjectHideFlags: 0
@@ -1039,7 +1039,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 896707110}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 4300000, guid: c30e35727f930454bba91ed334d5036c, type: 2}
 --- !u!4 &896707114
 Transform:
   m_ObjectHideFlags: 0
@@ -1478,7 +1478,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1796928700}
-  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 4300000, guid: 2c633b024827f4fdb83db74779f4c0d7, type: 2}
 --- !u!4 &1796928704
 Transform:
   m_ObjectHideFlags: 0
@@ -2052,7 +2052,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2111474544}
-  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 4300000, guid: 2c633b024827f4fdb83db74779f4c0d7, type: 2}
 --- !u!4 &2111474548
 Transform:
   m_ObjectHideFlags: 0
