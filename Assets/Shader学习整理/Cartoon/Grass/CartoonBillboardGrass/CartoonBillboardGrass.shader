@@ -30,9 +30,8 @@ Shader "URP/Cartoon/BillboardGrass"
     {
         Tags
         {
-            "RenderType" = "Transparent"
+            "RenderType" = "Opaque"
             "RenderPipeline" = "UniversalPipeline"
-            "Queue" = "Transparent"
         }
     	
     	//解决深度引动模式Depth Priming Mode问题
@@ -41,9 +40,7 @@ Shader "URP/Cartoon/BillboardGrass"
 
         pass
         {
-            Blend SrcAlpha OneMinusSrcAlpha
-            
-            Cull Off
+            //Cull Off
             HLSLPROGRAM
 
             #pragma vertex vert
@@ -147,7 +144,7 @@ Shader "URP/Cartoon/BillboardGrass"
                 float bias = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_Bias);
                     
                 //Billboard
-                float3 newForwardDir = -normalize(GetWorldSpaceViewDir(float3(0,0,0)));
+                float3 newForwardDir = normalize(GetWorldSpaceViewDir(float3(0,0,0)));
                 float3 newRightDir = normalize(cross(float3(0,1,0),newForwardDir));
                 float3 newUpDir = normalize(cross(newForwardDir,newRightDir));
                 v.vertex.xyz =  v.vertex.x * newRightDir + v.vertex.y * newUpDir + v.vertex.z * newForwardDir;
@@ -163,7 +160,6 @@ Shader "URP/Cartoon/BillboardGrass"
                 v.vertex.xyz = mul(windRotation,v.vertex.xyz);
                 o.pos = TransformObjectToHClip(v.vertex.xyz);
                 o.nDirWS = TransformObjectToWorldNormal(v.normal);
-                float4 mainTex_ST = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _MainTex_ST);
                 o.uv = v.uv;
                 o.posOS = v.vertex.xyz;
                 o.color = v.color;
@@ -202,7 +198,8 @@ Shader "URP/Cartoon/BillboardGrass"
                     mainTex.rgb *= i.color.rgb; 
                     
                 #else
-                    mainTexUV = TRANSFORM_TEX(i.uv, _MainTex);
+                    float4 mainTex_ST = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _MainTex_ST);
+                    mainTexUV = i.uv*mainTex_ST.xy+mainTex_ST.zw;
                     mainTex = i.color * SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, mainTexUV);
                 #endif
 
@@ -214,7 +211,8 @@ Shader "URP/Cartoon/BillboardGrass"
                 
                 half3 finalRGB = albedo*baseColor;
                 finalRGB = lerp(finalRGB*shadowValue,finalRGB,shadow);
-                
+
+                clip(albedo.a-0.1);
                 half4 result = half4(finalRGB,albedo.a);
                 return result;
             }
