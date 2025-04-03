@@ -5,12 +5,25 @@ Shader "URP/Cartoon/BillboardGrass"
         _BaseColor("Base Color",Color) = (1.0,1.0,1.0,1.0)
         _MainTex("MainTex",2D) = "white"{}
         
+        [Space(20)]
         //Wind
         _WindDistortionMap("Wind Distortion Map",2D) = "black"{}
         _WindStrength("WindStrength",float) = 0
         _U_Speed("U_Seed",float) = 0
         _V_Speed("V_Seed",float) = 0
-        _Bias("WindBias",Range(-1.0,1.0)) = 0
+        _Bias("Wind Bias",Range(-1.0,1.0)) = 0
+        
+        [Space(20)]
+        //FrameTexture
+        [Toggle(_EnableFrameTexture)] _EnableFrameTexture("Enable Frame Texture",float) = 0
+        _FrameTex("Sprite Frame Texture", 2D) = "white" {}
+        _FrameNum("Frame Num",int) = 24
+        _FrameRow("Frame Row",int) = 5
+        _FrameColumn("Frame Column",int) = 5
+        _FrameSpeed("Frame Speed",Range(0,10)) = 3
+        
+        [Space(20)]
+        _ShadowValue("Shadow Value",Range(0,1)) = 0.5
     }
     
     SubShader
@@ -36,8 +49,13 @@ Shader "URP/Cartoon/BillboardGrass"
             #pragma vertex vert
             #pragma fragment frag
 
+            #pragma shader_feature _EnableFrameTexture
             //开启GPU Instance
             #pragma multi_compile_instancing
+
+            #pragma multi_compile  _MAIN_LIGHT_SHADOWS
+    		#pragma multi_compile  _MAIN_LIGHT_SHADOWS_CASCADE
+    		#pragma multi_compile  _SHADOWS_SOFT
             
             
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
@@ -49,17 +67,27 @@ Shader "URP/Cartoon/BillboardGrass"
             SAMPLER(sampler_MainTex);//定义采样器
             TEXTURE2D(_WindDistortionMap);
             SAMPLER(sampler_WindDistortionMap);
+            TEXTURE2D(_FrameTex);
+            SAMPLER(sampler_FrameTex);
             //----------贴图声明结束-----------
 
             //GPU Instance
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _BaseColor)
                 UNITY_DEFINE_INSTANCED_PROP(float4,_MainTex_ST)
+            
                 UNITY_DEFINE_INSTANCED_PROP(float, _WindStrength)
                 UNITY_DEFINE_INSTANCED_PROP(float, _U_Speed)
                 UNITY_DEFINE_INSTANCED_PROP(float, _V_Speed)
                 UNITY_DEFINE_INSTANCED_PROP(float4,_WindDistortionMap_ST)
                 UNITY_DEFINE_INSTANCED_PROP(float,_Bias)
+            
+                UNITY_DEFINE_INSTANCED_PROP(float4,_FrameTex_ST)
+                UNITY_DEFINE_INSTANCED_PROP(int,_FrameNum)
+                UNITY_DEFINE_INSTANCED_PROP(float,_FrameRow)
+                UNITY_DEFINE_INSTANCED_PROP(float,_FrameColumn)
+                UNITY_DEFINE_INSTANCED_PROP(float,_FrameSpeed)
+                UNITY_DEFINE_INSTANCED_PROP(float,_ShadowValue)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             //SRP Bathcer
@@ -91,6 +119,7 @@ Shader "URP/Cartoon/BillboardGrass"
             {
                 float4 vertex : POSITION;
                 float3 normal : NORMAL;
+                float4 color : COLOR;
                 float2 uv : TEXCOORD0;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
@@ -101,6 +130,7 @@ Shader "URP/Cartoon/BillboardGrass"
                 float2 uv : TEXCOORD0;
                 float3 nDirWS : TEXCOORD1;
                 float3 posOS : TEXCOORD2;
+                float4 color : TEXCOORD3;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -134,8 +164,9 @@ Shader "URP/Cartoon/BillboardGrass"
                 o.pos = TransformObjectToHClip(v.vertex.xyz);
                 o.nDirWS = TransformObjectToWorldNormal(v.normal);
                 float4 mainTex_ST = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _MainTex_ST);
-                o.uv = v.uv*mainTex_ST.xy+mainTex_ST.zw;
+                o.uv = v.uv;
                 o.posOS = v.vertex.xyz;
+                o.color = v.color;
                 return o;
             }
 
@@ -145,17 +176,44 @@ Shader "URP/Cartoon/BillboardGrass"
                 
                 //Instance变量
                 half3 baseColor = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseColor);
+                int frameNum = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FrameNum);
+                float frameRow = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FrameRow);
+                float frameColumn = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_FrameColumn);
+                float frameSpeed = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_FrameSpeed);
+                float shadowValue = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_ShadowValue);
                 
                 float3 posWS = TransformObjectToWorld(i.posOS);
                 float4 mainShadowCoord = TransformWorldToShadowCoord(posWS);
                 Light mainLight = GetMainLight(mainShadowCoord);
                 float3 nDirWS = i.nDirWS;
                 float3 lDirWS = mainLight.direction.xyz;
+                
+                float2 mainTexUV;
+                half4 mainTex;
+                #ifdef _EnableFrameTexture
+                    mainTexUV = TRANSFORM_TEX(i.uv, _FrameTex);
+                    float perX = 1.0f /frameRow;
+                    float perY = 1.0f /frameColumn;
+                    float currentIndex = fmod(_Time.z*frameSpeed,frameNum);
+                    int rowIndex = currentIndex/frameRow;
+                    int columnIndex = fmod(currentIndex,frameColumn);
+                    float2 realMainTexUV = mainTexUV*float2(perX,perY)+float2(perX*columnIndex,perY*rowIndex);
+                    mainTex =   SAMPLE_TEXTURE2D(_FrameTex, sampler_FrameTex, realMainTexUV);
+                    mainTex.rgb *= i.color.rgb; 
+                    
+                #else
+                    mainTexUV = TRANSFORM_TEX(i.uv, _MainTex);
+                    mainTex = i.color * SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, mainTexUV);
+                #endif
+
+                //shadow
+            	float shadow = MainLightRealtimeShadow(mainShadowCoord);
 
                 float halfLambert = dot(nDirWS,lDirWS)*0.5+0.5;
-                half4 albedo = SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,i.uv);
+                half4 albedo = mainTex;
                 
                 half3 finalRGB = albedo*baseColor;
+                finalRGB = lerp(finalRGB*shadowValue,finalRGB,shadow);
                 
                 half4 result = half4(finalRGB,albedo.a);
                 return result;

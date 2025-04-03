@@ -23,8 +23,12 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - _FrameTex:
+        m_Texture: {fileID: 2800000, guid: 0d2e3aa0c6d89b44db914f35ed28b071, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: eec246800670847b19ffeb6857201207, type: 3}
+        m_Texture: {fileID: 2800000, guid: 15b968274fdc93741aedef83b02015ae, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _WindDistortionMap:
@@ -33,10 +37,16 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Bias: 0.336
+    - _Bias: 0.64
+    - _EnableFrameTexture: 0
+    - _FrameColumn: 2
+    - _FrameNum: 4
+    - _FrameRow: 2
+    - _FrameSpeed: 1
+    - _ShadowValue: 0.115
     - _U_Speed: 0.04
     - _V_Speed: 0.04
-    - _WindStrength: 0.97
+    - _WindStrength: 0.2
     m_Colors:
     - _BaseColor: {r: 0.5803922, g: 0.9254902, b: 0.4392157, a: 1}
   m_BuildTextureStacks: []
