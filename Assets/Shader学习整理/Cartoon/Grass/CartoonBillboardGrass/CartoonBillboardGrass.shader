@@ -24,6 +24,9 @@ Shader "URP/Cartoon/BillboardGrass"
         
         [Space(20)]
         _ShadowValue("Shadow Value",Range(0,1)) = 0.5
+        
+        [Space(20)]
+        [Toggle(_EnableMultipleMeshMode)]_EnableMultipleMeshMode("Enable Multiple Mesh Mode",float) = 0
     }
     
     SubShader
@@ -34,19 +37,21 @@ Shader "URP/Cartoon/BillboardGrass"
             "RenderPipeline" = "UniversalPipeline"
         }
     	
-    	//解决深度引动模式Depth Priming Mode问题
-        UsePass "Universal Render Pipeline/Unlit/DepthOnly"
-        UsePass "Universal Render Pipeline/Lit/DepthNormals"
+    	
+        //UsePass "Universal Render Pipeline/Lit/DepthOnly"
+        //UsePass "Universal Render Pipeline/Lit/DepthNormals"
 
         pass
         {
-            //Cull Off
+            Cull Off
             HLSLPROGRAM
 
             #pragma vertex vert
             #pragma fragment frag
 
             #pragma shader_feature _EnableFrameTexture
+            #pragma shader_feature _EnableMultipleMeshMode
+            
             //开启GPU Instance
             #pragma multi_compile_instancing
 
@@ -142,22 +147,32 @@ Shader "URP/Cartoon/BillboardGrass"
                 float2 windDistorationMap_FlowSpeed = float2(UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_U_Speed),UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_V_Speed));
                 float4 windDistortionMap_ST = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_WindDistortionMap_ST);
                 float bias = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_Bias);
+
+                float3 centerOffset = float3(0, 0, 0);
+                #ifdef _EnableMultipleMeshMode
+                    centerOffset = v.color;
+                #endif
+                v.vertex.xyz -= centerOffset;
                     
                 //Billboard
-                float3 newForwardDir = normalize(GetWorldSpaceViewDir(float3(0,0,0)));
-                float3 newRightDir = normalize(cross(float3(0,1,0),newForwardDir));
-                float3 newUpDir = normalize(cross(newForwardDir,newRightDir));
-                v.vertex.xyz =  v.vertex.x * newRightDir + v.vertex.y * newUpDir + v.vertex.z * newForwardDir;
+                float3 camPosOS = TransformWorldToObject(_WorldSpaceCameraPos);//将摄像机的坐标转换到物体模型空间
+                float3 newForwardDir = normalize(camPosOS - centerOffset); //计算新的forward轴
+                float3 newRightDir = normalize(cross(float3(0, 1, 0), newForwardDir)); //计算新的right轴
+                float3 newUpDir = normalize(cross(newForwardDir,newRightDir)); //计算新的up轴
+                v.vertex.xyz = newRightDir * v.vertex.x + newUpDir * v.vertex.y + newForwardDir*v.vertex.z; //将原本的xyz坐标以在新轴上计算，相当于一个线性变换【原模型空间】->【新模型空间】
                 
                 //Wind
-                float3 positionWS = TransformObjectToWorld(v.vertex.xyz);
-                float3 positionWS_0 = TransformObjectToWorld(float3(0,0,0));
+                float3 positionWS = TransformObjectToWorld(v.vertex.xyz+centerOffset);
+                float3 positionWS_0 = TransformObjectToWorld(float3(0,0,0)+centerOffset);
                 windStrength = max(0.0001f,windStrength);
                 float2 windUV = positionWS_0.xz*windDistortionMap_ST.xy + windDistortionMap_ST.zw + windDistorationMap_FlowSpeed*_Time.z;
                 float2 windSample = ((SAMPLE_TEXTURE2D_LOD(_WindDistortionMap,sampler_WindDistortionMap, windUV,0).xy * 2 - 1)+bias) * windStrength;
                 float3 wind = normalize(float3(windSample.x,0,windSample.y));
 	            float3x3 windRotation = AngleAxis3x3(PI * windSample.x, newForwardDir);
                 v.vertex.xyz = mul(windRotation,v.vertex.xyz);
+                
+                v.vertex.xyz += centerOffset;
+                
                 o.pos = TransformObjectToHClip(v.vertex.xyz);
                 o.nDirWS = TransformObjectToWorldNormal(v.normal);
                 o.uv = v.uv;
@@ -177,6 +192,7 @@ Shader "URP/Cartoon/BillboardGrass"
                 float frameColumn = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_FrameColumn);
                 float frameSpeed = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_FrameSpeed);
                 float shadowValue = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_ShadowValue);
+                float4 frameTex_ST = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_FrameTex_ST);
                 
                 float3 posWS = TransformObjectToWorld(i.posOS);
                 float4 mainShadowCoord = TransformWorldToShadowCoord(posWS);
@@ -187,7 +203,7 @@ Shader "URP/Cartoon/BillboardGrass"
                 float2 mainTexUV;
                 half4 mainTex;
                 #ifdef _EnableFrameTexture
-                    mainTexUV = TRANSFORM_TEX(i.uv, _FrameTex);
+                    mainTexUV = i.uv * frameTex_ST.xy + frameTex_ST.zw;
                     float perX = 1.0f /frameRow;
                     float perY = 1.0f /frameColumn;
                     float currentIndex = fmod(_Time.z*frameSpeed,frameNum);
@@ -195,12 +211,11 @@ Shader "URP/Cartoon/BillboardGrass"
                     int columnIndex = fmod(currentIndex,frameColumn);
                     float2 realMainTexUV = mainTexUV*float2(perX,perY)+float2(perX*columnIndex,perY*rowIndex);
                     mainTex =   SAMPLE_TEXTURE2D(_FrameTex, sampler_FrameTex, realMainTexUV);
-                    mainTex.rgb *= i.color.rgb; 
                     
                 #else
                     float4 mainTex_ST = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _MainTex_ST);
                     mainTexUV = i.uv*mainTex_ST.xy+mainTex_ST.zw;
-                    mainTex = i.color * SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, mainTexUV);
+                    mainTex = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, mainTexUV);
                 #endif
 
                 //shadow

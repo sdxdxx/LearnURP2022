@@ -65,7 +65,7 @@ Material:
     - _SubLayerMetallic: 0
     - _SubLayerNormalInt: 1
     - _SubLayerSmoothness: 0
-    - _WindStrength: 2.32
+    - _WindStrength: 0
     m_Colors:
     - _ColorTint: {r: 0.4528302, g: 0.22592595, b: 0.12175151, a: 1}
     - _DarkColor: {r: 0, g: 0, b: 0, a: 1}

@@ -26,7 +26,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 20019e63ee850eb4ea73b41b83a9b183, type: 3}
   m_Name: GodRayRenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     renderPassEvent: 550
     shader: {fileID: 4800000, guid: 01e7a6fa448b1964a89575727e5c2dfd, type: 3}
@@ -42,13 +42,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1dd661e3e19d6354b87e4c3379b16bfd, type: 3}
   m_Name: UnderWaterRenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     renderPassEvent: 550
     waterLayer:
       serializedVersion: 2
       m_Bits: 16
     shader: {fileID: 4800000, guid: 5fae94a8a3c7f324596e73f876327e4c, type: 3}
+--- !u!114 &-5379288083382555390
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b3d5ee6d82c2e24eb15a1eed47cfafb, type: 3}
+  m_Name: NormalLineRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  settings:
+    renderPassEvent: 220
 --- !u!114 &-3768913323404907122
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -76,7 +91,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b0dd1324ed513241bacf4f0212b7caa, type: 3}
   m_Name: CustomSSAORenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     renderPassEvent: 550
     shader: {fileID: 4800000, guid: a0b6cf6fab284e640803448e49b54c14, type: 3}
@@ -211,7 +226,8 @@ MonoBehaviour:
   - {fileID: -1976716827555561739}
   - {fileID: 4115091042566621598}
   - {fileID: 5375380266536543113}
-  m_RendererFeatureMap: adc0de57c6d2eee5d7c237a8a6a61b4cbeb84ddb1c055f8d48b3ff2b16d55de0e6d587b442c35ccc51e642729de87eac01595dabf62b1d43f090451f1e26cea3343dc546724425448ead36094d21b2cbd95633ab3bef4ef1f57e03b8844a91e49e49932280bd1b3989238e57df2f994a
+  - {fileID: -5379288083382555390}
+  m_RendererFeatureMap: adc0de57c6d2eee5d7c237a8a6a61b4cbeb84ddb1c055f8d48b3ff2b16d55de0e6d587b442c35ccc51e642729de87eac01595dabf62b1d43f090451f1e26cea3343dc546724425448ead36094d21b2cbd95633ab3bef4ef1f57e03b8844a91e49e49932280bd1b3989238e57df2f994a02ad7d25fded58b5
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
@@ -342,7 +358,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eea18e62c3cfbd44aa2f00bc4bbe5498, type: 3}
   m_Name: OutlineRenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     renderPassEvent: 550
     outlineLayer:

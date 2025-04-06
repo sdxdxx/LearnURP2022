@@ -125,16 +125,17 @@ Material:
     - _QueueOffset: 0
     - _RangeDark: 0.132
     - _RangeLight: 0.736
-    - _RangeSpecular: 0.518
+    - _RangeSpecular: 1
     - _ReceiveShadows: 1
     - _SmoothDark: 0
     - _SmoothLight: 0
-    - _SmoothSpecular: 0.003
+    - _SmoothSpecular: 0.2
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
+    - _SobelValue: 1
     - _SpecularHighlights: 1
-    - _SpecularIntensity: 0
-    - _SpecularPow: 70
+    - _SpecularIntensity: 1
+    - _SpecularPow: 3.51
     - _SrcBlend: 1
     - _SrcBlendAlpha: 1
     - _Surface: 0
