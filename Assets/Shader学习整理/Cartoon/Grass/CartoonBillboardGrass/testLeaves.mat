@@ -11,12 +11,15 @@ Material:
   m_Shader: {fileID: 4800000, guid: fb6f5bc7feec72249af08e748a0b161b, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
+  m_ValidKeywords:
+  - _EnableFrameTexture
+  - _EnableHoudiniDecodeMode
+  - _EnableMultipleMeshMode
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
+  m_CustomRenderQueue: 2000
   stringTagMap: {}
   disabledShaderPasses: []
   m_LockedProperties: 
@@ -72,7 +75,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _WindDistortionMap:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: e82bf72157401624698e571bf7bf369e, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - unity_Lightmaps:
@@ -99,11 +102,14 @@ Material:
     - _ClearCoatSmoothness: 0
     - _Cull: 2
     - _Cutoff: 0.5
+    - _DecodeValue: 10000
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _DstBlendAlpha: 0
-    - _EnableFrameTexture: 0
+    - _EnableDecodeMode: 1
+    - _EnableFrameTexture: 1
+    - _EnableMultipleMeshMode: 1
     - _EnvironmentReflections: 1
     - _FrameColumn: 2
     - _FrameNum: 4
@@ -132,7 +138,7 @@ Material:
     - _Surface: 0
     - _U_Speed: 0
     - _V_Speed: 0
-    - _WindStrength: 1
+    - _WindStrength: 0
     - _WorkflowMode: 1
     - _ZWrite: 1
     m_Colors:

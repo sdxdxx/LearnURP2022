@@ -28,6 +28,11 @@ Shader "URP/Cartoon/BillboardLeaf"
         _FrameColumn("Frame Column",int) = 5
         _FrameSpeed("Frame Speed",Range(0,10)) = 3
         
+        [Space(20)]
+        [Toggle(_EnableMultipleMeshMode)]_EnableMultipleMeshMode("Enable Multiple Mesh Mode",float) = 0
+        [Toggle(_EnableHoudiniDecodeMode)]_EnableDecodeMode("Enable Houdini Decode Mode",float) = 0
+        _DecodeValue("Decode Value",float) = 10000
+        
     }
     
     SubShader
@@ -51,6 +56,8 @@ Shader "URP/Cartoon/BillboardLeaf"
             #pragma fragment frag
 
             #pragma shader_feature _EnableFrameTexture
+            #pragma shader_feature _EnableMultipleMeshMode
+            #pragma shader_feature _EnableHoudiniDecodeMode
             
             //开启GPU Instance
             #pragma multi_compile_instancing
@@ -92,6 +99,8 @@ Shader "URP/Cartoon/BillboardLeaf"
                 UNITY_DEFINE_INSTANCED_PROP(float,_FrameRow)
                 UNITY_DEFINE_INSTANCED_PROP(float,_FrameColumn)
                 UNITY_DEFINE_INSTANCED_PROP(float,_FrameSpeed)
+
+                UNITY_DEFINE_INSTANCED_PROP(float,_DecodeValue)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             //SRP Bathcer
@@ -125,6 +134,8 @@ Shader "URP/Cartoon/BillboardLeaf"
                 float3 normal : NORMAL;
                 float4 color : COLOR;
                 float2 uv : TEXCOORD0;
+                float2 uv2 : TEXCOORD1;
+                float2 uv3 : TEXCOORD2;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -143,28 +154,42 @@ Shader "URP/Cartoon/BillboardLeaf"
                 vertexOutput o;
                 UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_TRANSFER_INSTANCE_ID(v, o);
-                
+
                 //Instance变量
                 float windStrength = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_WindStrength);
                 float2 windDistorationMap_FlowSpeed = float2(UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_U_Speed),UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_V_Speed));
                 float4 windDistortionMap_ST = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_WindDistortionMap_ST);
                 float bias = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_Bias);
+                
+                 float3 centerOffset = float3(0, 0, 0);
+                
+                #ifdef _EnableMultipleMeshMode
+                    centerOffset = v.color;
+                #endif
+
+                #ifdef _EnableHoudiniDecodeMode
+                    centerOffset = (float4(v.uv2,v.uv3)*2.0-1.0)*UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_DecodeValue);
+                #endif
+                v.vertex.xyz -= centerOffset;
                     
                 //Billboard
-                float3 newForwardDir = normalize(GetWorldSpaceViewDir(TransformObjectToWorld(float3(0,0,0))));
-                float3 newRightDir = normalize(cross(float3(0,1,0),newForwardDir));
-                float3 newUpDir = normalize(cross(newForwardDir,newRightDir));
-                v.vertex.xyz =  v.vertex.x * newRightDir + v.vertex.y * newUpDir + v.vertex.z * newForwardDir;
+                float3 camPosOS = TransformWorldToObject(_WorldSpaceCameraPos);//将摄像机的坐标转换到物体模型空间
+                float3 newForwardDir = normalize(camPosOS - centerOffset); //计算新的forward轴
+                float3 newRightDir = normalize(cross(float3(0, 1, 0), newForwardDir)); //计算新的right轴
+                float3 newUpDir = normalize(cross(newForwardDir,newRightDir)); //计算新的up轴
+                v.vertex.xyz = newRightDir * v.vertex.x + newUpDir * v.vertex.y + newForwardDir*v.vertex.z; //将原本的xyz坐标以在新轴上计算，相当于一个线性变换【原模型空间】->【新模型空间】
                 
                 //Wind
-                float3 positionWS = TransformObjectToWorld(v.vertex.xyz);
-                float3 positionWS_0 = TransformObjectToWorld(float3(0,0,0));
+                float3 positionWS_0 = TransformObjectToWorld(float3(0,0,0)+centerOffset);
                 windStrength = max(0.0001f,windStrength);
                 float2 windUV = positionWS_0.xz*windDistortionMap_ST.xy + windDistortionMap_ST.zw + windDistorationMap_FlowSpeed*_Time.z;
                 float2 windSample = ((SAMPLE_TEXTURE2D_LOD(_WindDistortionMap,sampler_WindDistortionMap, windUV,0).xy * 2 - 1)+bias) * windStrength;
                 float3 wind = normalize(float3(windSample.x,0,windSample.y));
 	            float3x3 windRotation = AngleAxis3x3(PI * windSample.x, newForwardDir);
                 v.vertex.xyz = mul(windRotation,v.vertex.xyz);
+                
+                v.vertex.xyz += centerOffset;
+                
                 o.pos = TransformObjectToHClip(v.vertex.xyz);
                 o.nDirWS = TransformObjectToWorldNormal(v.normal);
                 o.uv = v.uv;
@@ -196,6 +221,11 @@ Shader "URP/Cartoon/BillboardLeaf"
                 float smoothValue = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_SmoothValue);
                 
                 float3 normal = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_normal);
+
+                #ifdef _EnableMultipleMeshMode
+                    normal = i.nDirWS;
+                #endif
+                
                 
                 float2 mainTexUV;
                 half4 mainTex;

@@ -27,6 +27,8 @@ Shader "URP/Cartoon/BillboardGrass"
         
         [Space(20)]
         [Toggle(_EnableMultipleMeshMode)]_EnableMultipleMeshMode("Enable Multiple Mesh Mode",float) = 0
+        [Toggle(_EnableHoudiniDecodeMode)]_EnableDecodeMode("Enable Houdini Decode Mode",float) = 0
+        _DecodeValue("Decode Value",float) = 10000
     }
     
     SubShader
@@ -51,6 +53,7 @@ Shader "URP/Cartoon/BillboardGrass"
 
             #pragma shader_feature _EnableFrameTexture
             #pragma shader_feature _EnableMultipleMeshMode
+            #pragma shader_feature _EnableHoudiniDecodeMode
             
             //开启GPU Instance
             #pragma multi_compile_instancing
@@ -90,6 +93,8 @@ Shader "URP/Cartoon/BillboardGrass"
                 UNITY_DEFINE_INSTANCED_PROP(float,_FrameColumn)
                 UNITY_DEFINE_INSTANCED_PROP(float,_FrameSpeed)
                 UNITY_DEFINE_INSTANCED_PROP(float,_ShadowValue)
+            
+                UNITY_DEFINE_INSTANCED_PROP(float,_DecodeValue)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             //SRP Bathcer
@@ -123,6 +128,8 @@ Shader "URP/Cartoon/BillboardGrass"
                 float3 normal : NORMAL;
                 float4 color : COLOR;
                 float2 uv : TEXCOORD0;
+                float2 uv2 : TEXCOORD1;
+                float2 uv3 : TEXCOORD2;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -141,16 +148,22 @@ Shader "URP/Cartoon/BillboardGrass"
                 vertexOutput o;
                 UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_TRANSFER_INSTANCE_ID(v, o);
+
                 
                 //Instance变量
                 float windStrength = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_WindStrength);
                 float2 windDistorationMap_FlowSpeed = float2(UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_U_Speed),UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_V_Speed));
                 float4 windDistortionMap_ST = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_WindDistortionMap_ST);
                 float bias = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_Bias);
-
+                
                 float3 centerOffset = float3(0, 0, 0);
+                
                 #ifdef _EnableMultipleMeshMode
                     centerOffset = v.color;
+                #endif
+
+                #ifdef _EnableHoudiniDecodeMode
+                    centerOffset = (float4(v.uv2,v.uv3)*2.0-1.0)*UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_DecodeValue);
                 #endif
                 v.vertex.xyz -= centerOffset;
                     
@@ -184,7 +197,6 @@ Shader "URP/Cartoon/BillboardGrass"
             half4 frag (vertexOutput i) : SV_TARGET
             {
                 UNITY_SETUP_INSTANCE_ID(i);
-                
                 //Instance变量
                 half3 baseColor = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseColor);
                 int frameNum = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FrameNum);

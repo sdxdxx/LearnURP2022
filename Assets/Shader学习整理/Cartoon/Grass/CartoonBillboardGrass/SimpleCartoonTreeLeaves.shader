@@ -26,6 +26,11 @@ Shader "URP/CartoonTree/SimpleLeaves"
         _FrameRow("Frame Row",int) = 5
         _FrameColumn("Frame Column",int) = 5
         _FrameSpeed("Frame Speed",Range(0,10)) = 3
+    	
+    	[Space(20)]
+        [Toggle(_EnableMultipleMeshMode)]_EnableMultipleMeshMode("Enable Multiple Mesh Mode",float) = 0
+    	[Toggle(_EnableHoudiniDecodeMode)]_EnableDecodeMode("Enable Houdini Decode Mode",float) = 0
+        _DecodeValue("Decode Value",float) = 10000
     }
     
     SubShader
@@ -47,6 +52,8 @@ Shader "URP/CartoonTree/SimpleLeaves"
     		#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
 
     		#pragma shader_feature _EnableFrameTexture
+    		#pragma shader_feature _EnableMultipleMeshMode
+    		#pragma shader_feature _EnableHoudiniDecodeMode
 
     		#pragma multi_compile  _MAIN_LIGHT_SHADOWS
     		#pragma multi_compile  _MAIN_LIGHT_SHADOWS_CASCADE
@@ -80,6 +87,8 @@ Shader "URP/CartoonTree/SimpleLeaves"
     		
     		float _ShadowValue;
     		float _SmoothValue;
+    		
+    		float _DecodeValue;
             //----------变量声明结束-----------
             CBUFFER_END
     		
@@ -89,6 +98,8 @@ Shader "URP/CartoonTree/SimpleLeaves"
                 float3 normal : NORMAL;
             	float4 color : COLOR;
                 float2 uv : TEXCOORD0;
+                float2 uv2 : TEXCOORD1;
+                float2 uv3 : TEXCOORD2;
             };
 
             struct vertexOutput
@@ -102,6 +113,26 @@ Shader "URP/CartoonTree/SimpleLeaves"
 
             vertexOutput vert (vertexInput v)
             {
+
+            	float3 centerOffset = float3(0, 0, 0);
+                #ifdef _EnableMultipleMeshMode
+                    centerOffset = v.color;
+                #endif
+
+            	#ifdef _EnableHoudiniDecodeMode
+                    centerOffset = (float4(v.uv2,v.uv3)*2.0-1.0)*_DecodeValue;
+                #endif
+            	
+                v.vertex.xyz -= centerOffset;
+                    
+                //Billboard
+                float3 camPosOS = TransformWorldToObject(_WorldSpaceCameraPos);//将摄像机的坐标转换到物体模型空间
+                float3 newForwardDir = normalize(camPosOS - centerOffset); //计算新的forward轴
+                float3 newRightDir = normalize(cross(float3(0, 1, 0), newForwardDir)); //计算新的right轴
+                float3 newUpDir = normalize(cross(newForwardDir,newRightDir)); //计算新的up轴
+                v.vertex.xyz = newRightDir * v.vertex.x + newUpDir * v.vertex.y + newForwardDir*v.vertex.z; //将原本的xyz坐标以在新轴上计算，相当于一个线性变换【原模型空间】->【新模型空间】
+            	v.vertex.xyz += centerOffset;
+            	
             	float3 posWS = TransformObjectToWorld(v.vertex);
             	float windStrength = _WindStrength+0.001f;
             	float2 windUV = posWS.xz * _WindDistortionMap_ST.xy + _WindDistortionMap_ST.zw + float2(_U_Speed,_V_Speed) * _Time.y;

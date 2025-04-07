@@ -8,6 +8,7 @@ public class CombineMeshes : EditorWindow
     
     GUIStyle boxStyle;
     private GameObject parentGameObject;
+    private Vector3 originPosition;
     private string savePath = "Assets";
     private string defaultName = "NewMesh";
     
@@ -51,11 +52,16 @@ public class CombineMeshes : EditorWindow
     }
     private void CombineMeshesWindow()
     {
+        
+        
         if (parentGameObject == null)
         {
             Debug.LogError("Parent game object is null.");
             return;
         }
+        
+        originPosition = parentGameObject.transform.position;
+        parentGameObject.transform.position = new Vector3(0,0,0);
         
         var meshfilters = parentGameObject.GetComponentsInChildren<MeshFilter>();
         if (meshfilters != null && meshfilters.Length > 0)
@@ -80,18 +86,19 @@ public class CombineMeshes : EditorWindow
 
             var newMesh = new Mesh();
             newMesh.CombineMeshes(combineInstances, true);
-
             var colors = new List<Color>();
             foreach (var offset in centerOffset)
             {
                 colors.Add(new Vector4(offset.x, offset.y, offset.z, 1));
+                Debug.Log(offset);
             }
             //把偏移向量写入顶点颜色数据中
             newMesh.colors = colors.ToArray();
-            
             SaveAssets(newMesh, ref savePath);
         }
-        
+
+        parentGameObject.transform.position = originPosition;
+
     }
     
     private void SaveAssets(Mesh mesh, ref string path)
