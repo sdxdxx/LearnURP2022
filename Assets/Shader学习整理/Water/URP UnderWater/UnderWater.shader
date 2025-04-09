@@ -139,12 +139,25 @@ Shader "URP/PostProcessing/UnderWater"
             //----------变量声明结束-----------
             CBUFFER_END
 
-             float3 ReconstructWorldPositionFromDepth(float2 screenPos, float depth)
+            float3 ReconstructWorldPositionFromDepth(float2 screenPos, float rawDepth)
             {
                 float2 ndcPos = screenPos*2-1;//map[0,1] -> [-1,1]
-                float3 clipPos = float3(ndcPos.x,ndcPos.y,1)*_ProjectionParams.z;// z = far plane = mvp result w
-                float3 viewPos = mul(unity_CameraInvProjection,clipPos.xyzz).xyz * depth;
-                float3 worldPos = mul(UNITY_MATRIX_I_V,float4(viewPos,1)).xyz;
+            	float3 worldPos;
+                if (unity_OrthoParams.w)
+                {
+					float depth01 = 1-rawDepth;
+                	float3 viewPos = float3(unity_OrthoParams.xy * ndcPos.xy, 0);
+                	viewPos.z = -lerp(_ProjectionParams.y, _ProjectionParams.z, depth01);
+                	worldPos = mul(UNITY_MATRIX_I_V, float4(viewPos, 1)).xyz;
+                }
+                else
+                {
+	                float depth01 = Linear01Depth(rawDepth,_ZBufferParams);
+                	float3 clipPos = float3(ndcPos.x,ndcPos.y,1)*_ProjectionParams.z;// z = far plane = mvp result w
+	                float3 viewPos = mul(unity_CameraInvProjection,clipPos.xyzz).xyz * depth01;
+	                worldPos = mul(UNITY_MATRIX_I_V,float4(viewPos,1)).xyz;
+                }
+            	
                 return worldPos;
             }
             
@@ -203,6 +216,11 @@ Shader "URP/PostProcessing/UnderWater"
             	float m_rawDepth =  SAMPLE_TEXTURE2D(_MyDepthTex, sampler_PointClamp, i.texcoord);
                 float m_linearDepth = LinearEyeDepth(m_rawDepth,_ZBufferParams);
             	float m_depth01 = Linear01Depth(m_rawDepth,_ZBufferParams);
+                if (unity_OrthoParams.w)
+                {
+	                m_depth01 = 1-m_rawDepth;
+                	m_linearDepth = lerp(_ProjectionParams.y,_ProjectionParams.z,m_depth01);
+                }
             	
             	float2 distorationNoise = SAMPLE_TEXTURE2D(_DistorationNoise,sampler_DistorationNoise,
             		i.texcoord*_DistorationNoise_Tilling+_Time.y*0.1*_DistorationSpeed);
@@ -210,6 +228,10 @@ Shader "URP/PostProcessing/UnderWater"
             	
             	float m_rawDepth_distoration =  SAMPLE_TEXTURE2D(_MyDepthTex, sampler_PointClamp, distorationUV);
                 float m_depth01_distoration = Linear01Depth(m_rawDepth_distoration,_ZBufferParams);
+            	if (unity_OrthoParams.w)
+                {
+	                m_depth01_distoration = 1-m_rawDepth_distoration;
+                }
             	
             	float waterDepth = _WaterPlaneHeight - viewPortFragWS.y;
             	half3 waterCol = lerp(_UnderWaterDeepColor,_UnderWaterShallowColor,exp(-waterDepth));
@@ -220,8 +242,7 @@ Shader "URP/PostProcessing/UnderWater"
             	
             	//Caustics
             	float rawDepth_distoration =  SAMPLE_TEXTURE2D(_CameraDepthTexture, sampler_PointClamp, i.texcoord);
-                float depth01_distoration = Linear01Depth(rawDepth_distoration,_ZBufferParams);
-            	float3 posWS_Frag_distoration = ReconstructWorldPositionFromDepth(i.texcoord,depth01_distoration);
+            	float3 posWS_Frag_distoration = ReconstructWorldPositionFromDepth(i.texcoord,rawDepth_distoration);
             	float2 causiticsUV = posWS_Frag_distoration.xz/_CausticsTextureScale;
                 float2 causiticsUV1 = frac(causiticsUV+_Time.x*_CausiticsSpeed);
                 float2 causiticsUV2 = frac(causiticsUV-_Time.x*_CausiticsSpeed);

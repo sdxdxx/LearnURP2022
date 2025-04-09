@@ -58,10 +58,10 @@ Shader "URP/ShaderURP_Water"
         _BlinkThreshold("Blink Threshold",float) = 1
         
     	//[Header(Wave)]
-    	//_WaveA ("Wave A (dir, steepness, wavelength)", Vector) = (0.2,0,0.1,2)
-    	//_WaveB ("Wave B", Vector) = (0,0.2,0.05,4)
-		//_WaveC ("Wave C", Vector) = (0.2,0.2,0.1,2)
-        //_WaveInt("Wave Intensity",Range(0,1)) = 1
+    	_WaveA ("Wave A (dir, steepness, wavelength)", Vector) = (0.2,0,0.1,2)
+    	_WaveB ("Wave B", Vector) = (0,0.2,0.05,2)
+		_WaveC ("Wave C", Vector) = (0.2,0.2,0.1,2)
+        _WaveInt("Wave Intensity",Range(0,1)) = 1
     }
     
     SubShader
@@ -258,12 +258,25 @@ Shader "URP/ShaderURP_Water"
 				return (t / t.z) * dot(t, u) - u;
 			}
 
-            float3 ReconstructWorldPositionFromDepth(float4 screenPos, float depth)
+            float3 ReconstructWorldPositionFromDepth(float4 screenPos, float rawDepth)
             {
-                float4 ndcPos = (screenPos/screenPos.w)*2-1;//map[0,1] -> [-1,1]
-                float3 clipPos = float3(ndcPos.x,ndcPos.y,1)*_ProjectionParams.z;// z = far plane = mvp result w
-                float3 viewPos = mul(unity_CameraInvProjection,clipPos.xyzz).xyz * depth;
-                float3 worldPos = mul(UNITY_MATRIX_I_V,float4(viewPos,1)).xyz;
+                float2 ndcPos = (screenPos/screenPos.w)*2-1;//map[0,1] -> [-1,1]
+            	float3 worldPos;
+                if (unity_OrthoParams.w)
+                {
+					float depth01 = 1-rawDepth;
+                	float3 viewPos = float3(unity_OrthoParams.xy * ndcPos.xy, 0);
+                	viewPos.z = -lerp(_ProjectionParams.y, _ProjectionParams.z, depth01);
+                	worldPos = mul(UNITY_MATRIX_I_V, float4(viewPos, 1)).xyz;
+                }
+                else
+                {
+	                float depth01 = Linear01Depth(rawDepth,_ZBufferParams);
+                	float3 clipPos = float3(ndcPos.x,ndcPos.y,1)*_ProjectionParams.z;// z = far plane = mvp result w
+	                float3 viewPos = mul(unity_CameraInvProjection,clipPos.xyzz).xyz * depth01;
+	                worldPos = mul(UNITY_MATRIX_I_V,float4(viewPos,1)).xyz;
+                }
+            	
                 return worldPos;
             }
     	
@@ -355,16 +368,15 @@ Shader "URP/ShaderURP_Water"
             	
             	//WaterDepth(Get Original Depth)
                 float rawDepth0 = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_CameraDepthTexture,screenPos).r;
-                float depth0 = Linear01Depth(rawDepth0,_ZBufferParams);//linear 0-1
-                float3 posWS_frag0 = ReconstructWorldPositionFromDepth(i.screenPos,depth0);
+                float3 posWS_frag0 = ReconstructWorldPositionFromDepth(i.screenPos,rawDepth0);
                 float waterDepth0 = i.posWS.y - posWS_frag0.y;
             	
             	//Firstly Sample Depth Texture (Distortion)
             	float2 grabUV = screenPos;
             	grabUV.x += noiseUV*_NormalNoise;
             	float rawDepth1 =  SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,grabUV).r;
-            	float depth1 = Linear01Depth(rawDepth1,_ZBufferParams);//linear 0-1
-                float3 posWS_frag1 = ReconstructWorldPositionFromDepth(i.screenPos,depth1);
+            	
+                float3 posWS_frag1 = ReconstructWorldPositionFromDepth(i.screenPos,rawDepth1);
 
             	//Get Refraction Mask
             	float refractionMask = step(posWS_frag1.y,i.posWS.y);
@@ -373,8 +385,7 @@ Shader "URP/ShaderURP_Water"
 
             	//Secondly Sample Depth Texture (Remove the parts that should not be distorted)
             	float rawDepth2 =  SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,grabUV).r;
-            	float depth2 = Linear01Depth(rawDepth2,_ZBufferParams);//linear 0-1
-                float3 posWS_frag2 = ReconstructWorldPositionFromDepth(i.screenPos,depth2);
+                float3 posWS_frag2 = ReconstructWorldPositionFromDepth(i.screenPos,rawDepth2);
 
             	float waterDepth = i.posWS.y - posWS_frag2.y;
             	

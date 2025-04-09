@@ -54,12 +54,53 @@ Shader "URP/PostProcessing/Custom_SSAO"
 				return frac(sin(dot(p, float2(12.9898, 78.233))) * 43758.5453);
 			}
 
-            float3 ReconstructViewPositionFromDepth(float2 screenPos, float depth)
+            float3 ReconstructViewPositionFromDepth(float2 screenPos, float depth01)
             {
                 float2 ndcPos = screenPos*2-1;//map[0,1] -> [-1,1]
-               float3 clipPos = float3(ndcPos.x,ndcPos.y,1)*_ProjectionParams.z;// z = far plane = mvp result w（由规律可知）
-               float3 viewPos = mul(unity_CameraInvProjection,clipPos.xyzz).xyz * depth;
-               return viewPos;
+            	float3 viewPos;
+                if (unity_OrthoParams.w)
+                {
+                	viewPos = float3(unity_OrthoParams.xy * ndcPos.xy, 0);
+                	viewPos.z = -lerp(_ProjectionParams.y, _ProjectionParams.z, depth01);
+                }
+                else
+                {
+                	float3 clipPos = float3(ndcPos.x,ndcPos.y,1)*_ProjectionParams.z;// z = far plane = mvp result w
+	                viewPos = mul(unity_CameraInvProjection,clipPos.xyzz).xyz * depth01;
+                }
+            	
+                return viewPos;
+            }
+
+			float GetDepth01(float rawDepth)
+            {
+            	float depth01;
+	            if (unity_OrthoParams.w)
+	            {
+		             depth01 = 1-rawDepth;
+	            }
+	            else
+	            {
+		             depth01 = Linear01Depth(rawDepth,_ZBufferParams);
+	            }
+
+            	return depth01;
+            }
+
+			float2 GetScreenPos(float3 posVS)
+            {
+                float2 screenPos;
+                if (unity_OrthoParams.w>0.5)
+                {
+                    float2 ndcPos = posVS.xy/unity_OrthoParams.xy;
+                    screenPos = ndcPos*0.5+0.5;
+                }
+                else
+                {
+                    float3 clipPos = mul((float3x3)unity_CameraProjection, posVS);
+                    screenPos = (clipPos.xy / clipPos.z) * 0.5 + 0.5;
+                }
+                return screenPos;
             }
         ENDHLSL
 
@@ -97,10 +138,10 @@ Shader "URP/PostProcessing/Custom_SSAO"
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
 
             	//Preparation
-                float existingDepth01 = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_CameraDepthTexture,i.texcoord).r;
+                float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_CameraDepthTexture,i.texcoord).r;
                 float3 nDirWS = SAMPLE_TEXTURE2D_X(_CameraNormalsTexture,sampler_CameraNormalsTexture,i.texcoord).xyz;
                 float3 nDirVS = TransformWorldToViewNormal(nDirWS);//View Space Normal Direction
-                float linear01Depth = Linear01Depth(existingDepth01,_ZBufferParams);
+                float linear01Depth = GetDepth01(rawDepth);
                 float3 posVS_frag = ReconstructViewPositionFromDepth(i.texcoord,linear01Depth);//View Space Frag Pos
             	float2 lastSampleScreenPos = i.texcoord;
             	
@@ -116,9 +157,7 @@ Shader "URP/PostProcessing/Custom_SSAO"
                 	
                      //Calculate Normal-Oriented Hemisphere Vector
                     float3 randomSamplePosVS = posVS_frag + randomSampleVec * _SampleRadius;
-                	
-                    float3 randomSampleClipPos = mul((float3x3)unity_CameraProjection, randomSamplePosVS);
-                    float2 randomSampleScreenPos = (randomSampleClipPos.xy / randomSampleClipPos.z) * 0.5 + 0.5;
+                    float2 randomSampleScreenPos = GetScreenPos(randomSamplePosVS);
                 	lastSampleScreenPos = randomSampleScreenPos;
                 	
 
@@ -131,7 +170,7 @@ Shader "URP/PostProcessing/Custom_SSAO"
                     //Calculate Sample Point Depth
                     float OcculusionPoint01Depth;
                     float OcculusionPointRawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_CameraDepthTexture,randomSampleScreenPos).r;
-                    OcculusionPoint01Depth = Linear01Depth(OcculusionPointRawDepth,_ZBufferParams);
+                    OcculusionPoint01Depth = GetDepth01(OcculusionPointRawDepth);
 
                 	//Calculate Randomly Sampled View Space Frag Position
                 	float3 OcculusionPointPosVS = ReconstructViewPositionFromDepth(randomSampleScreenPos,OcculusionPoint01Depth);
