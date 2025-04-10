@@ -27,7 +27,7 @@ MonoBehaviour:
     m_Value: {r: 1, g: 1, b: 1, a: 1}
   StepLength:
     m_OverrideState: 1
-    m_Value: 0.045
+    m_Value: 0.04
   Thickness:
     m_OverrideState: 1
     m_Value: 0.125

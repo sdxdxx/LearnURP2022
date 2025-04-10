@@ -24,12 +24,55 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
             #include  "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
     		#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/GlobalIllumination.hlsl"
             
-            float3 ReconstructViewPositionFromDepth(float2 screenPos, float depth)
+            float3 ReconstructViewPositionFromDepth(float2 screenPos, float rawDepth)
             {
                 float2 ndcPos = screenPos*2-1;//map[0,1] -> [-1,1]
-               float3 clipPos = float3(ndcPos.x,ndcPos.y,1)*_ProjectionParams.z;// z = far plane = mvp result w（由规律可知）
-               float3 viewPos = mul(unity_CameraInvProjection,clipPos.xyzz).xyz * depth;
-               return viewPos;
+            	float3 viewPos;
+                if (unity_OrthoParams.w)
+                {
+					float depth01 = 1-rawDepth;
+                	viewPos = float3(unity_OrthoParams.xy * ndcPos.xy, 0);
+                	viewPos.z = -lerp(_ProjectionParams.y, _ProjectionParams.z, depth01);
+                }
+                else
+                {
+	                float depth01 = Linear01Depth(rawDepth,_ZBufferParams);
+                	float3 clipPos = float3(ndcPos.x,ndcPos.y,1)*_ProjectionParams.z;// z = far plane = mvp result w
+	                viewPos = mul(unity_CameraInvProjection,clipPos.xyzz).xyz * depth01;
+                }
+            	
+                return viewPos;
+            }
+
+            float GetLinearEyeDepth(float rawDepth)
+            {
+                float linearEyeDepth ;
+                if (unity_OrthoParams.w>0.5)
+                {
+                    float depth01 = 1-rawDepth;
+                    linearEyeDepth = lerp(_ProjectionParams.y, _ProjectionParams.z, depth01);
+                }
+                else
+                {
+                   linearEyeDepth = LinearEyeDepth(rawDepth,_ZBufferParams);
+                }
+                return linearEyeDepth;
+            }
+
+            float2 GetScreenPos(float3 posVS)
+            {
+                float2 screenPos;
+                if (unity_OrthoParams.w>0.5)
+                {
+                    float2 ndcPos = posVS.xy/unity_OrthoParams.xy;
+                    screenPos = ndcPos*0.5+0.5;
+                }
+                else
+                {
+                    float3 clipPos = mul((float3x3)unity_CameraProjection, posVS);
+                    screenPos = (clipPos.xy / clipPos.z) * 0.5 + 0.5;
+                }
+                return screenPos;
             }
         ENDHLSL
         
@@ -87,15 +130,26 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
             half4 ScreenSpaceReflection_Simple(Varyings i)
             {
                 float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, i.texcoord).r;
-                float linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
-                float3 posVS = ReconstructViewPositionFromDepth(i.texcoord,linear01Depth);
+                float3 posVS = ReconstructViewPositionFromDepth(i.texcoord,rawDepth);
                 float3 nDirWS = SAMPLE_TEXTURE2D(_CameraNormalsTexture,sampler_PointClamp,i.texcoord).xyz;
                 float3 nDirVS = TransformWorldToViewNormal(nDirWS);
-                float3 sampleNormalizeVector = normalize(reflect(normalize(posVS),nDirVS));
+                
+                float3 sampleNormalizeVector;
+                if (unity_OrthoParams.w>0)
+                {
+                    float3 rayWS = normalize(-UNITY_MATRIX_V[2].xyz);//防止Raymarching视角变形
+                    float3 rayVS = TransformWorldToViewDir(rayWS);
+                    sampleNormalizeVector = normalize(reflect(rayVS,nDirVS));
+                }
+                else
+                {
+                    sampleNormalizeVector = normalize(reflect(normalize(posVS),nDirVS));
+                }
+                
                 float3 samplePosVS = posVS;
                 float stepLength = _StepLength;
                 int maxStep = 128;
-                float3 sampleClipPos;
+                
                 float2 sampleScreenPos;
                 int step;
                 
@@ -105,9 +159,7 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                 for (step = 1; step<=maxStep; step++)
                 {
                     samplePosVS += sampleNormalizeVector*stepLength;
-                    sampleClipPos = mul((float3x3)unity_CameraProjection, samplePosVS);
-                    sampleScreenPos = (sampleClipPos.xy / sampleClipPos.z) * 0.5 + 0.5;
-                    
+                    sampleScreenPos = GetScreenPos(samplePosVS);
                     if (sampleScreenPos.x>1 || sampleScreenPos.y >1)
                     {
                         //超出屏幕直接剔除
@@ -115,7 +167,7 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                     }
                     
                     float sampleRawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,sampleScreenPos).r;
-                    float sampleLinearEyeDepth = LinearEyeDepth(sampleRawDepth,_ZBufferParams);
+                    float sampleLinearEyeDepth = GetLinearEyeDepth(sampleRawDepth);
                     if ((sampleLinearEyeDepth<-samplePosVS.z)&&(-samplePosVS.z<(sampleLinearEyeDepth+_Thickness)))
                     {
                         float2 reflectScreenPos = sampleScreenPos;
@@ -138,16 +190,27 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
             half4 ScreenSpaceReflection_BinarySearch(Varyings i)
             {
                 float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, i.texcoord).r;
-                float linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
-                float3 posVS = ReconstructViewPositionFromDepth(i.texcoord,linear01Depth);
+                //float linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
+                float3 posVS = ReconstructViewPositionFromDepth(i.texcoord,rawDepth);
                 float3 nDirWS = SAMPLE_TEXTURE2D(_CameraNormalsTexture,sampler_PointClamp,i.texcoord).xyz;
                 float3 nDirVS = TransformWorldToViewNormal(nDirWS);
-                float3 sampleNormalizeVector = normalize(reflect(normalize(posVS),nDirVS));
+                
+                float3 sampleNormalizeVector;
+                if (unity_OrthoParams.w>0)
+                {
+                    float3 rayWS = normalize(-UNITY_MATRIX_V[2].xyz);//防止Raymarching视角变形
+                    float3 rayVS = TransformWorldToViewDir(rayWS);
+                    sampleNormalizeVector = normalize(reflect(rayVS,nDirVS));
+                }
+                else
+                {
+                    sampleNormalizeVector = normalize(reflect(normalize(posVS),nDirVS));
+                }
+                
                 float3 lastSamplePosVS = posVS;
                 float3 samplePosVS = posVS;
                 float stepLength = _MaxStepLength;
                 int maxStep = 128;
-                float3 sampleClipPos;
                 float2 sampleScreenPos;
                 int step;
                 
@@ -158,8 +221,7 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                 {
                     lastSamplePosVS = samplePosVS;
                     samplePosVS += sampleNormalizeVector*stepLength;
-                    sampleClipPos = mul((float3x3)unity_CameraProjection, samplePosVS);
-                    sampleScreenPos = (sampleClipPos.xy / sampleClipPos.z) * 0.5 + 0.5;
+                    sampleScreenPos = GetScreenPos(samplePosVS);
                     
                     if (sampleScreenPos.x>1 || sampleScreenPos.y >1)
                     {
@@ -168,7 +230,7 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                     }
                     
                     float sampleRawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,sampleScreenPos).r;
-                    float sampleLinearEyeDepth = LinearEyeDepth(sampleRawDepth,_ZBufferParams);
+                    float sampleLinearEyeDepth = GetLinearEyeDepth(sampleRawDepth);
 
                     //判定成功
                     if ((sampleLinearEyeDepth<-samplePosVS.z))
@@ -213,17 +275,28 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
             half4 ScreenSpaceReflection_BinarySearch_JitterDither(Varyings i)
             {
                 float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, i.texcoord).r;
-                float linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
-                float3 posVS = ReconstructViewPositionFromDepth(i.texcoord,linear01Depth);
+                //float linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
+                float3 posVS = ReconstructViewPositionFromDepth(i.texcoord,rawDepth);
                 float3 nDirWS = SAMPLE_TEXTURE2D(_CameraNormalsTexture,sampler_PointClamp,i.texcoord).xyz;
                 float3 nDirVS = TransformWorldToViewNormal(nDirWS);
-                float3 sampleNormalizeVector = normalize(reflect(normalize(posVS),nDirVS));
+                                
+                float3 sampleNormalizeVector;
+                if (unity_OrthoParams.w>0)
+                {
+                    float3 rayWS = normalize(-UNITY_MATRIX_V[2].xyz);//防止Raymarching视角变形
+                    float3 rayVS = TransformWorldToViewDir(rayWS);
+                    sampleNormalizeVector = normalize(reflect(rayVS,nDirVS));
+                }
+                else
+                {
+                    sampleNormalizeVector = normalize(reflect(normalize(posVS),nDirVS));
+                }
+                
                 float3 samplePosVS = posVS;
                 float3 lastSamplePosVS = posVS;
                 float stepLength = _MaxStepLength;
                 
                 int maxStep = 64;
-                float3 sampleClipPos;
                 float2 sampleScreenPos = i.texcoord.xy;
                 float2 pixelPos = round(i.texcoord.xy*_ScreenParams.xy);
                 int step;
@@ -237,8 +310,7 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                     float2 ditherUV = fmod(pixelPos, 4);  
                     float jitter = dither[ditherUV.x * 4 + ditherUV.y]*_DitherIntensity*2.5f;
                     float3 realSamplePosVS = samplePosVS + jitter*sampleNormalizeVector*stepLength;
-                    sampleClipPos = mul((float3x3)unity_CameraProjection, realSamplePosVS);
-                    sampleScreenPos = (sampleClipPos.xy / sampleClipPos.z) * 0.5 + 0.5;
+                    sampleScreenPos = GetScreenPos(realSamplePosVS);
 
                     if (sampleScreenPos.x>1 || sampleScreenPos.y >1)
                     {
@@ -247,7 +319,7 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                     }
                     
                     float sampleRawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,sampleScreenPos).r;
-                    float sampleLinearEyeDepth = LinearEyeDepth(sampleRawDepth,_ZBufferParams);
+                    float sampleLinearEyeDepth = GetLinearEyeDepth(sampleRawDepth);
 
                     //判定成功
                     if ((sampleLinearEyeDepth<-realSamplePosVS.z))
@@ -284,8 +356,8 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
             half4 ScreenSpaceReflection_Efficient(Varyings i)
             {
                 float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, i.texcoord).r;
-                float linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
-                float3 posVS = ReconstructViewPositionFromDepth(i.texcoord,linear01Depth);
+                //float linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
+                float3 posVS = ReconstructViewPositionFromDepth(i.texcoord,rawDepth);
                 float3 nDirWS = SAMPLE_TEXTURE2D(_CameraNormalsTexture,sampler_PointClamp,i.texcoord).xyz;
                 float3 nDirVS = TransformWorldToViewNormal(nDirWS);
                 float3 sampleNormalizeVector = normalize(reflect(normalize(posVS),nDirVS));
@@ -377,7 +449,7 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                     }
                     
                     float sampleRawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,sampleScreenPos).r;
-                    float sampleLinearEyeDepth = LinearEyeDepth(sampleRawDepth,_ZBufferParams);
+                    float sampleLinearEyeDepth = GetLinearEyeDepth(sampleRawDepth);
                     float t = step/maxStep;
                     float k = lerp(k_start,k_end,t);
                     //float2 realNDCPos = sampleScreenPos*2-1;
@@ -433,8 +505,8 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
             half4 ScreenSpaceReflection_Efficient_JitterDither(Varyings i)
             {
                 float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, i.texcoord).r;
-                float linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
-                float3 posVS = ReconstructViewPositionFromDepth(i.texcoord,linear01Depth);
+                //float linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
+                float3 posVS = ReconstructViewPositionFromDepth(i.texcoord,rawDepth);
                 float3 nDirWS = SAMPLE_TEXTURE2D(_CameraNormalsTexture,sampler_PointClamp,i.texcoord).xyz;
                 float3 nDirVS = TransformWorldToViewNormal(nDirWS);
                 float3 sampleNormalizeVector = normalize(reflect(normalize(posVS),nDirVS));
@@ -532,7 +604,7 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                     }
                     
                     float sampleRawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,sampleScreenPos).r;
-                    float sampleLinearEyeDepth = LinearEyeDepth(sampleRawDepth,_ZBufferParams);
+                    float sampleLinearEyeDepth = GetLinearEyeDepth(sampleRawDepth);
                     float t = step/maxStep;
                     float k = lerp(k_start,k_end,t);
                     //float2 realNDCPos = sampleScreenPos*2-1;
@@ -595,8 +667,8 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
             half4 ScreenSpaceReflection_Hiz(Varyings i)
             {
                  float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, i.texcoord).r;
-                float linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
-                float3 posVS = ReconstructViewPositionFromDepth(i.texcoord,linear01Depth);
+                //float linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
+                float3 posVS = ReconstructViewPositionFromDepth(i.texcoord,rawDepth);
                 float3 nDirWS = SAMPLE_TEXTURE2D(_CameraNormalsTexture,sampler_PointClamp,i.texcoord).xyz;
                 float3 nDirVS = TransformWorldToViewNormal(nDirWS);
                 float3 sampleNormalizeVector = normalize(reflect(normalize(posVS),nDirVS));
@@ -618,7 +690,7 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                     sampleClipPos = mul((float3x3)unity_CameraProjection, samplePosVS);
                     sampleScreenPos = (sampleClipPos.xy / sampleClipPos.z) * 0.5 + 0.5;
                     float sampleRawDepth = SampleDepthTexture_Hiz(sampleScreenPos,6).r;
-                    float sampleLinearEyeDepth = LinearEyeDepth(sampleRawDepth,_ZBufferParams);
+                    float sampleLinearEyeDepth = GetLinearEyeDepth(sampleRawDepth);
                     if ((sampleLinearEyeDepth<-samplePosVS.z)&&(-samplePosVS.z<(sampleLinearEyeDepth+_Thickness)))
                     {
                         float2 reflectScreenPos = sampleScreenPos;
@@ -641,7 +713,7 @@ Shader "URP/PostProcessing/ScreenSpaceReflection"
                     sampleClipPos = mul((float3x3)unity_CameraProjection, samplePosVS);
                     sampleScreenPos = (sampleClipPos.xy / sampleClipPos.z) * 0.5 + 0.5;
                     float sampleRawDepth = SampleDepthTexture_Hiz(sampleScreenPos,mipLevel).r;
-                    float sampleLinearEyeDepth = LinearEyeDepth(sampleRawDepth,_ZBufferParams);
+                    float sampleLinearEyeDepth = GetLinearEyeDepth(sampleRawDepth);
 
                     //通过判定
                     if ((sampleLinearEyeDepth<-samplePosVS.z))

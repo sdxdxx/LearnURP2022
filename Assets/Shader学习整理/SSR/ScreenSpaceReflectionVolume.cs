@@ -10,8 +10,8 @@ public class ScreenSpaceReflectionVolume : VolumeComponent
         Simple_ViewSpace = 1,
         BinarySearch_ViewSpace,
         BinarySearch_Jitter_ViewSpace,
-        Efficient_ScreenSpace,
-        Efficient_ScreenSpace_Jitter,
+        Efficient_ScreenSpace_PerspectiveOnly,
+        Efficient_ScreenSpace_Jitter_PerspectiveOnly,
         HIZ_ViewSpace
     }
     
