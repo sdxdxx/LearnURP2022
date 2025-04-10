@@ -491,6 +491,7 @@ Shader "URP/ShaderURP_Water"
             	waterNormal = mul(TBN,waterNormal);
             	waterNormal = normalize(waterNormal);
             	
+            	
             	//ReflectionColor
                  float2 noiseUV = waterNormal.xz/(1+i.pos.w);
             	float2 reflectUV = screenPos;
@@ -499,16 +500,15 @@ Shader "URP/ShaderURP_Water"
             	
             	//WaterDepth
                 float rawDepth0 = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_CameraDepthTexture,screenPos).r;
-                float depth0 = Linear01Depth(rawDepth0,_ZBufferParams);//线性0-1
-                float3 posWS_frag0 = ReconstructWorldPositionFromDepth(i.screenPos,depth0);
+                float3 posWS_frag0 = ReconstructWorldPositionFromDepth(i.screenPos,rawDepth0);
                 float waterDepth0 =  posWS_frag0.y- i.posWS.y;
+            	
             	float2 grabUV = screenPos;
             	grabUV.x += noiseUV*_NormalNoise;
             	
             	//第一次次采样深度图（扰动）
             	float rawDepth1 =  SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,grabUV).r;
-            	float depth1 = Linear01Depth(rawDepth1,_ZBufferParams);//线性0-1
-                float3 posWS_frag1 = ReconstructWorldPositionFromDepth(i.screenPos,depth1);
+                float3 posWS_frag1 = ReconstructWorldPositionFromDepth(i.screenPos,rawDepth1);
             	
             	float refractionMask = step(i.posWS.y,posWS_frag1.y);
             	grabUV = screenPos;
@@ -516,9 +516,7 @@ Shader "URP/ShaderURP_Water"
 
             	//第二次次采样深度图（去除不该扰动部分）
             	float rawDepth2 =  SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,grabUV).r;
-            	float depth2 = Linear01Depth(rawDepth2,_ZBufferParams);//线性0-1
-                float3 posWS_frag2 = ReconstructWorldPositionFromDepth(i.screenPos,depth2);
-
+                float3 posWS_frag2 = ReconstructWorldPositionFromDepth(i.screenPos,rawDepth2);
             	float waterDepth = posWS_frag2.y-i.posWS.y;
             	
             	//UnderWater
@@ -559,10 +557,11 @@ Shader "URP/ShaderURP_Water"
             	half3 shoreCol = _ShoreCol;
                 float shoreRange = saturate(exp(-max(waterDepth0,waterDepth)/_ShoreRange));
                 half3 shoreEdge = smoothstep(0.1,1-(_ShoreEdgeWidth-0.2),shoreRange)*shoreCol*_ShoreEdgeIntensity;
-
+            	
             	//Foam
                 float foamX = saturate(1-waterDepth/_FoamRange);
                 float foamRange = 1-smoothstep(_FoamBend-0.1,1,saturate(max(waterDepth0,waterDepth)/_FoamRange));//Mask
+            	
                 float foamNoise = SAMPLE_TEXTURE2D(_FoamNoise,sampler_FoamNoise,i.posWS.xz*_FoamNoise_ST.xy+_FoamNoise_ST.zw);
                 half4 foam = sin(_FoamFrequency*foamX-_FoamSpeed*_Time.y);
                 foam = saturate(step(foamRange,foam+foamNoise-_FoamDissolve))*foamRange*_FoamCol;
