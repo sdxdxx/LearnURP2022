@@ -122,6 +122,64 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!21 &196193892
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: URP/2D/UGUI/CustomEffect
+  m_Shader: {fileID: 4800000, guid: 0b2fe138676f44192b0798bea6d7b247, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _EnableOutline
+  - _EnableShadow
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _AlphaTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - PixelSnap: 0
+    - _EnableExternalAlpha: 0
+    - _EnableGradient: 0
+    - _EnableOutline: 0
+    - _EnableShadow: 0
+    - _EnableVertexColorMode: 0
+    - _GradientIntensity: 1
+    - _GradientRange: 0.5
+    - _GradientRotation: 0
+    - _GradientSmoothRange: 0.1
+    - _IsText: 0
+    - _OutlineWidth: 5.6
+    - _ShadowScale: 1
+    m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Flip: {r: 1, g: 1, b: 1, a: 1}
+    - _GradientColor1: {r: 1, g: 0, b: 0, a: 1}
+    - _GradientColor2: {r: 0, g: 1, b: 0, a: 1}
+    - _OutlineColor: {r: 1, g: 1, b: 1, a: 1}
+    - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
+    - _ShadowColor: {r: 0, g: 0, b: 0, a: 1}
+    - _ShadowOffset: {r: 0, g: 0, b: 0, a: 0}
+  m_BuildTextureStacks: []
 --- !u!1 &517362203
 GameObject:
   m_ObjectHideFlags: 0
@@ -186,7 +244,7 @@ MonoBehaviour:
   EnableOutline: 1
   OutlineColor: {r: 1, g: 1, b: 1, a: 1}
   OutlineWidth: 5.6
-  EnableShadow: 0
+  EnableShadow: 1
   ShadowOffset: {x: 0, y: 0}
   ShadowColor: {r: 0, g: 0, b: 0, a: 1}
   EnableUnderline: 0
@@ -207,7 +265,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 2080296949}
+  m_Material: {fileID: 196193892}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -447,7 +505,7 @@ RectTransform:
   m_GameObject: {fileID: 1752564672}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 2.9793286, y: 2.9793286, z: 2.9793286}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2049864303}
@@ -469,7 +527,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 1772849286}
+  m_Material: {fileID: 2142632518}
   m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -526,7 +584,7 @@ MonoBehaviour:
   OutlineColor: {r: 1, g: 1, b: 1, a: 1}
   OutlineWidth: 2.77
   EnableShadow: 1
-  ShadowOffset: {x: 1, y: 1}
+  ShadowOffset: {x: 26.5, y: 1}
   ShadowColor: {r: 0, g: 0, b: 0, a: 1}
   EnableUnderline: 1
   UnderlineHeight: 15.7
@@ -534,67 +592,6 @@ MonoBehaviour:
   UnderlineColor:
     serializedVersion: 2
     rgba: 4294967295
---- !u!21 &1772849286
-Material:
-  serializedVersion: 8
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: URP/2D/UGUI/CustomEffect
-  m_Shader: {fileID: 4800000, guid: 0b2fe138676f44192b0798bea6d7b247, type: 3}
-  m_Parent: {fileID: 0}
-  m_ModifiedSerializedProperties: 0
-  m_ValidKeywords:
-  - _EnableGradient
-  - _EnableOutline
-  - _EnableShadow
-  - _EnableVertexColorMode
-  - _IsText
-  m_InvalidKeywords: []
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_LockedProperties: 
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs:
-    - _AlphaTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _MainTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    m_Ints: []
-    m_Floats:
-    - PixelSnap: 0
-    - _EnableExternalAlpha: 0
-    - _EnableGradient: 0
-    - _EnableOutline: 0
-    - _EnableShadow: 0
-    - _EnableVertexColorMode: 0
-    - _GradientIntensity: 0
-    - _GradientRange: 1
-    - _GradientRotation: 0.462
-    - _GradientSmoothRange: 1
-    - _IsText: 0
-    - _OutlineWidth: 2.77
-    - _ShadowScale: 1
-    m_Colors:
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _Flip: {r: 1, g: 1, b: 1, a: 1}
-    - _GradientColor1: {r: 1, g: 0, b: 0, a: 1}
-    - _GradientColor2: {r: 0, g: 1, b: 0, a: 1}
-    - _OutlineColor: {r: 1, g: 1, b: 1, a: 1}
-    - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
-    - _ShadowColor: {r: 0, g: 0, b: 0, a: 1}
-    - _ShadowOffset: {r: 1, g: 1, b: 0, a: 0}
-  m_BuildTextureStacks: []
 --- !u!1 &1803070989
 GameObject:
   m_ObjectHideFlags: 0
@@ -835,7 +832,7 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
---- !u!21 &2080296949
+--- !u!21 &2142632518
 Material:
   serializedVersion: 8
   m_ObjectHideFlags: 0
@@ -847,7 +844,11 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
+  - _EnableGradient
   - _EnableOutline
+  - _EnableShadow
+  - _EnableVertexColorMode
+  - _IsText
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -875,12 +876,12 @@ Material:
     - _EnableOutline: 0
     - _EnableShadow: 0
     - _EnableVertexColorMode: 0
-    - _GradientIntensity: 1
-    - _GradientRange: 0.5
-    - _GradientRotation: 0
-    - _GradientSmoothRange: 0.1
+    - _GradientIntensity: 0
+    - _GradientRange: 1
+    - _GradientRotation: 0.462
+    - _GradientSmoothRange: 1
     - _IsText: 0
-    - _OutlineWidth: 5.6
+    - _OutlineWidth: 2.77
     - _ShadowScale: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
@@ -890,7 +891,7 @@ Material:
     - _OutlineColor: {r: 1, g: 1, b: 1, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
     - _ShadowColor: {r: 0, g: 0, b: 0, a: 1}
-    - _ShadowOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _ShadowOffset: {r: 26.5, g: 1, b: 0, a: 0}
   m_BuildTextureStacks: []
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

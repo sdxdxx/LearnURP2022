@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a1b0542a0af2474d942b790ee2cccd8, type: 3}
   m_Name: DepthNormalsFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   NormalTexture: 1
 --- !u!114 &-6643330489509375760
 MonoBehaviour:
@@ -26,10 +26,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 20019e63ee850eb4ea73b41b83a9b183, type: 3}
   m_Name: GodRayRenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   settings:
-    renderPassEvent: 550
-    shader: {fileID: 4800000, guid: 01e7a6fa448b1964a89575727e5c2dfd, type: 3}
+    renderPassEvent: 500
 --- !u!114 &-6017116289195907503
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -61,7 +60,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8b3d5ee6d82c2e24eb15a1eed47cfafb, type: 3}
   m_Name: NormalLineRenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     renderPassEvent: 220
 --- !u!114 &-3768913323404907122
@@ -91,7 +90,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b0dd1324ed513241bacf4f0212b7caa, type: 3}
   m_Name: CustomSSAORenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     renderPassEvent: 550
     shader: {fileID: 4800000, guid: a0b6cf6fab284e640803448e49b54c14, type: 3}
@@ -174,7 +173,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9461e825ec96974988a573d949ed2e0, type: 3}
   m_Name: PixelizeObject
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     layerMask:
       serializedVersion: 2

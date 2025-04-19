@@ -39,7 +39,7 @@ public class PixelizeFeature : ScriptableRendererFeature
             shaderTagsList.Add(new ShaderTagId("PixelizeObjectMaskPass"));
             
             Shader shader = Shader.Find("URP/PostProcessing/Pixelize");
-            renderPassEvent = settings.renderPassEvent+1; //传入设置的渲染事件顺序(renderPassEvent在基类ScriptableRenderPass中)
+            renderPassEvent = settings.renderPassEvent; //传入设置的渲染事件顺序(renderPassEvent在基类ScriptableRenderPass中)
             material = CoreUtils.CreateEngineMaterial(shader);//根据传入的Shader创建material;
         }
 

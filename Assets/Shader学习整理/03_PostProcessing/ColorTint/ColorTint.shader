@@ -13,12 +13,13 @@ Shader "URP/PostProcessing/ColorTint"
             "RenderPipeline" = "UniversalPipeline"  
         }
         
-        Cull Off 
-        ZWrite Off
-        ZTest Always
         
-        pass
+        
+        Pass
         {
+            Cull Off 
+            ZWrite Off
+            
             HLSLPROGRAM
 
             #pragma vertex Vert

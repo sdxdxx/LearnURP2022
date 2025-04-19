@@ -292,25 +292,24 @@ Shader "URP/MySimplePBR"
     	// shadow casting pass with empty fragment
 		Pass
 		{
-		Name "GrassShadowCaster"
-		Tags{ "LightMode" = "ShadowCaster" }
+			Tags{ "LightMode" = "ShadowCaster" }
 
-		ZWrite On
-		ZTest LEqual
+			ZWrite On
+			ZTest LEqual
 
-		HLSLPROGRAM
+			HLSLPROGRAM
 
-		 #pragma vertex vert
-		#pragma fragment frag_shadow
-		
-		#pragma target 4.6
+			 #pragma vertex vert
+			#pragma fragment frag_shadow
+			
+			#pragma target 4.6
 
-		half4 frag_shadow(vertexOutput i) : SV_TARGET
-		{
-			return 1;
-		 }
+			half4 frag_shadow(vertexOutput i) : SV_TARGET
+			{
+				return 1;
+			 }
 
-		ENDHLSL
+			ENDHLSL
 		}
     }
 }

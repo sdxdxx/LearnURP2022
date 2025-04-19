@@ -104,11 +104,14 @@ Material:
     - _ClearCoatSmoothness: 0
     - _Cull: 2
     - _Cutoff: 0.5
+    - _DecodeValue: 10000
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _DstBlendAlpha: 0
+    - _EnableDecodeMode: 0
     - _EnableFrameTexture: 1
+    - _EnableMultipleMeshMode: 0
     - _EnvironmentReflections: 1
     - _FrameColumn: 2
     - _FrameNum: 4

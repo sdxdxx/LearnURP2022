@@ -40,6 +40,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _DownSampleBias: 0.3
+    - _DownSampleValue: 2
     - _EnableObjectCenterPoint: 1
     - _ID: 200
     - _OutlineWidth: 1

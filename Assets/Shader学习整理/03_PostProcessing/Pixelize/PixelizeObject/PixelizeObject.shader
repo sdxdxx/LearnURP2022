@@ -34,7 +34,7 @@ Shader "URP/Cartoon/PixelizeObject"
     	
     	[Header(DownSample)]
     	[IntRange]_DownSampleValue("Down Sample Value",Range(0,5)) = 0
-        _DownSampleBias("Down Sample Bias",Range(0,5)) = 0
+        _DownSampleBias("Down Sample Bias",float) = 0
     	[Toggle(_EnableObjectCenterPoint)]_EnableObjectCenterPoint("Enable Object Center Point",float) = 0.0
     }
     
@@ -80,8 +80,8 @@ Shader "URP/Cartoon/PixelizeObject"
          ENDHLSL
     	
     	//解决深度引动模式Depth Priming Mode问题
-        UsePass "Universal Render Pipeline/Unlit/DepthOnly"
-        UsePass "Universal Render Pipeline/Unlit/DepthNormalsOnly"
+        //UsePass "Universal Render Pipeline/Unlit/DepthOnly"
+        //UsePass "Universal Render Pipeline/Unlit/DepthNormalsOnly"
         
         //Cartoon Rendering
         Pass
@@ -449,6 +449,7 @@ Shader "URP/Cartoon/PixelizeObject"
 
             half4 frag_Pixelize (vertexOutput input) : SV_TARGET
             {
+            	
             	float2 screenPos = input.screenPos.xy/input.screenPos.w;
             	
             	float downSampleValue = pow(2,_DownSampleValue);

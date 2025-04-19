@@ -35,6 +35,7 @@ Material:
     m_Floats:
     - _DownSampleBias: 0.3
     - _DownSampleValue: 0
+    - _EnableObjectCenterPoint: 0
     - _ID: 100
     - _InlineWidth: 0
     - _MatCapLerp: 1
