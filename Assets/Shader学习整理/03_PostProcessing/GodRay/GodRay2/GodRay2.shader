@@ -1,4 +1,4 @@
-Shader "URP/PostProcessing/GodRay"
+Shader "URP/PostProcessing/GodRay2"
 {
     Properties
     {
@@ -34,18 +34,19 @@ Shader "URP/PostProcessing/GodRay"
             TEXTURE2D(_CameraOpaqueTexture);//获取到摄像机渲染画面的Texture
             SAMPLER(sampler_CameraOpaqueTexture);
             TEXTURE2D(_CameraDepthTexture);
-            SAMPLER(sampler_CameraDepthTexture);
+            TEXTURE2D(_CloudTex);
+        
             //----------贴图声明结束-----------
-            
-            CBUFFER_START(UnityPerMaterial)
+        
             //----------变量声明开始-----------
             half4 _BaseColor;
             float _Intensity;
             int _StepTime;
             float _RandomNumber;
             float _Scattering;
+            float4 _CloudTexTillingAndOffset;
+            float2 _CloudTexUVFlowSpeed;
             //----------变量声明结束-----------
-            CBUFFER_END
 
             float3 ReconstructWorldPositionFromDepth(float2 screenPos, float rawDepth)
             {
@@ -93,7 +94,7 @@ Shader "URP/PostProcessing/GodRay"
             
             half4 frag_GodRayRange (Varyings i) : SV_TARGET
             {
-                float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_CameraDepthTexture,i.texcoord).r;
+                float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,i.texcoord).r;
                 float3 posWS_frag = ReconstructWorldPositionFromDepth(i.texcoord, rawDepth);
                 
                 float3 startPos;
@@ -109,7 +110,10 @@ Shader "URP/PostProcessing/GodRay"
                 }
                 
                 float3 vDir = normalize(posWS_frag - startPos); //视线方向
-                
+
+                //float2 cloudUV = posWS_frag.xz*_CloudTexTillingAndOffset.xy+_CloudTexTillingAndOffset.zw+_CloudTexUVFlowSpeed.xy*_Time.z;
+                //float cloud = SAMPLE_TEXTURE2D(_CloudTex,sampler_LinearRepeat,cloudUV);
+                float mask = step(0.01,rawDepth);
                 float3 lDir = _MainLightPosition.xyz; //光线方向
                 float rayLength = length(posWS_frag - startPos); //视线长度
                 rayLength = min(rayLength, MAX_RAY_LENGTH); //限制最大步进长度，MAX_RAY_LENGTH这里设置为20
@@ -117,20 +121,22 @@ Shader "URP/PostProcessing/GodRay"
                 float3 final = startPos + vDir * rayLength; //定义步进结束点
 
                 half3 sumIntensity = 0; //累计光强
-                float2 step = 1.0 / _StepTime; //定义单次插值大小，_StepTime为步进次数
-                step.y *= 0.4;
+                float2 stepLength = 1.0 / _StepTime; //定义单次插值大小，_StepTime为步进次数
+                stepLength.y *= 0.4;
                 float seed = random((_ScreenParams.y * i.texcoord.y + i.texcoord.x) * _ScreenParams.x + _RandomNumber);
-                for(float i = step.x ; i < 1; i += step.x) //光线步进
+                for(float j = stepLength.x ; j < 1; j += stepLength.x) //光线步进
                 {
                     seed = random(seed);
-                    float3 currentPosition = lerp(startPos, final, i + seed * step.y); //当前世界坐标
-                    float atten = GetLightAttenuation(currentPosition);//阴影采样，intensity为强度因子
+                    float3 currentPosition = lerp(startPos, final, j + seed * stepLength.y); //当前世界坐标
+                    float2 cloudUV = currentPosition.xz*_CloudTexTillingAndOffset.xy+_CloudTexTillingAndOffset.zw+_CloudTexUVFlowSpeed.xy*_Time.z;
+                    float cloud = step(0.01,SAMPLE_TEXTURE2D(_CloudTex,sampler_LinearRepeat,cloudUV));
+                    float atten = cloud*mask;//GetLightAttenuation(currentPosition);//阴影采样，intensity为强度因子
                     float3 light = atten*ComputeScattering(dot(lDir,vDir),_Scattering); 
                     sumIntensity += light; 
                 }
                 sumIntensity /= _StepTime;
                 
-                half3 finalRGB = sumIntensity;
+                half3 finalRGB = saturate(sumIntensity);
                 half4 result = half4(finalRGB,1.0);
                 return result;
             }
@@ -180,7 +186,7 @@ Shader "URP/PostProcessing/GodRay"
                 half4 albedo = SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp,i.texcoord);
                 half3 godRayRange = SAMPLE_TEXTURE2D(_GodRayRangeTexture,sampler_GodRayRangeTexture,i.texcoord);
                 float intensity = _Intensity*20;
-                half3 finalRGB = godRayRange*albedo*intensity*_BaseColor+albedo;
+                half3 finalRGB = saturate(godRayRange*intensity*_BaseColor+albedo);
                 half4 result = half4(finalRGB,1.0);
                 return result;
             }

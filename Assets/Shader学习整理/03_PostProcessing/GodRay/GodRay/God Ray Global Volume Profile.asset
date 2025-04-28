@@ -1,5 +1,52 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-373149896762206772
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f292d66b53361994bba87e9545e4c7b0, type: 3}
+  m_Name: GodRayVolume2
+  m_EditorClassIdentifier: 
+  active: 1
+  EnableEffect:
+    m_OverrideState: 1
+    m_Value: 0
+  ColorChange:
+    m_OverrideState: 1
+    m_Value: {r: 0.8301887, g: 0.8112267, b: 0.66180134, a: 1}
+  Intensity:
+    m_OverrideState: 1
+    m_Value: 0.177
+  Scattering:
+    m_OverrideState: 1
+    m_Value: 0.467
+  StepTime:
+    m_OverrideState: 1
+    m_Value: 16
+  RandomNumber:
+    m_OverrideState: 1
+    m_Value: 0
+  DownSample:
+    m_OverrideState: 1
+    m_Value: 1
+  BlurRange:
+    m_OverrideState: 1
+    m_Value: 0
+  CloudTex:
+    m_OverrideState: 1
+    m_Value: {fileID: 2800000, guid: fadd581f0aa56104f8058970902cd8c8, type: 3}
+    dimension: 1
+  CloudTexTillingAndOffset:
+    m_OverrideState: 1
+    m_Value: {x: 0.01, y: 0.01, z: 0, w: 0}
+  CloudTexUVFlowSpeed:
+    m_OverrideState: 1
+    m_Value: {x: 0.01, y: 0.02}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14,6 +61,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   components:
   - {fileID: 7320617980541437987}
+  - {fileID: -373149896762206772}
 --- !u!114 &7320617980541437987
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -35,16 +83,16 @@ MonoBehaviour:
     m_Value: {r: 1, g: 1, b: 1, a: 1}
   Intensity:
     m_OverrideState: 1
-    m_Value: 0.6
+    m_Value: 1
   Scattering:
     m_OverrideState: 1
-    m_Value: 0.324
+    m_Value: 0.334
   StepTime:
     m_OverrideState: 1
     m_Value: 16
   RandomNumber:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 50
   DownSample:
     m_OverrideState: 1
     m_Value: 3
