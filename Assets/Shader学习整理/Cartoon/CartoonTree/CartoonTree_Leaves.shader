@@ -20,11 +20,7 @@ Shader "URP/CartoonTree/Leaves"
     	_ScatteringDistoration("Scattering Distoration",Range(0,5)) = 1
     	_ScatteringPow("Scattering Power",Range(0,5)) = 1
     	_ScatteringInt("Scattering Intensity",Range(0,5)) = 1
-    	
-    	[Header(Rim)]
-    	_RimCol("Rim Color",Color) = (1,1,1,1)
-        _RimOffset("Rim Offset",float) = 1
-    	
+	    
     	[Header(Wind)]
     	_WindDistortionMap("Wind Distortion Map", 2D) = "white" {}
         _WindFrequency("Wind Frequency", Vector) = (0.05, 0.05, 0, 0)
@@ -36,13 +32,12 @@ Shader "URP/CartoonTree/Leaves"
         Tags
         {
             "RenderType" = "Opaque"
-        	"Queue" = "Transparent"
             "RenderPipeline" = "UniversalPipeline"  
         }
 
         //解决深度引动模式Depth Priming Mode问题
-        UsePass "Universal Render Pipeline/Lit/DepthOnly"
-        UsePass "Universal Render Pipeline/Lit/DepthNormals"
+		//UsePass "Universal Render Pipeline/Lit/DepthOnly"
+		//UsePass "Universal Render Pipeline/Lit/DepthNormals"
     	
     	HLSLINCLUDE
     		#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
@@ -136,13 +131,13 @@ Shader "URP/CartoonTree/Leaves"
             	return specColor;
             }
 
-    	
-            
+    		
             struct vertexInput
             {
                 float4 vertex : POSITION;
                 float3 normal : NORMAL;
                 float2 uv : TEXCOORD0;
+            	float3 color : COLOR;
             };
 
             struct vertexOutput
@@ -153,6 +148,7 @@ Shader "URP/CartoonTree/Leaves"
                 float3 posWS : TEXCOORD2;
             	float4 screenPos : TEXCOORD3;
             	float4 shadowCoord : TEXCOORD4;
+            	float3 color : TEXCOORD5;
             };
 
             vertexOutput vert (vertexInput v)
@@ -173,12 +169,14 @@ Shader "URP/CartoonTree/Leaves"
                 o.posWS = TransformObjectToWorld(v.vertex);
             	o.screenPos = ComputeScreenPos(posCS);
             	o.shadowCoord = TransformWorldToShadowCoord(o.posWS);
+            	o.color = v.color;
                 return o;
             }
 
             half4 frag (vertexOutput i) : SV_TARGET
             {
                 float3 nDirWS = TransformObjectToWorldNormal(i.nDirOS);
+            	float3 nDirWS_origin = TransformObjectToWorldNormal(i.color*2.0-1.0);
             	float3 nDirVS = TransformWorldToView(nDirWS);
                 float3 lDirWS = _MainLightPosition.xyz;
                 float3 vDirWS = normalize(_WorldSpaceCameraPos - i.posWS);
@@ -189,7 +187,11 @@ Shader "URP/CartoonTree/Leaves"
             	//alpha clip
             	float2 mainTexUV = i.uv *_MainTex_ST.xy+_MainTex_ST.zw;
                 half4 mainTex = SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,mainTexUV);
-                clip(mainTex.a-0.1);
+            	clip(mainTex.a-0.1);
+
+            	//TODO: 减弱插片感
+            	//float nDotv_origin = dot(nDirWS_origin,vDirWS);
+            	//clip(nDotv_origin-0.01);
             	
             	//diffuse
                 half3 diffuse= lerp(albedo*_DarkColor,albedo,halfLambert);
@@ -211,6 +213,62 @@ Shader "URP/CartoonTree/Leaves"
             }
     	ENDHLSL
         
+
+        //DepthOnly
+        pass
+        {
+        	Name "CustomDepthOnly"
+            Tags
+            {
+                "LightMode" = "DepthOnly"
+            }
+	        
+            ZWrite On
+            ColorMask R
+            
+            HLSLPROGRAM
+            #pragma target 2.0
+
+            #pragma vertex vert
+            #pragma fragment frag_DepthOnly
+
+            half4 frag_DepthOnly(vertexOutput i) : SV_TARGET
+			{
+				float2 mainTexUV = i.uv *_MainTex_ST.xy+_MainTex_ST.zw;
+				half4 mainTex = SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,mainTexUV);
+				clip(mainTex.a-0.1);
+				return i.pos.z;
+			}
+            
+            ENDHLSL
+        }
+
+		//DepthNormals
+		pass
+        {
+        	Name "CustomNormalsPass"
+
+        	Tags{"LightMode" = "DepthNormals"}
+        	
+            HLSLPROGRAM
+
+            #pragma vertex vert
+            #pragma fragment frag_DepthNormals
+
+            half4 frag_DepthNormals(vertexOutput i) : SV_TARGET
+			{
+				float2 mainTexUV = i.uv *_MainTex_ST.xy+_MainTex_ST.zw;
+				half4 mainTex = SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,mainTexUV);
+				clip(mainTex.a-0.1);
+				float3 nDirWS = TransformObjectToWorldNormal(i.nDirOS);
+				return float4(nDirWS,i.pos.z);
+			}
+
+            ENDHLSL
+            
+        }
+
+        // Universal Forward
         pass
         {
 	        Tags{"LightMode"="UniversalForward"}
@@ -226,9 +284,9 @@ Shader "URP/CartoonTree/Leaves"
         }
     	
     	// shadow casting pass with empty fragment
-		Pass
+		pass
 		{
-		Name "GrassShadowCaster"
+		Name "LeavesShadowCaster"
 		Tags{ "LightMode" = "ShadowCaster" }
 
 		ZWrite On

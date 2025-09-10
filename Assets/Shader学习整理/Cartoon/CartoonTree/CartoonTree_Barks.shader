@@ -16,6 +16,7 @@ Shader "URP/CartoonTree/Barks"
     	_NormalInt("Normal Intensity",Range(0,5)) = 1
         
         [Header(Depth Rim)]
+    	[Toggle(_EnableDepthRim)] _EnableDepthRim("Enable Depth Rim",float) = 0
     	_RimCol("Rim Color",Color) = (1,1,1,1)
         _RimWidth("Rim Width",float) = 1
     	
@@ -69,6 +70,7 @@ Shader "URP/CartoonTree/Barks"
     		#pragma multi_compile  _MAIN_LIGHT_SHADOWS_CASCADE
     		#pragma multi_compile  _SHADOWS_SOFT
 
+    		#pragma shader_feature _EnableDepthRim
     		#pragma shader_feature _EnableSubLayer
     		#pragma shader_feature _EnableSubLayerMask
     	
@@ -191,10 +193,6 @@ Shader "URP/CartoonTree/Barks"
 
             vertexOutput vert (vertexInput v)
             {
-            	
-
-            	
-            	
             	
                 vertexOutput o;
 
@@ -354,9 +352,12 @@ Shader "URP/CartoonTree/Barks"
             	float3 nDirVS = normalize(mul((float3x3)UNITY_MATRIX_V, i.nDirWS));
             	float3 lDir = normalize(_MainLightPosition.xyz);
             	float3 vDir = normalize(_WorldSpaceCameraPos.xyz - i.posWS.xyz);
-            	
+
             	//depth rim
-            	half3 depthRim = CalculateDepthRim(i.screenPos,nDirVS,_RimCol,_RimWidth);
+            	half3 depthRim = 0;
+            	#ifdef _EnableDepthRim
+            		depthRim = CalculateDepthRim(i.screenPos,nDirVS,_RimCol,_RimWidth);
+            	#endif
 
             	//shadow
             	float shadow = MainLightRealtimeShadow(i.shadowCoord);
@@ -370,24 +371,27 @@ Shader "URP/CartoonTree/Barks"
 
             	//SubLayer
             	#ifdef _EnableSubLayer
-            	float2 subLayerNormalUV = i.uv*_SubLayerNormalMap_ST.xy+_SubLayerNormalMap_ST.zw;
-            	float4 subLayerPackedNormal = SAMPLE_TEXTURE2D(_SubLayerNormalMap,sampler_SubLayerNormalMap,subLayerNormalUV);
-            	float3 var_subLayerNormalMap = UnpackScaleNormal(subLayerPackedNormal,_SubLayerNormalInt);
-            	float3 nDirTS_subLayer  =NormalBlendReoriented(var_NormalMap,var_subLayerNormalMap);
-            	float3 nDir_subLayer = normalize(mul(nDirTS_subLayer,TBN));
-            	float2 subTexUV = i.uv *_SubTex_ST.xy+_SubTex_ST.zw;
-                half4 subTex = SAMPLE_TEXTURE2D(_SubTex,sampler_SubTex,subTexUV);
-            	subTex.rgb *=_SubLayerColorTint.rgb;
-            	half3 subResult_RBR = CalculatePBRResult(nDir_subLayer,lDir,vDir,subTex,_SubLayerSmoothness,_SubLayerMetallic,shadow);
-            	half3 subDepthRim = CalculateDepthRim(i.screenPos,nDirVS,_SubLayerRimCol,_RimWidth);
-            	half3 SubFinalRGB = subResult_RBR+subDepthRim;
-            	float subLayerMask =i.color.r; 
-            	#ifdef _EnableSubLayerMask
-            	float2 subLayerMaskUV = i.uv*_SubLayerMask_ST.xy+_SubLayerMask_ST.zw;
-            	subLayerMask = SAMPLE_TEXTURE2D(_SubLayerMask,sampler_SubLayerMask,subLayerMaskUV);
-            	#endif
-            	
-            	FinalRGB = lerp(MainFinalRGB,SubFinalRGB,subLayerMask);
+            		float2 subLayerNormalUV = i.uv*_SubLayerNormalMap_ST.xy+_SubLayerNormalMap_ST.zw;
+            		float4 subLayerPackedNormal = SAMPLE_TEXTURE2D(_SubLayerNormalMap,sampler_SubLayerNormalMap,subLayerNormalUV);
+            		float3 var_subLayerNormalMap = UnpackScaleNormal(subLayerPackedNormal,_SubLayerNormalInt);
+            		float3 nDirTS_subLayer  =NormalBlendReoriented(var_NormalMap,var_subLayerNormalMap);
+            		float3 nDir_subLayer = normalize(mul(nDirTS_subLayer,TBN));
+            		float2 subTexUV = i.uv *_SubTex_ST.xy+_SubTex_ST.zw;
+	                half4 subTex = SAMPLE_TEXTURE2D(_SubTex,sampler_SubTex,subTexUV);
+            		subTex.rgb *=_SubLayerColorTint.rgb;
+            		half3 subResult_RBR = CalculatePBRResult(nDir_subLayer,lDir,vDir,subTex,_SubLayerSmoothness,_SubLayerMetallic,shadow);
+            		half3 subDepthRim = 0;
+            	    #ifdef _EnableDepthRim
+            			subDepthRim = CalculateDepthRim(i.screenPos,nDirVS,_SubLayerRimCol,_RimWidth);
+            		#endif
+            		half3 SubFinalRGB = subResult_RBR+subDepthRim;
+            		float subLayerMask =i.color.r; 
+            		#ifdef _EnableSubLayerMask
+            			float2 subLayerMaskUV = i.uv*_SubLayerMask_ST.xy+_SubLayerMask_ST.zw;
+            			subLayerMask = SAMPLE_TEXTURE2D(_SubLayerMask,sampler_SubLayerMask,subLayerMaskUV);
+            		#endif
+            		
+            		FinalRGB = lerp(MainFinalRGB,SubFinalRGB,subLayerMask);
 				#endif
             	
                 return half4(FinalRGB,1.0);
