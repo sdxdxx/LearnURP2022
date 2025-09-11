@@ -33,8 +33,10 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _EnableNormalInline: 0
+    - _EnableNormalOutline: 0
     - _MatCapLerp: 0
-    - _OutlineWidth: 0.12
+    - _OutlineWidth: 0
     - _RangeDark: 0
     - _RangeLight: 0.33
     - _ShadowValue: 0.09
@@ -43,9 +45,11 @@ Material:
     - _SmoothValue: 0
     - _SobelValue: 3
     m_Colors:
-    - _BaseColor: {r: 0.8980392, g: 0.8627451, b: 0.7137255, a: 1}
+    - _BaseColor: {r: 0.6774725, g: 0.7162187, b: 0.7433963, a: 1}
     - _DarkColor: {r: 0, g: 0, b: 0, a: 1}
     - _GreyColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
     - _LightColor: {r: 1, g: 1, b: 1, a: 1}
+    - _NormalInlineColor: {r: 1, g: 1, b: 1, a: 1}
+    - _NormalOutlineColor: {r: 1, g: 1, b: 1, a: 1}
     - _OutlineColor: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a1b0542a0af2474d942b790ee2cccd8, type: 3}
   m_Name: DepthNormalsFeature
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   NormalTexture: 1
 --- !u!114 &-6643330489509375760
 MonoBehaviour:

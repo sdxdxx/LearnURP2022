@@ -49,10 +49,12 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _EnableDepthRim: 0
+    - _EnableFrameTexture: 0
     - _EnableSubLayer: 0
     - _EnableSubLayerMask: 0
     - _Metallic: 0
-    - _NormalInt: 1
+    - _NormalInt: 1.2
     - _RimMaxRange: 1
     - _RimMinRange: 0
     - _RimOffset: 6.88

@@ -29,10 +29,10 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _ra: 2
-    - _rb: 1
+    - _ra: 0.69
+    - _rb: 2.97
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _pa: {r: -5.71, g: 3.75, b: -4.78, a: 1}
-    - _pb: {r: 4.88, g: 0.74, b: -2, a: 1}
+    - _pa: {r: -7.59, g: 4.06, b: -3.85, a: 1}
+    - _pb: {r: 3.51, g: 0.74, b: -2, a: 1}
   m_BuildTextureStacks: []
