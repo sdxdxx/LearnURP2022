@@ -16,16 +16,14 @@ Shader "URP/VolumetricLighting"
     {
          Tags
         {
-            "RenderType" = "Opaque"
+            "RenderType" = "Transparent"
+            "Queue" = "Transparent"
             "RenderPipeline" = "UniversalPipeline"
         }
-    	
-    	//解决深度引动模式Depth Priming Mode问题
-        UsePass "Universal Render Pipeline/Lit/DepthOnly"
-        UsePass "Universal Render Pipeline/Lit/DepthNormals"
 
          pass
         {
+            Blend SrcAlpha OneMinusSrcAlpha
             HLSLPROGRAM
 
             #pragma vertex vert
@@ -98,15 +96,12 @@ Shader "URP/VolumetricLighting"
                 float t2 = (-k1+sqrt(h))/k2;
                 
                 float y1 = m1 + t1*m2;
-                float y2 = m1 + t1*m2;
                 
                 if (y1<0.0 || y1>m0)
                     return -1; //no intersection
-
-                // if (y2<0.0 || y2>m0)
-                //     return -1; //no intersection
                 
-                return float4(t1, normalize(m0*(m0*(oa+t1*rd)+rr*ba*ra)-ba*hy*y1));
+                
+                return float4(t1,t2,0,1);
             }
 
 
@@ -146,8 +141,16 @@ Shader "URP/VolumetricLighting"
                 float3 pb = _pb;
                 float3 ra = _ra;
                 float3 rb = _rb;
-                
-                return coneIntersect(ro,rd,pa,pb,ra,rb);
+
+                float4 coneIntersection = coneIntersect(ro,rd,pa,pb,ra,rb);
+                if (coneIntersection.z<0)
+                {
+                    discard;
+                }
+
+                float3 intersectionPoint1 = ro+rd*coneIntersection.x;
+                float3 intersectionPoint2 = ro+rd*coneIntersection.y;
+                return float4(_BaseColor.rgb,1.0);
                 return albedo*_BaseColor;
             }
             

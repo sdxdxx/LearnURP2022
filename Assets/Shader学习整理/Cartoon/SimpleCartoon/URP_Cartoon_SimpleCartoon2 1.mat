@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: URP_VolumetricLighting
-  m_Shader: {fileID: 4800000, guid: dee695cea7faa9b4dafc063a8a629e28, type: 3}
+  m_Name: URP_Cartoon_SimpleCartoon2 1
+  m_Shader: {fileID: 4800000, guid: 0f81288ec59f2a240a06bfecd2cb864b, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -19,7 +19,7 @@ Material:
   m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
-  m_LockedProperties: _pa
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -27,12 +27,20 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _MatCap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _ra: 0
-    - _rb: 0.54336345
+    - _EnableNormalInline: 0
+    - _EnableNormalOutline: 0
+    - _MatCapLerp: 0
+    - _OutlineWidth: 0
+    - _SmoothValue: 0
     m_Colors:
-    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _pa: {r: 5, g: 8.89, b: 20, a: 0}
-    - _pb: {r: 5, g: 4.8999996, b: 20, a: 0}
+    - _BaseColor: {r: 0.6226415, g: 0.5999185, b: 0.5785867, a: 1}
+    - _NormalInlineColor: {r: 1, g: 1, b: 1, a: 1}
+    - _NormalOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+    - _OutlineColor: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
