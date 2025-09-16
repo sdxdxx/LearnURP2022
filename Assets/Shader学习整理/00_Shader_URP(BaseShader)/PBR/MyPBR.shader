@@ -128,7 +128,7 @@ Shader "URP/MyPBR"
                 return o;
             }
 
-    		 half3 CalculatePBRResult(float3 nDir, float3 lDir, float3 vDir, half3 MainTex, half3 lightCol, float smoothness, float metallic, float shadow)
+    		half3 CalculatePBRResult(float3 nDir, float3 lDir, float3 vDir, half3 MainTex, half3 lightCol, float smoothness, float metallic, float shadow)
             {
 				float3 hDir = normalize(vDir+lDir);
 

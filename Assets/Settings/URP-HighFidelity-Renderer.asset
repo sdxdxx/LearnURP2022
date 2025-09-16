@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a1b0542a0af2474d942b790ee2cccd8, type: 3}
   m_Name: DepthNormalsFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   NormalTexture: 1
 --- !u!114 &-6643330489509375760
 MonoBehaviour:
@@ -26,7 +26,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 20019e63ee850eb4ea73b41b83a9b183, type: 3}
   m_Name: GodRayRenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     renderPassEvent: 500
 --- !u!114 &-6017116289195907503
