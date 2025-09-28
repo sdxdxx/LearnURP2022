@@ -39,7 +39,10 @@ Shader "URP/SkyBox"
     {
         Tags
         {
-            "RenderType"="Opaque"
+            "RenderType"="Background"
+            "Queue"="Background"
+            "RenderType"="Background"
+            "PreviewType"="Skybox"
             "RenderPipeline" = "UniversalPipeline"  
         }
         
@@ -52,9 +55,7 @@ Shader "URP/SkyBox"
         
         pass
         {
-            //Tags{"LightMode"="UniversalForward"}
-            Tags { "QUEUE"="Background" "RenderType"="Background" "PreviewType"="Skybox" }
-             
+            Tags{"LightMode"="UniversalForward"}
             HLSLPROGRAM
             
 

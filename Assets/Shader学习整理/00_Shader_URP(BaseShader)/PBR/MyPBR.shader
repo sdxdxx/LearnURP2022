@@ -105,10 +105,9 @@ Shader "URP/MyPBR"
                 float3 nDirWS : TEXCOORD1;
                 float3 posWS : TEXCOORD2;
             	float4 screenPos : TEXCOORD3;
-            	float4 shadowCoord : TEXCOORD4;
-            	float3 tDirWS : TEXCOORD5;
-            	float3 bDirWS : TEXCOORD6;
-            	float4 color : TEXCOORD7;
+            	float3 tDirWS : TEXCOORD4;
+            	float3 bDirWS : TEXCOORD5;
+            	float4 color : TEXCOORD6;
             };
 
             vertexOutput vert (vertexInput v)
@@ -121,7 +120,6 @@ Shader "URP/MyPBR"
                 o.uv = v.uv;
                 o.posWS = TransformObjectToWorld(v.vertex);
             	o.screenPos = ComputeScreenPos(posCS);
-            	o.shadowCoord = TransformWorldToShadowCoord(o.posWS);
             	o.tDirWS = normalize(TransformObjectToWorld(v.tangent));
             	o.bDirWS = normalize(cross(o.nDirWS,o.tDirWS)*v.tangent.w);
             	o.color = v.color;
@@ -238,12 +236,15 @@ Shader "URP/MyPBR"
             	float4 MetallicSmoothnessTex = SAMPLE_TEXTURE2D(_MetallicSmoothnessTex,sampler_MetallicSmoothnessTex,i.uv).rgba;
             	float metallic = MetallicSmoothnessTex.r*_Metallic;
             	float smoothness = MetallicSmoothnessTex.a*_Smoothness;
+
+            	//shadowCoord 逐像素计算，避免出现级联阴影过度时出现锯齿错误
+            	float4 shadowCoord = TransformWorldToShadowCoord(i.posWS);
             	
             	//MainLight
-            	Light mainLight = GetMainLight(i.shadowCoord);
+            	Light mainLight = GetMainLight(shadowCoord);
                 half3 mainLightColor = mainLight.color;
             	float3 mainLightDir = mainLight.direction;
-            	float mainLightShadow = MainLightRealtimeShadow(i.shadowCoord);
+            	float mainLightShadow = MainLightRealtimeShadow(shadowCoord);
             	float3 mainLightRadiance = mainLightColor * mainLight.distanceAttenuation;
             	half3 mainColor = CalculatePBRResult(nDir,mainLightDir,vDir,albedo.rgb,mainLightRadiance,smoothness,metallic,mainLightShadow);
 
@@ -267,6 +268,7 @@ Shader "URP/MyPBR"
                 return half4(FinalRGB,1.0);
             }
     	ENDHLSL
+
         pass
         {
 	        Tags{"LightMode"="UniversalForward"}
@@ -280,8 +282,21 @@ Shader "URP/MyPBR"
             
             ENDHLSL
         }
-        
 
+		pass
+        {
+	        Tags{"LightMode"="Meta"}
+            
+            cull off
+             
+            HLSLPROGRAM
+            
+            #pragma vertex vert
+            #pragma fragment frag
+            
+            ENDHLSL
+        }
+        
 		//使用官方的ShadowCaster
 		Pass
         {
