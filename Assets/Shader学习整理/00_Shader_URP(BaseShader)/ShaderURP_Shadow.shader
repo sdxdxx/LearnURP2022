@@ -57,7 +57,7 @@ Shader "URP/Shadow"
                 float4 pos : SV_POSITION;
                 float2 uv : TEXCOORD0;
                 float3 nDirWS : TEXCOORD1;
-                float4 shadowCoord : TEXCOORD2;
+                float3 posWS : TEXCOORD2;
             };
 
             vertexOutput vert (vertexInput v)
@@ -67,17 +67,17 @@ Shader "URP/Shadow"
                 o.nDirWS = TransformObjectToWorldNormal(v.normal);
                 o.uv = v.uv*_MainTex_ST.xy+_MainTex_ST.zw;
                 float3 positionWS = TransformObjectToWorld(v.vertex.xyz);
-                o.shadowCoord = TransformWorldToShadowCoord(positionWS);
+                o.posWS = positionWS;;
                 return o;
             }
 
             half4 frag (vertexOutput i) : SV_TARGET
             {
-                float shadow = MainLightRealtimeShadow(i.shadowCoord);
+            	float4 shadowCoord = TransformWorldToShadowCoord(i.posWS);
+                float shadow = MainLightRealtimeShadow(shadowCoord);
                 half4 albedo = SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,i.uv);
-                return albedo*_BaseColor*shadow;
+                return float4(albedo*_BaseColor.rgb*shadow,1.0);
             }
-            
             ENDHLSL
         }
 

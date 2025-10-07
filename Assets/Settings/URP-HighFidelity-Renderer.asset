@@ -75,7 +75,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 78434f8baf84542a196bb6e69aef22d3, type: 3}
   m_Name: ScreenSpaceReflectionRenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   settings:
     renderPassEvent: 550
 --- !u!114 &-3720884500850813466
@@ -106,7 +106,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25798028fe1636f42bd8224afa828066, type: 3}
   m_Name: GrabDepthRF
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   m_RenderEvent: 500
 --- !u!114 &-1976716827555561739
 MonoBehaviour:
@@ -227,7 +227,8 @@ MonoBehaviour:
   - {fileID: 5375380266536543113}
   - {fileID: -5379288083382555390}
   - {fileID: 486685509490752328}
-  m_RendererFeatureMap: adc0de57c6d2eee5d7c237a8a6a61b4cbeb84ddb1c055f8d48b3ff2b16d55de0e6d587b442c35ccc51e642729de87eac01595dabf62b1d43f090451f1e26cea3343dc546724425448ead36094d21b2cbd95633ab3bef4ef1f57e03b8844a91e49e49932280bd1b3989238e57df2f994a02ad7d25fded58b548bb866ee40dc106
+  - {fileID: 7068098774862981660}
+  m_RendererFeatureMap: adc0de57c6d2eee5d7c237a8a6a61b4cbeb84ddb1c055f8d48b3ff2b16d55de0e6d587b442c35ccc51e642729de87eac01595dabf62b1d43f090451f1e26cea3343dc546724425448ead36094d21b2cbd95633ab3bef4ef1f57e03b8844a91e49e49932280bd1b3989238e57df2f994a02ad7d25fded58b548bb866ee40dc1061cea142963ee1662
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
@@ -419,3 +420,20 @@ MonoBehaviour:
       serializedVersion: 2
       m_Bits: 64
     shader: {fileID: 4800000, guid: 56b2dfdb3ecf1d64fa7bab19dc145392, type: 3}
+--- !u!114 &7068098774862981660
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c7510a59a3543d438c9d936a5165cd1, type: 3}
+  m_Name: WaterRippleRF
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  settings:
+    layerMask:
+      serializedVersion: 2
+      m_Bits: 8

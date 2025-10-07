@@ -1,0 +1,80 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: URP_CartoonTree_Barks
+  m_Shader: {fileID: 4800000, guid: 6466387c6416a8342871961722118fd7, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: 38cd991401e210d40a7dda2fa2f42159, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMap:
+        m_Texture: {fileID: 2800000, guid: 4d3696225e0ca5041b7e477bb0b1c9de, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SubLayerMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SubLayerNormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SubTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _WindDistortionMap:
+        m_Texture: {fileID: 2800000, guid: e82bf72157401624698e571bf7bf369e, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _EnableDepthRim: 0
+    - _EnableFrameTexture: 0
+    - _EnableSubLayer: 0
+    - _EnableSubLayerMask: 0
+    - _Metallic: 0
+    - _NormalInt: 1.2
+    - _RimMaxRange: 1
+    - _RimMinRange: 0
+    - _RimOffset: 6.88
+    - _RimWidth: 1
+    - _ScatteringDistoration: 1
+    - _ScatteringInt: 1
+    - _ScatteringPow: 1
+    - _Smoothness: 0.5
+    - _SpecInt: 1
+    - _SubLayerMetallic: 0
+    - _SubLayerNormalInt: 1
+    - _SubLayerSmoothness: 0
+    - _WindStrength: 0
+    m_Colors:
+    - _ColorTint: {r: 0.4528302, g: 0.22592595, b: 0.12175151, a: 1}
+    - _DarkColor: {r: 0, g: 0, b: 0, a: 1}
+    - _RimCol: {r: 1, g: 1, b: 1, a: 1}
+    - _SpecCol: {r: 1, g: 1, b: 1, a: 1}
+    - _SubLayerColorTint: {r: 1, g: 1, b: 1, a: 1}
+    - _SubLayerDarkColor: {r: 0, g: 0, b: 0, a: 1}
+    - _SubLayerRimCol: {r: 1, g: 1, b: 1, a: 1}
+    - _WindFrequency: {r: 0.05, g: 0.05, b: 0, a: 0}
+  m_BuildTextureStacks: []

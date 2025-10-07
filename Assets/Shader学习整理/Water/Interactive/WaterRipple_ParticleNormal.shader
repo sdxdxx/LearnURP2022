@@ -21,13 +21,13 @@ Shader "URP/WaterRipple_ParticleNormal"
         }
 
         //解决深度引动模式Depth Priming Mode问题
-        UsePass "Universal Render Pipeline/Lit/DepthOnly"
-        UsePass "Universal Render Pipeline/Lit/DepthNormals"
+        //UsePass "Universal Render Pipeline/Lit/DepthOnly"
+        //UsePass "Universal Render Pipeline/Lit/DepthNormals"
         
         pass
         {
-            Tags{"LightMode"="UniversalForward"}
-            
+            Tags{"LightMode"="WaterRipple"}
+            cull off
             Blend One OneMinusSrcAlpha
             Zwrite Off
              

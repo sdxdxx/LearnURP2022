@@ -297,7 +297,6 @@ Shader "URP/ShaderURP_Water"
                 float3 nDirWS : TEXCOORD3;
                 float3 tDirWS : TEXCOORD4;
                 float3 bDirWS : TEXCOORD5;
-            	float4 shadowCoord : TEXCOORD6;
             };
 
             vertexOutput vert (vertexInput v)
@@ -326,7 +325,6 @@ Shader "URP/ShaderURP_Water"
             	o.bDirWS = normalize(mul(o.nDirWS,o.tDirWS)*v.tangent.w);
                 o.uv = v.uv;
                 o.screenPos = ComputeScreenPos(posCS);
-            	o.shadowCoord = TransformWorldToShadowCoord(o.posWS);
                 return o;
             }
 
@@ -423,7 +421,8 @@ Shader "URP/ShaderURP_Water"
             	waterCol.rgb = lerp(refCol*saturate(waterCol+0.3),waterCol,1-_RefIntensity)*halfLambert_Modified;
             	
             	//shadow
-            	float shadow = MainLightRealtimeShadow(i.shadowCoord);
+            	float4 shadowCoord = TransformWorldToShadowCoord(i.posWS);
+            	float shadow = MainLightRealtimeShadow(shadowCoord);
             	shadow = remap(shadow,0,1,0.7,1);
             	
             	float FinalA = waterCol.a;

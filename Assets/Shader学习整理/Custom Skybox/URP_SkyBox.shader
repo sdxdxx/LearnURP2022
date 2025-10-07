@@ -55,7 +55,7 @@ Shader "URP/SkyBox"
         
         pass
         {
-            Tags{"LightMode"="UniversalForward"}
+            //Tags{"LightMode"="UniversalForward"}
             HLSLPROGRAM
             
 

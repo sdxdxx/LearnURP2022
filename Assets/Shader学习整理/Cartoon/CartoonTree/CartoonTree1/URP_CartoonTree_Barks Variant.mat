@@ -1,0 +1,62 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: URP_CartoonTree_Barks Variant
+  m_Shader: {fileID: 4800000, guid: 6466387c6416a8342871961722118fd7, type: 3}
+  m_Parent: {fileID: 2100000, guid: 6bfb8d88770c01e4299b5caa2d9e5d1f, type: 2}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _EnableSubLayer
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: 313c154b9b7fab54e9942786f0804fc4, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMap:
+        m_Texture: {fileID: 2800000, guid: 198a4dac613f69a4d9a77d94ad0e7dd9, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SubLayerNormalMap:
+        m_Texture: {fileID: 2800000, guid: a513c09fdf1a90941a7e6945029ab0c8, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SubTex:
+        m_Texture: {fileID: 2800000, guid: e086d335af49ee04c9a9ba85c2b4485c, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _EnableSubLayer: 1
+    - _EnableSubLayerMask: 0
+    - _Metallic: 0.5
+    - _NormalInt: 1
+    - _RimOffset: 2
+    - _RimWidth: 0
+    - _Smoothness: 0
+    - _SpecInt: 1
+    - _SubLayerMetallic: 0
+    - _SubLayerNormalInt: 2
+    - _SubLayerSmoothness: 0
+    m_Colors:
+    - _ColorTint: {r: 1, g: 1, b: 1, a: 1}
+    - _DarkColor: {r: 0.3773585, g: 0.33861747, b: 0.31149876, a: 1}
+    - _RimCol: {r: 0.809, g: 0.75506663, b: 0.6951407, a: 1}
+    - _SubLayerColorTint: {r: 1, g: 1, b: 1, a: 1}
+    - _SubLayerRimCol: {r: 0.63071334, g: 0.8773585, b: 0.36832502, a: 1}
+  m_BuildTextureStacks: []

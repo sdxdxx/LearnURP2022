@@ -76,10 +76,35 @@ public class GrabDepthPass : ScriptableRenderPass
         CommandBuffer cmd = CommandBufferPool.Get("GrabDepthPass");
         using (new ProfilingScope(cmd, m_Sampler)) 
         {
+            RenderTextureDescriptor desc = renderingData.cameraData.cameraTargetDescriptor;
             //可以根据当前相机的AAlevel配置关键字
-            m_Mat.EnableKeyword("_DEPTH_MSAA_2");
-            m_Mat.DisableKeyword("_DEPTH_MSAA_4");
-            m_Mat.DisableKeyword("_DEPTH_MSAA_8");
+            switch (desc.msaaSamples)
+            {
+                case 8:
+                    m_Mat.DisableKeyword("_DEPTH_MSAA_2");
+                    m_Mat.DisableKeyword("_DEPTH_MSAA_4");
+                    m_Mat.EnableKeyword("_DEPTH_MSAA_8");
+                    break;
+
+                case 4:
+                    m_Mat.DisableKeyword("_DEPTH_MSAA_2");
+                    m_Mat.EnableKeyword("_DEPTH_MSAA_4");
+                    m_Mat.DisableKeyword("_DEPTH_MSAA_8");
+                    break;
+
+                case 2:
+                    m_Mat.EnableKeyword("_DEPTH_MSAA_2");
+                    m_Mat.DisableKeyword("_DEPTH_MSAA_4");
+                    m_Mat.DisableKeyword("_DEPTH_MSAA_8");
+                    break;
+
+                // MSAA disabled, auto resolve supported, resolve texture requested, or ms textures not supported
+                default:
+                    m_Mat.DisableKeyword("_DEPTH_MSAA_2");
+                    m_Mat.DisableKeyword("_DEPTH_MSAA_4");
+                    m_Mat.DisableKeyword("_DEPTH_MSAA_8");
+                    break;
+            }
             m_Mat.EnableKeyword("_OUTPUT_DEPTH");
             Blitter.BlitCameraTexture(cmd,_cameraDepth,_GrabDepthTex,m_Mat,0);
         }

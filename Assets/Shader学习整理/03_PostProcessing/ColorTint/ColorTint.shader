@@ -32,6 +32,7 @@ Shader "URP/PostProcessing/ColorTint"
             
             //----------贴图声明开始-----------
             TEXTURE2D(_CameraOpaqueTexture);//获取到摄像机渲染画面的Texture
+            TEXTURE2D(_MyDepthTex);//获取到摄像机渲染画面的Texture
             SAMPLER(sampler_CameraOpaqueTexture);
             TEXTURE2D(_MainTex);
             SAMPLER(sampler_MainTex);
