@@ -1,0 +1,180 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: URP_Terrain_CustomTerrianGrass
+  m_Shader: {fileID: 4800000, guid: 7704d7de1389dca4fab7be6d1c674e76, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _Grass2
+  - _Grass3
+  - _Grass4
+  - _TERRAIN_INSTANCED_PERPIXEL_NORMAL
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap:
+    RenderType: Opaque
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BaseMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Control:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ControlMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Mask0:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Mask1:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Mask2:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Mask3:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Normal0:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Normal1:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Normal2:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Normal3:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Splat0:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Splat1:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Splat2:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Splat3:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _TerrainHolesTexture:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _WindDistortionMap:
+        m_Texture: {fileID: 2800000, guid: aec3a7f2e8c0fc34eae63f6a8e960983, type: 3}
+        m_Scale: {x: 0.01, y: 0.01}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AlphaClip: 0
+    - _AlphaToMask: 0
+    - _BendRotationRandom: 0.2
+    - _BladeCurve: 3
+    - _BladeForward: 0.3
+    - _BladeHeight: 0.28
+    - _BladeHeight1: 0.5
+    - _BladeHeight2: 1
+    - _BladeHeight3: 1
+    - _BladeHeight4: 1
+    - _BladeHeightRandom: 0.3
+    - _BladeWidth: 0.03
+    - _BladeWidth1: 0.05
+    - _BladeWidth2: 0.1
+    - _BladeWidth3: 0.1
+    - _BladeWidth4: 0.1
+    - _BladeWidthRandom: 0.06
+    - _Blend: 0
+    - _BlendOp: 0
+    - _ColorRandom: 0.1
+    - _Cull: 2
+    - _Cutoff: 0.5
+    - _DstBlend: 0
+    - _DstBlendAlpha: 0
+    - _EnableGrass1: 0
+    - _EnableGrass2: 1
+    - _EnableGrass3: 1
+    - _EnableGrass4: 1
+    - _EnableHeightBlend: 0
+    - _EnableInstancedPerPixelNormal: 1
+    - _GrassDensity: 5
+    - _GrassDensity1: 8
+    - _GrassDensity2: 1
+    - _GrassDensity3: 3
+    - _GrassDensity4: 2
+    - _HeightTransition: 0
+    - _Lerp: 0.5
+    - _Metallic0: 0
+    - _Metallic1: 0
+    - _Metallic2: 0
+    - _Metallic3: 0
+    - _NumLayersCount: 1
+    - _PushRadius: 2.44
+    - _QueueOffset: 0
+    - _SampleGI: 0
+    - _Smoothness0: 0.5
+    - _Smoothness1: 0.5
+    - _Smoothness2: 0.5
+    - _Smoothness3: 0.5
+    - _SrcBlend: 1
+    - _SrcBlendAlpha: 1
+    - _Strength: 1.79
+    - _Surface: 0
+    - _TranslucentGain: 0.5
+    - _WindStrength: 0.5
+    - _ZWrite: 1
+    m_Colors:
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _BottomColor: {r: 0.0627451, g: 0.37647063, b: 0.07058824, a: 1}
+    - _BottomColor1: {r: 0, g: 0.5, b: 0, a: 1}
+    - _BottomColor2: {r: 0.3764706, g: 0.32216403, b: 0.06274509, a: 1}
+    - _BottomColor3: {r: 0, g: 0.24584796, b: 0.5019608, a: 1}
+    - _BottomColor4: {r: 0.0627451, g: 0.37647063, b: 0.07058824, a: 1}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _GrassColorTint: {r: 1, g: 1, b: 1, a: 1}
+    - _GrassColorTint1: {r: 1, g: 1, b: 1, a: 1}
+    - _GrassColorTint2: {r: 1, g: 1, b: 1, a: 1}
+    - _GrassColorTint3: {r: 1, g: 1, b: 1, a: 1}
+    - _GrassColorTint4: {r: 1, g: 1, b: 1, a: 1}
+    - _TopColor: {r: 0.5803922, g: 0.8470589, b: 0.32941177, a: 1}
+    - _TopColor1: {r: 0.09999997, g: 1, b: 0.09999997, a: 1}
+    - _TopColor2: {r: 0.84705883, g: 0.7032536, b: 0.32941183, a: 1}
+    - _TopColor3: {r: 0.32941183, g: 0.84705883, b: 0.80334216, a: 1}
+    - _TopColor4: {r: 0.5803922, g: 0.8470589, b: 0.32941177, a: 1}
+    - _WindFrequency: {r: 0.05, g: 0.05, b: 0, a: 0}
+  m_BuildTextureStacks: []
