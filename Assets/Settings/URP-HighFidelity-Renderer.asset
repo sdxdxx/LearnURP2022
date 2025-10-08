@@ -1,5 +1,20 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-7793652359041810675
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b3d5ee6d82c2e24eb15a1eed47cfafb, type: 3}
+  m_Name: NormalLineRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  settings:
+    renderPassEvent: 220
 --- !u!114 &-6692801930337666028
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15,6 +30,22 @@ MonoBehaviour:
   m_Active: 0
   settings:
     renderPassEvent: 500
+--- !u!114 &-6623979406184408848
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f86b09eb8d908fa44bc8b6ef89d87522, type: 3}
+  m_Name: ColorTintRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 0
+  settings:
+    renderPassEvent: 550
+    shader: {fileID: 4800000, guid: fed65bf69d51bc943898072f9c7133f0, type: 3}
 --- !u!114 &-5062150752757379744
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -27,7 +58,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e7bddc125ada5774bb546b23807f66ac, type: 3}
   m_Name: GasussianBlurRenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     renderPassEvent: 550
     shader: {fileID: 4800000, guid: 67fae0bbe1f66674da30475d39ea3b99, type: 3}
@@ -43,7 +74,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 828a9754f8867d847a3a6b204a18a19c, type: 3}
   m_Name: CustomDepthNormalsRendererFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     renderPassEvent: 220
     layerMask:
@@ -125,7 +156,9 @@ MonoBehaviour:
   - {fileID: 5990593880843631149}
   - {fileID: 647216610253103066}
   - {fileID: -5062150752757379744}
-  m_RendererFeatureMap: adc0de57c6d2eee5259b5863b1ef40204c16e4bd7233684a14bc2cb61a641ea31299797569247e71b1b2dab0a4cedeeee96589dae5dc6adb2d3a502565dd2253da5fdef21360fb08608d6bf6b5a0bfb9
+  - {fileID: -6623979406184408848}
+  - {fileID: -7793652359041810675}
+  m_RendererFeatureMap: adc0de57c6d2eee5259b5863b1ef40204c16e4bd7233684a14bc2cb61a641ea31299797569247e71b1b2dab0a4cedeeee96589dae5dc6adb2d3a502565dd2253da5fdef21360fb08608d6bf6b5a0bfb9f018e04ed3e512a40d7f6dd47862d793
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
@@ -202,7 +235,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c7510a59a3543d438c9d936a5165cd1, type: 3}
   m_Name: WaterRippleRF
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     layerMask:
       serializedVersion: 2
@@ -254,7 +287,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25abd6a4fb4880145a4b4bb8f66cf44d, type: 3}
   m_Name: WaterScreenSpaceReflectionRenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     renderPassEvent: 550
 --- !u!114 &8178014008712468754

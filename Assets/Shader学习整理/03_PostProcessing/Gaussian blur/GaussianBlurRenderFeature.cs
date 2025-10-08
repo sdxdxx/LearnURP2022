@@ -25,6 +25,7 @@ public class GasussianBlurRenderFeature : ScriptableRendererFeature
 
         private RTHandle cameraColorRTHandle;//可以理解为GameView_RenderTarget的句柄
         private RTHandle tempRTHandle;
+        private RTHandle tempRTHandle2;
 
         //自定义Pass的构造函数(用于传参)
         public CustomRenderPass(RenderPassEvent evt, Shader shader)
@@ -50,11 +51,11 @@ public class GasussianBlurRenderFeature : ScriptableRendererFeature
         public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
         {
             ConfigureInput(ScriptableRenderPassInput.Color); //确认传入的参数类型为Color
-            ConfigureTarget(cameraColorRTHandle);//确认传入的目标为cameraColorRT
-            
-            GetTempRT(ref tempRTHandle,this.renderingData);//获取与摄像机大小一致的临时RT
+            GetTempRT(ref tempRTHandle, this.renderingData); //获取与摄像机大小一致的临时RT
+            GetTempRT(ref tempRTHandle2, this.renderingData); //获取与摄像机大小一致的临时RT
+            ConfigureTarget(cameraColorRTHandle); //确认传入的目标
         }
-        
+
         //执行传递。这是自定义渲染发生的地方
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
@@ -69,7 +70,8 @@ public class GasussianBlurRenderFeature : ScriptableRendererFeature
             using (new ProfilingScope(cmd, m_ProfilingSampler))
             {
                 Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle);
-                Blitter.BlitCameraTexture(cmd,tempRTHandle,cameraColorRTHandle,material,0);//写入渲染命令进CommandBuffer
+                Blitter.BlitCameraTexture(cmd,tempRTHandle,tempRTHandle2,material,0);//写入渲染命令进CommandBuffer
+                Blitter.BlitCameraTexture(cmd,tempRTHandle2,cameraColorRTHandle,material,1);//写入渲染命令进CommandBuffer
             }
             
             context.ExecuteCommandBuffer(cmd);//执行CommandBuffer
@@ -86,6 +88,7 @@ public class GasussianBlurRenderFeature : ScriptableRendererFeature
         public void OnDispose() 
         {
             tempRTHandle?.Release();//如果tempRTHandle没被释放的话，会被释放
+            tempRTHandle2?.Release();//如果tempRTHandle没被释放的话，会被释放
         }
     }
 

@@ -120,6 +120,7 @@ public class DrawLeaf : MonoBehaviour
     }
 }
 
+#if UNITY_EDITOR
 [CustomEditor(typeof(DrawLeaf))]
 public class DrawLeafEditor : Editor {
     public override void OnInspectorGUI() {
@@ -134,4 +135,4 @@ public class DrawLeafEditor : Editor {
         }
     }
 }
-
+#endif

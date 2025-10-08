@@ -268,6 +268,7 @@ Shader "URP/PostProcessing/Clouds"
             }
         ENDHLSL
         
+        //CalculateCloud
         pass
         {
             HLSLPROGRAM
@@ -297,29 +298,114 @@ Shader "URP/PostProcessing/Clouds"
             ENDHLSL
         }
         
-         pass
+
+        //Blur Vertical
+        Pass
         {
+            Cull Off 
+            ZWrite Off
+            
             HLSLPROGRAM
 
             #pragma vertex Vert
-            #pragma fragment frag_Blur
+            #pragma fragment frag
             
-            CBUFFER_START(UnityPerMaterial)
-            uniform float4 _BlitTexture_TexelSize;
+            //----------贴图声明开始-----------
+
+            //----------贴图声明结束-----------
+
+            float4 _BlitTexture_TexelSize;
             float _BlurRange;
+            CBUFFER_START(UnityPerMaterial)
+            //----------变量声明开始-----------
+            
+            //----------变量声明结束-----------
             CBUFFER_END
             
-             half4 frag_Blur(Varyings i) : SV_TARGET
+            
+            half4 frag (Varyings i) : SV_TARGET
             {
-                half4 tex = SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp,i.texcoord);
-                float blurRange = lerp(0.5,5,_BlurRange);
-                //四角像素
-                //注意这个【_BlurRange】，这就是扩大卷积核范围的参数
-                tex+=SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp,i.texcoord+float2(-1,-1)*_BlitTexture_TexelSize.xy*blurRange); 
-                tex+=SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp,i.texcoord+float2(1,-1)*_BlitTexture_TexelSize.xy*blurRange);
-                tex+=SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp,i.texcoord+float2(-1,1)*_BlitTexture_TexelSize.xy*blurRange);
-                tex+=SAMPLE_TEXTURE2D(_BlitTexture,sampler_PointClamp,i.texcoord+float2(1,1)*_BlitTexture_TexelSize.xy*blurRange);
-                return tex/5.0;
+                float2 uv = i.texcoord;
+                float blurSize = lerp(0.0f,5.0f,_BlurRange);
+                //设置垂直方向的采样坐标
+                float2 uv_vertical[5];
+                uv_vertical[0] = uv + float2(0.0, _BlitTexture_TexelSize.y * 2.0) * blurSize;
+                uv_vertical[1] = uv + float2(0.0, _BlitTexture_TexelSize.y * 1.0) * blurSize;
+                uv_vertical[2] = uv;
+                uv_vertical[3] = uv - float2(0.0, _BlitTexture_TexelSize.y * 1.0) * blurSize;
+                uv_vertical[4] = uv - float2(0.0, _BlitTexture_TexelSize.y * 2.0) * blurSize;
+                
+                //weight
+                float weight[5] = { 0.0545,0.2442,0.4026, 0.2442, 0.0545};
+
+                //中心纹理*权重
+                half4 sum = half4(0,0,0,0);
+                //上下/左右 的2个纹理*权重
+                sum += SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp,uv_vertical[0]) * weight[0];
+                sum += SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp,uv_vertical[1]) * weight[1];
+                sum += SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp,uv_vertical[2]) * weight[2];
+                sum += SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp,uv_vertical[3]) * weight[3];
+                sum += SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp,uv_vertical[4]) * weight[4];
+                half4 col = sum;
+                return col*_BaseColor;
+            }
+            
+            ENDHLSL
+        }
+
+        //Blur Horizontal
+        Pass
+        {
+            Cull Off 
+            ZWrite Off
+            
+            HLSLPROGRAM
+
+            #pragma vertex Vert
+            #pragma fragment frag
+
+           #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+           #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+           #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+            #include  "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
+            
+            //----------贴图声明开始-----------
+            
+            //----------贴图声明结束-----------
+            float4 _BlitTexture_TexelSize;
+            float _BlurRange;
+            CBUFFER_START(UnityPerMaterial)
+            //----------变量声明开始-----------
+
+            //----------变量声明结束-----------
+            CBUFFER_END
+            
+            
+            half4 frag (Varyings i) : SV_TARGET
+            {
+                float2 uv = i.texcoord;
+                float blurSize = lerp(0.0f,5.0f,_BlurRange);
+                //设置水平方向的采样坐标
+                float2 uv_horizontal[5];
+                uv_horizontal[0] = uv + float2(_BlitTexture_TexelSize.x * 2.0, 0.0) * blurSize;
+                uv_horizontal[1] = uv + float2(_BlitTexture_TexelSize.x * 1.0, 0.0) * blurSize;
+                uv_horizontal[2] = uv;
+                uv_horizontal[3] = uv - float2(_BlitTexture_TexelSize.x * 1.0, 0.0) * blurSize;
+                uv_horizontal[4] = uv - float2(_BlitTexture_TexelSize.x * 2.0, 0.0) * blurSize;
+
+                //weight
+                float weight[5] = { 0.0545,0.2442,0.4026, 0.2442, 0.0545};
+
+                //中心纹理*权重
+                half4 sum = half4(0,0,0,0);
+                //上下/左右 的2个纹理*权重
+                sum += SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp,uv_horizontal[0]) * weight[0];
+                sum += SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp,uv_horizontal[1]) * weight[1];
+                sum += SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp,uv_horizontal[2]) * weight[2];
+                sum += SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp,uv_horizontal[3]) * weight[3];
+                sum += SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp,uv_horizontal[4]) * weight[4];
+                half4 col = sum;
+                return col*_BaseColor;
             }
             
             ENDHLSL
@@ -344,7 +430,7 @@ Shader "URP/PostProcessing/Clouds"
                 half4 cloud = SAMPLE_TEXTURE2D(_CloudMap,sampler_CloudMap,i.texcoord);
                 
                 half3 FinalRGB = albedo.rgb*(1-cloud.a)+cloud.a*cloud.rgb*_BaseColor*intensity;
-
+                
                 half4 result = half4(FinalRGB,1.0);
                 
                 return result;
@@ -353,4 +439,4 @@ Shader "URP/PostProcessing/Clouds"
             ENDHLSL
         }
     }
-    }
+}

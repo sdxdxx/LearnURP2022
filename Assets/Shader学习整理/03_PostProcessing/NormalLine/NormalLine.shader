@@ -45,7 +45,8 @@ Shader "URP/PostProcessing/NormalLine"
                 float3 lum = float3(0.5,0.5,0.5);//转化为自定义luminance亮度值
                 float2 pixelPos = screenPos*_ScreenParams.xy;
 
-                float2 bias[4] = {float2(0,1),float2(1,0),float2(-1,0),float2(0,-1)};
+                float size = 1.5;
+                float2 bias[4] = {float2(0,size),float2(size,0),float2(-size,0),float2(0,-size)};
                 float3 nDirWS_00 = SAMPLE_TEXTURE2D(_CameraNormalsTexture, sampler_PointClamp, screenPos);
                 float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp, screenPos).r;
                 float mc_00 = dot(nDirWS_00,lum);

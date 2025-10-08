@@ -25,6 +25,7 @@ public class CloudsRenderFeature : ScriptableRendererFeature
 
         private RTHandle cameraColorRTHandle;//可以理解为GameView_RenderTarget的句柄
         private RTHandle tempRTHandle;
+        private RTHandle tempRTHandle2;
         private RTHandle downSampleTexRTHandle;
 
         //自定义Pass的构造函数(用于传参)
@@ -73,11 +74,11 @@ public class CloudsRenderFeature : ScriptableRendererFeature
                 return;
             }
             
-            //Only Game Camera can Render
-            if (renderingData.cameraData.cameraType != CameraType.Game)
-            {
-                return;
-            }
+            // //Only Game Camera can Render
+            // if (renderingData.cameraData.cameraType != CameraType.Game)
+            // {
+            //     return;
+            // }
 
             var stack = VolumeManager.instance.stack;//获取Volume的栈
             cloudsVolume = stack.GetComponent<CloudsVolume>();//从栈中获取到CloudsVolume
@@ -88,7 +89,8 @@ public class CloudsRenderFeature : ScriptableRendererFeature
                 CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);//获得一个为ProfilerTag的CommandBuffer
                 
                 GetTempRT(ref downSampleTexRTHandle,this.renderingData,cloudsVolume.DownSampleValue.value,true);
-                GetTempRT(ref tempRTHandle,this.renderingData,cloudsVolume.DownSampleValue.value,true);
+                GetTempRT(ref tempRTHandle,this.renderingData,1,true);
+                GetTempRT(ref tempRTHandle2,this.renderingData,1,true);
 
                 if (cloudsVolume.EnableSkyMask.value)
                 {
@@ -147,8 +149,10 @@ public class CloudsRenderFeature : ScriptableRendererFeature
                 {
                     Blitter.BlitCameraTexture(cmd,downSampleTexRTHandle,downSampleTexRTHandle,material,0);//降采样
                     Blitter.BlitCameraTexture(cmd,downSampleTexRTHandle,tempRTHandle,material,1);//Blur
-                    material.SetTexture("_CloudMap",tempRTHandle);
-                    Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,cameraColorRTHandle,material,2);//写入渲染命令进CommandBuffer
+                    Blitter.BlitCameraTexture(cmd,tempRTHandle,tempRTHandle2,material,2);//Blur
+                    material.SetTexture("_CloudMap",tempRTHandle2);
+                    Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle);//写入渲染命令进CommandBuffer
+                    Blitter.BlitCameraTexture(cmd,tempRTHandle,cameraColorRTHandle,material,3);//写入渲染命令进CommandBuffer
                 }
                 
                 context.ExecuteCommandBuffer(cmd);//执行CommandBuffer
@@ -167,6 +171,7 @@ public class CloudsRenderFeature : ScriptableRendererFeature
         {
             downSampleTexRTHandle?.Release();
             tempRTHandle?.Release();
+            tempRTHandle2?.Release();
         }
     }
 
