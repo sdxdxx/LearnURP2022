@@ -420,7 +420,7 @@ Shader "URP/ShaderURP_Water_SSR"
                 o.pos = posCS;
                 o.nDirWS = TransformObjectToWorldNormal(v.normal);
             	o.tDirWS = normalize(TransformObjectToWorld(v.tangent));
-            	o.bDirWS = normalize(mul(o.nDirWS,o.tDirWS)*v.tangent.w);
+            	o.bDirWS = normalize(cross(o.nDirWS,o.tDirWS)*v.tangent.w);
                 o.uv = v.uv;
                 o.screenPos = ComputeScreenPos(posCS);
                 return o;

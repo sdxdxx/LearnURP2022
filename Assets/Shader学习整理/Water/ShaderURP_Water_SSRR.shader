@@ -420,7 +420,7 @@ Shader "URP/ShaderURP_Water_SSPR"
                 o.pos = posCS;
                 o.nDirWS = TransformObjectToWorldNormal(v.normal);
             	o.tDirWS = normalize(TransformObjectToWorld(v.tangent));
-            	o.bDirWS = normalize(mul(o.nDirWS,o.tDirWS)*v.tangent.w);
+            	o.bDirWS = normalize(cross(o.nDirWS,o.tDirWS)*v.tangent.w);
                 o.uv = v.uv;
                 o.screenPos = ComputeScreenPos(posCS);
                 return o;
@@ -580,7 +580,7 @@ Shader "URP/ShaderURP_Water_SSPR"
                 foam = saturate(step(foamRange,foam+foamNoise-_FoamDissolve))*foamRange*_FoamCol;
             	
                 half3 FinalRGB = saturate(WaterFinalColor+shoreEdge+foam);
-            	FinalRGB = FinalRGB+smoothstep(0.3,0.4,rippleNormal.b)*FinalRGB,
+            	FinalRGB = FinalRGB+smoothstep(0.3,0.4,rippleNormal.b)*FinalRGB;
             	FinalRGB += blink;
             	
             	half4 result = half4(FinalRGB,1.0);
@@ -694,7 +694,7 @@ Shader "URP/ShaderURP_Water_SSPR"
                 foam = saturate(step(foamRange,foam+foamNoise-_FoamDissolve))*foamRange*_FoamCol;
             	
                 half3 FinalRGB = saturate(waterFinalCol+foam+shoreEdge);
-            	FinalRGB = FinalRGB+smoothstep(0.3,0.4,rippleNormal.b)*FinalRGB,
+            	FinalRGB = FinalRGB+smoothstep(0.3,0.4,rippleNormal.b)*FinalRGB;
             	FinalRGB += blink;
             	half4 result = half4(FinalRGB,1.0);
             	

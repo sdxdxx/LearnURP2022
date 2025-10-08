@@ -15,6 +15,24 @@ MonoBehaviour:
   m_Active: 0
   settings:
     renderPassEvent: 500
+--- !u!114 &-2636051752099944983
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 828a9754f8867d847a3a6b204a18a19c, type: 3}
+  m_Name: CustomDepthNormalsRendererFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  settings:
+    renderPassEvent: 220
+    layerMask:
+      serializedVersion: 2
+      m_Bits: 17
 --- !u!114 &-1878332245247344467
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -27,7 +45,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f62c9c65cf3354c93be831c8bc075510, type: 3}
   m_Name: SSAO
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   m_Settings:
     AOMethod: 1
     Downsample: 0
@@ -50,6 +68,20 @@ MonoBehaviour:
   - {fileID: 2800000, guid: 3302065f671a8450b82c9ddf07426f3a, type: 3}
   - {fileID: 2800000, guid: 56a77a3e8d64f47b6afe9e3c95cb57d5, type: 3}
   m_Shader: {fileID: 4800000, guid: 0849e84e3d62649e8882e9d6f056a017, type: 3}
+--- !u!114 &-1234322041115856207
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a1b0542a0af2474d942b790ee2cccd8, type: 3}
+  m_Name: DepthNormalsFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  NormalTexture: 1
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -72,7 +104,10 @@ MonoBehaviour:
   - {fileID: 5361591924289705548}
   - {fileID: -6692801930337666028}
   - {fileID: 8178014008712468754}
-  m_RendererFeatureMap: adc0de57c6d2eee5259b5863b1ef40204c16e4bd7233684a14bc2cb61a641ea31299797569247e71
+  - {fileID: -1234322041115856207}
+  - {fileID: -2636051752099944983}
+  - {fileID: 5990593880843631149}
+  m_RendererFeatureMap: adc0de57c6d2eee5259b5863b1ef40204c16e4bd7233684a14bc2cb61a641ea31299797569247e71b1b2dab0a4cedeeee96589dae5dc6adb2d3a502565dd2253
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
@@ -173,6 +208,21 @@ MonoBehaviour:
   m_Active: 1
   m_RenderEvent: 500
   shader: {fileID: 4800000, guid: dae47e8bb2ad5de4f8f40a1f8c38cc3a, type: 3}
+--- !u!114 &5990593880843631149
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 25abd6a4fb4880145a4b4bb8f66cf44d, type: 3}
+  m_Name: WaterScreenSpaceReflectionRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  settings:
+    renderPassEvent: 550
 --- !u!114 &8178014008712468754
 MonoBehaviour:
   m_ObjectHideFlags: 0

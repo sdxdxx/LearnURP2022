@@ -70,7 +70,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _BlinkIntensity: 17
-    - _BlinkThreshold: 1.5
+    - _BlinkThreshold: 7
     - _Blur: 0
     - _CausiticsIntensity: 1
     - _CausiticsRange: 5.5
