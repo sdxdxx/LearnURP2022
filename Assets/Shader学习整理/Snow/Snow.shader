@@ -236,11 +236,10 @@ Shader "URP/Snow"
                 float4 color : COLOR;
                 float4 vertex : SV_POSITION;
                 float2 uv : TEXCOORD0;
-                float3 posWS:TEXCOORD1;
+                float3 posOS:TEXCOORD1;
             	float3 nDirWS : TEXCOORD2;
             	float3 tDirWS : TEXCOORD3;
             	float3 bDirWS : TEXCOORD4;
-            	float4 shadowCoord : TEXCOORD5;
             };
 
             // 为了确定如何细分三角形，GPU使用了四个细分因子。三角形面片的每个边缘都有一个因数。
@@ -338,12 +337,11 @@ Shader "URP/Snow"
                 float height = SAMPLE_TEXTURE2D_LOD(_HeightMap,sampler_HeightMap,v.uv,0).r*_Height;
 				o.vertex = TransformObjectToHClip(v.vertex+v.normal*height);
 				o.uv = v.uv;
-				o.posWS = TransformObjectToWorld(v.vertex+v.normal*height);
+				o.posOS = v.vertex+v.normal*height;
             	o.nDirWS = TransformObjectToWorldNormal(v.normal);
             	o.tDirWS = normalize(TransformObjectToWorld(v.tangent));
             	o.bDirWS = normalize(mul(o.nDirWS,o.tDirWS)*v.tangent.w);
             	o.color = v.color;
-            	o.shadowCoord = TransformWorldToShadowCoord(o.posWS);
                 return o;
 			}
 
@@ -398,14 +396,17 @@ Shader "URP/Snow"
             	float3 normal  = Height2Normal(_Normal2HeightInt,i.uv);
             	float3 final_Normal = NormalBlendReoriented(var_NormalMap,normal);
 
+            	float3 posWS = TransformObjectToWorld(i.posOS);
+
 				//Vector
 				float3 nDir = normalize(mul(final_Normal,TBN));
             	float3 nDirVS = normalize(mul((float3x3)UNITY_MATRIX_V, nDir));
             	float3 lDir = normalize(_MainLightPosition.xyz);
-            	float3 vDir = normalize(_WorldSpaceCameraPos.xyz - i.posWS.xyz);
+            	float3 vDir = normalize(_WorldSpaceCameraPos.xyz - posWS.xyz);
             	
             	//shadow
-            	float shadow = MainLightRealtimeShadow(i.shadowCoord);
+            	float4 shadowcoord = TransformWorldToShadowCoord(posWS);
+            	float shadow = MainLightRealtimeShadow(shadowcoord);
 
             	// Metallic & Smoothness
             	float4 MetallicSmoothnessTex = SAMPLE_TEXTURE2D(_MetallicSmoothnessTex,sampler_MetallicSmoothnessTex,i.uv).rgba;

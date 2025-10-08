@@ -280,7 +280,7 @@ Shader "URP/PostProcessing/Clouds"
 
                 float2 screenPos = i.texcoord;
                 
-                float rawDepth = SAMPLE_TEXTURE2D(_MyDepthTex,sampler_PointClamp,screenPos).r;
+                float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,screenPos).r;
                 float linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
                 
                 float3 posWS_Frag = ReconstructWorldPositionFromDepth(screenPos,linear01Depth);
