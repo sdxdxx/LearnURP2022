@@ -201,7 +201,7 @@ Shader "URP/ShaderURP_Water_SSR"
 					a * sin(f),
 					d.y * (a * cos(f))
 				);
-		}
+			}
 
             //直接光镜面反射部分
             float3 CalculateSpecularResultColor(float3 albedo, float3 nDir, float3 lDir, float3 vDir, float smothness, float metallic, float3 specCol)

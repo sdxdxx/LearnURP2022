@@ -180,7 +180,7 @@ Shader "URP/SimplePortal/Lighting"
                 
                 float smoothMask = pow(1-i.uv.y,_SmoothMainMaskPow);
                 smoothMask = smoothMask*smoothstep(0,_SmoothMainMaskBottom,i.uv.y);
-                
+                smoothMask = saturate(smoothMask);
                 float4 mainMask = pow(SAMPLE_TEXTURE2D(_MainMask,sampler_MainMask,maskUV),_MainMaskPow)*smoothMask;
                 float3 finalRGB = mainMask.rgb*_BaseColor;
                 float finalAlpha = mainMask.a*_BaseColor.a;

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8b3d5ee6d82c2e24eb15a1eed47cfafb, type: 3}
   m_Name: NormalLineRenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     renderPassEvent: 220
 --- !u!114 &-6692801930337666028
@@ -46,6 +46,24 @@ MonoBehaviour:
   settings:
     renderPassEvent: 550
     shader: {fileID: 4800000, guid: fed65bf69d51bc943898072f9c7133f0, type: 3}
+--- !u!114 &-6098284814209655416
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1dd661e3e19d6354b87e4c3379b16bfd, type: 3}
+  m_Name: UnderWaterRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  settings:
+    renderPassEvent: 550
+    waterLayer:
+      serializedVersion: 2
+      m_Bits: 16
 --- !u!114 &-5062150752757379744
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -74,7 +92,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 828a9754f8867d847a3a6b204a18a19c, type: 3}
   m_Name: CustomDepthNormalsRendererFeature
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   settings:
     renderPassEvent: 220
     layerMask:
@@ -92,7 +110,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f62c9c65cf3354c93be831c8bc075510, type: 3}
   m_Name: SSAO
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   m_Settings:
     AOMethod: 1
     Downsample: 0
@@ -158,7 +176,8 @@ MonoBehaviour:
   - {fileID: -5062150752757379744}
   - {fileID: -6623979406184408848}
   - {fileID: -7793652359041810675}
-  m_RendererFeatureMap: adc0de57c6d2eee5259b5863b1ef40204c16e4bd7233684a14bc2cb61a641ea31299797569247e71b1b2dab0a4cedeeee96589dae5dc6adb2d3a502565dd2253da5fdef21360fb08608d6bf6b5a0bfb9f018e04ed3e512a40d7f6dd47862d793
+  - {fileID: -6098284814209655416}
+  m_RendererFeatureMap: adc0de57c6d2eee5259b5863b1ef40204c16e4bd7233684a14bc2cb61a641ea31299797569247e71b1b2dab0a4cedeeee96589dae5dc6adb2d3a502565dd2253da5fdef21360fb08608d6bf6b5a0bfb9f018e04ed3e512a40d7f6dd47862d79388dddf85458a5eab
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
@@ -219,7 +238,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4bec71d9e7c196348ad7c618417168d1, type: 3}
   m_Name: CloudsRenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   settings:
     renderPassEvent: 550
     shader: {fileID: 4800000, guid: 2b4f5a17211fc7c4aab15588016e6205, type: 3}
@@ -235,7 +254,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c7510a59a3543d438c9d936a5165cd1, type: 3}
   m_Name: WaterRippleRF
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   settings:
     layerMask:
       serializedVersion: 2
@@ -287,7 +306,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25abd6a4fb4880145a4b4bb8f66cf44d, type: 3}
   m_Name: WaterScreenSpaceReflectionRenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   settings:
     renderPassEvent: 550
 --- !u!114 &8178014008712468754

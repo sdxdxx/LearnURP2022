@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: URP_ShaderURP_Water 1
-  m_Shader: {fileID: 4800000, guid: 43ce92ace1ac68e4d9b24c05ac8e4d44, type: 3}
+  m_Shader: {fileID: 4800000, guid: 7128ca0928286ab4fabc945eafd76abe, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -85,7 +85,7 @@ Material:
     - _FoamSpeed: -5
     - _FomaBend: 0.2
     - _FresnelPow: 20
-    - _MaxTessDistance: 1
+    - _MaxTessDistance: 8
     - _Metallic: 1
     - _MinTessDistance: 1
     - _NormalIntensity: 0.45
@@ -110,9 +110,9 @@ Material:
     - _SpecInt: 1
     - _SpecStart: 0
     - _SpecularPow: 44.8
-    - _Tess: 32
+    - _Tess: 16
     - _WaterShallowRange: 0.58
-    - _WaveInt: 0.6
+    - _WaveInt: 1
     - _phaseOffset: 0.3
     m_Colors:
     - _DeepColor: {r: 0.04039156, g: 0.46109277, b: 0.690566, a: 0.2784314}

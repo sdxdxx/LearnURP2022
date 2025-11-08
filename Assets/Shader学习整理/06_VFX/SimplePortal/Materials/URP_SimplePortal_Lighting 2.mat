@@ -41,7 +41,7 @@ Material:
     - _SmoothMainMaskBottom: 0.05
     - _SmoothMainMaskPow: 5.27
     m_Colors:
-    - _BaseColor: {r: 2.9960787, g: 1.9586486, b: 0.514421, a: 1}
+    - _BaseColor: {r: 2.9960783, g: 1.9586482, b: 0.51442087, a: 1}
     - _DistortionSpeed: {r: 0, g: 0, b: 0, a: 0}
     - _FlowSpeed: {r: 0, g: -1, b: 0, a: 0}
     - _RotationAxis: {r: 0, g: 0, b: 1, a: 0}

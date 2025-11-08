@@ -115,9 +115,11 @@ Material:
     - _ClearCoatSmoothness: 0
     - _Cull: 2
     - _Cutoff: 0.5
+    - _DecodeValue: 10000
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
+    - _EnableDecodeMode: 0
     - _EnableFrameTexture: 0
     - _EnableMultipleMeshMode: 1
     - _EnvironmentReflections: 1
