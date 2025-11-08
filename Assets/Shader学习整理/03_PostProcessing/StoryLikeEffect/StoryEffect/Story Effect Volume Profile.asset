@@ -1,0 +1,72 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-5937137566607418516
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1e975bc083b61419dd7ad6695415ff, type: 3}
+  m_Name: StoryEffectVolume
+  m_EditorClassIdentifier: 
+  active: 1
+  EnbaleStoryEffect:
+    m_OverrideState: 1
+    m_Value: 1
+  ColorChange:
+    m_OverrideState: 1
+    m_Value: {r: 1, g: 0.9824124, b: 0.83584905, a: 1}
+  VignetteColor:
+    m_OverrideState: 1
+    m_Value: {r: 1, g: 0.8375737, b: 0.619, a: 1}
+  PaperMaskTexture:
+    m_OverrideState: 1
+    m_Value: {fileID: 2800000, guid: 66ee9e3430ad2ec46bf0c8d4a44182e8, type: 3}
+    dimension: 1
+  PaperMaskNoise:
+    m_OverrideState: 1
+    m_Value: {fileID: 2800000, guid: a4ff0b162f071174d89b7064442db4a8, type: 3}
+    dimension: 1
+  VignetteMask:
+    m_OverrideState: 1
+    m_Value: {fileID: 2800000, guid: c14ad606e48606041818aee254afe153, type: 3}
+    dimension: 1
+  PaperEffectTexture:
+    m_OverrideState: 1
+    m_Value: {fileID: 2800000, guid: 313ce2bbf432f4c4e83a173dfe58dc75, type: 3}
+    dimension: 1
+  PaperEffectTillingAndOffset:
+    m_OverrideState: 1
+    m_Value: {x: 3, y: 3, z: 0, w: 0}
+  PaperMaskEdgeWidth:
+    m_OverrideState: 0
+    m_Value: 0.83
+  PaperMaskEdgeFlowSpeed:
+    m_OverrideState: 0
+    m_Value: 0.5
+  PaperEffectIntensity:
+    m_OverrideState: 1
+    m_Value: 2.5
+  VignetteIntensity:
+    m_OverrideState: 1
+    m_Value: 0.342
+  TestValue:
+    m_OverrideState: 0
+    m_Value: 1
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7fd9488000d3734a9e00ee676215985, type: 3}
+  m_Name: Story Effect Volume Profile
+  m_EditorClassIdentifier: 
+  components:
+  - {fileID: -5937137566607418516}

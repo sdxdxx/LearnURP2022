@@ -13,8 +13,6 @@ Shader "URP/PostProcessing/StoryEffect"
             "RenderPipeline" = "UniversalPipeline"  
         }
         
-        
-        
         Pass
         {
             Cull Off 
@@ -57,39 +55,6 @@ Shader "URP/PostProcessing/StoryEffect"
             //----------变量声明结束-----------
             CBUFFER_END
 
-            float3 ReconstructViewPositionFromDepth(float2 screenPos, float depth01)
-            {
-                float2 ndcPos = screenPos*2-1;//map[0,1] -> [-1,1]
-            	float3 viewPos;
-                if (unity_OrthoParams.w)
-                {
-                	viewPos = float3(unity_OrthoParams.xy * ndcPos.xy, 0);
-                	viewPos.z = -lerp(_ProjectionParams.y, _ProjectionParams.z, depth01);
-                }
-                else
-                {
-                	float3 clipPos = float3(ndcPos.x,ndcPos.y,1)*_ProjectionParams.z;// z = far plane = mvp result w
-	                viewPos = mul(unity_CameraInvProjection,clipPos.xyzz).xyz * depth01;
-                }
-            	
-                return viewPos;
-            }
-
-            float GetDepth01(float rawDepth)
-            {
-            	float depth01;
-	            if (unity_OrthoParams.w)
-	            {
-		             depth01 = 1-rawDepth;
-	            }
-	            else
-	            {
-		             depth01 = Linear01Depth(rawDepth,_ZBufferParams);
-	            }
-
-            	return depth01;
-            }
-
             inline half LerpRGBA_Wrap4(half4 rgba, half t)
             {
                 t = pow(frac(t),2.2);                // wrap 到 [0,1)
@@ -125,8 +90,6 @@ Shader "URP/PostProcessing/StoryEffect"
             	half4 result = realPaperMask*_BaseColor*realPaperEffect*albedo*vignette;
             	result = lerp(result*vignette,result,vignetteMask);
             	return result;
-            	return float4(1,1,1,1);
-                return result;
             }
             
             ENDHLSL
