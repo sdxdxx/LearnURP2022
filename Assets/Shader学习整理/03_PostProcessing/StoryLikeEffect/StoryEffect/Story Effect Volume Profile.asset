@@ -40,7 +40,7 @@ MonoBehaviour:
     dimension: 1
   PaperEffectTillingAndOffset:
     m_OverrideState: 1
-    m_Value: {x: 3, y: 3, z: 0, w: 0}
+    m_Value: {x: 1, y: 1, z: 0, w: 0}
   PaperMaskEdgeWidth:
     m_OverrideState: 0
     m_Value: 0.83

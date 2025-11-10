@@ -58,7 +58,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1dd661e3e19d6354b87e4c3379b16bfd, type: 3}
   m_Name: UnderWaterRenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     renderPassEvent: 550
     waterLayer:
@@ -92,7 +92,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 828a9754f8867d847a3a6b204a18a19c, type: 3}
   m_Name: CustomDepthNormalsRendererFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     renderPassEvent: 220
     layerMask:
@@ -160,7 +160,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a1b0542a0af2474d942b790ee2cccd8, type: 3}
   m_Name: DepthNormalsFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   NormalTexture: 1
 --- !u!114 &11400000
 MonoBehaviour:
@@ -254,7 +254,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4bec71d9e7c196348ad7c618417168d1, type: 3}
   m_Name: CloudsRenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     renderPassEvent: 550
     shader: {fileID: 4800000, guid: 2b4f5a17211fc7c4aab15588016e6205, type: 3}
@@ -270,7 +270,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c7510a59a3543d438c9d936a5165cd1, type: 3}
   m_Name: WaterRippleRF
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     layerMask:
       serializedVersion: 2
@@ -322,7 +322,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25abd6a4fb4880145a4b4bb8f66cf44d, type: 3}
   m_Name: WaterScreenSpaceReflectionRenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     renderPassEvent: 550
 --- !u!114 &8178014008712468754

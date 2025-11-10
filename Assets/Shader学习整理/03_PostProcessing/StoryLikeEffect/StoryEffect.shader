@@ -67,17 +67,30 @@ Shader "URP/PostProcessing/StoryEffect"
 				else if (idx < 3.0h) return lerp(rgba.b, rgba.a, f); // b->a
 				else return lerp(rgba.a, rgba.r, f); // a->r
             }
+
+            inline float GetAspectFromScreen()
+			{
+			    float2 sz = _ScreenParams.xy;
+			    return sz.x / max(sz.y, 1.0);
+			}
             
             half4 frag (Varyings i) : SV_TARGET
             {
+            	float aspectRatio = GetAspectFromScreen();
+
+            	half3 cameraFrontDirWS = normalize(TransformViewToWorldDir(float3(0,0,-1)));
+            	half3 cameraToWorldOriginDir = normalize(_WorldSpaceCameraPos);
+            	half3 cosSita = dot(cameraFrontDirWS,cameraToWorldOriginDir);
+            	half cameraDistanceToWorldXZPlane = distance(_WorldSpaceCameraPos,float3(0,0,0))*cosSita;
             	half3 worldOriginPosVS = TransformWorldToView(float3(0,0,0));
                 half4 albedo =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, i.texcoord);
-            	float2 paperEffectUV = (i.texcoord+worldOriginPosVS.xy/distance(_WorldSpaceCameraPos,float3(0,0,0)))*_PaperEffectTex_ST.xy*_ScreenParams.xy*_PaperEffectTex_TexelSize.xy+_PaperEffectTex_ST.zw;
+            	
+            	float2 paperEffectUV = (i.texcoord+worldOriginPosVS.xy/cameraDistanceToWorldXZPlane)*_PaperEffectTex_ST.xy*float2(9*aspectRatio,9)+_PaperEffectTex_ST.zw;
                 half4 paperEffect = SAMPLE_TEXTURE2D(_PaperEffectTex, sampler_LinearRepeat,paperEffectUV);
                 half realPaperEffect = LerpRGBA_Wrap4(paperEffect,_Time.x);
             	realPaperEffect = lerp(1,pow(realPaperEffect,max(1,_PaperEffectIntensity)),_PaperEffectIntensity);
-            	float2 paperMaskUV = (i.texcoord.xy+float2(worldOriginPosVS.x/distance(_WorldSpaceCameraPos,float3(0,0,0)),0))*float2(_ScreenParams.x*_PaperMaskTex_TexelSize.x,1)*float2(0.5,1);
-            	float2 paperMaskNoiseUV = (i.texcoord.xy+float2(worldOriginPosVS.x/distance(_WorldSpaceCameraPos,float3(0,0,0)),0))*_ScreenParams.xy*_PaperMaskNoise_TexelSize.xy*float2(0.2,1);
+            	float2 paperMaskUV = (i.texcoord.xy+float2(worldOriginPosVS.x/cameraDistanceToWorldXZPlane,0))*float2(22*aspectRatio,1)*float2(0.5,1);
+            	float2 paperMaskNoiseUV = (i.texcoord.xy+float2(worldOriginPosVS.x/cameraDistanceToWorldXZPlane,0))*_ScreenParams.xy*_PaperMaskNoise_TexelSize.xy*float2(0.2,1);
                 half paperMask = SAMPLE_TEXTURE2D(_PaperMaskTex,sampler_LinearRepeat,paperMaskUV).r;
             	paperMask = smoothstep(0,_PaperMaskEdgeWidth,paperMask);
             	half paperMaskNoise = SAMPLE_TEXTURE2D(_PaperMaskNoise,sampler_LinearRepeat,paperMaskNoiseUV+_Time.x*_PaperMaskEdgeFlowSpeed*0.1*5).r;
