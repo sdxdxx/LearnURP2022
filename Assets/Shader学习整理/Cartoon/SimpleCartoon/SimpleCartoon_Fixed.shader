@@ -88,6 +88,9 @@ Shader "URP/Cartoon/SimpleCartoon_Fixed"
 
             #pragma multi_compile_fog
             
+            #pragma enable_d3d11_debug_symbols
+
+            
             //----------贴图声明开始-----------
             TEXTURE2D(_MainTex);//定义贴图
             SAMPLER(sampler_MainTex);//定义采样器

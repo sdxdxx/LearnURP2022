@@ -17,6 +17,7 @@ Shader "URP/ShaderURP"
     	//解决深度引动模式Depth Priming Mode问题
         UsePass "Universal Render Pipeline/Lit/DepthOnly"
         UsePass "Universal Render Pipeline/Lit/DepthNormals"
+        
 
          pass
         {

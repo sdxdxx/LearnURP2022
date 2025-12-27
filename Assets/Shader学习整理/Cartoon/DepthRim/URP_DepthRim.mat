@@ -34,7 +34,7 @@ Material:
     - _RimOffset: 1
     - _RimThreshold: 1.88
     - _Spread: 1
-    - _Width: 4.59
+    - _Width: 5
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _RimCol: {r: 1, g: 1, b: 1, a: 1}

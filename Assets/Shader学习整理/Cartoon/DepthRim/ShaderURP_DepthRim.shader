@@ -5,7 +5,6 @@ Shader "URP/DepthRim"
         _Width ("Width", Float) = 0
         _MinRange ("MinRange", Range(0, 1)) = 0 
         _MaxRange ("MaxRange", Range(0, 1)) = 1
-        _Spread ("Spread", Float) = 1
         [HDR]_RimCol ("Rim Color", Color) = (1, 1, 1, 1)
         
     }
@@ -61,7 +60,7 @@ Shader "URP/DepthRim"
              float4  _MainTex_ST;
 
              float _Width;
-            float _MinRange, _MaxRange, _Spread;
+            float _MinRange, _MaxRange;
             float4 _RimCol;
             CBUFFER_END
 
@@ -100,12 +99,11 @@ Shader "URP/DepthRim"
                 float depthTex0 = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture,sampler_CameraDepthTexture,i.scrPos.xy / i.scrPos.w);
                 float depth = LinearEyeDepth(depthTex,_ZBufferParams);//view space depth 
                 float depth0 = LinearEyeDepth(depthTex0,_ZBufferParams);//view space depth 
-                float rim = saturate((depth - depth0));//稍作缩放, 可以不要
+                float rim = saturate((depth - depth0));
                 rim = smoothstep(min(_MinRange, 0.99), _MaxRange, rim);
                 
                 half4 col = 1;
                 col.xyz = rim * _RimCol.xyz;
-                //col.xyz = vNor;
                 return col;
             }
              ENDHLSL
