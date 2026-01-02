@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: URP_SSS_Jade
-  m_Shader: {fileID: 4800000, guid: eda130555d051fb478701878659ccc09, type: 3}
+  m_Shader: {fileID: 4800000, guid: 2f26e7abd054e9f4fa9bfdc31d758e8d, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -28,7 +28,27 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: de46c8e1d1761bc4da62f962a7ec74b2, type: 3}
+        m_Texture: {fileID: 2800000, guid: 9a7a4ba38d6e31b4997d190b186e60ab, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MetallicSmoothnessTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMap:
+        m_Texture: {fileID: 2800000, guid: 58a9db6c3186aa24597f3f915ebaec67, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ThicknesMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Thicknesmap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ThicknessMap:
+        m_Texture: {fileID: 2800000, guid: 825b36aee1836db4e995716853b19c3b, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _ThicknessTex:
@@ -37,10 +57,23 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _EnableTest: 0
+    - _MaxSampleDistanceScale: 0.03
+    - _Metallic: 0.1
+    - _NormalDistortion: 0.1
+    - _NormalInt: 1.2
+    - _SSSInt: 1
+    - _SSSRange: 0.1
+    - _SSSWeight: 0.5
+    - _ScatterDistance: 1
     - _ScatteringDistoration: 0.1
     - _ScatteringInt: 3.53
     - _ScatteringPow: 18.9
+    - _Smoothness: 0.8
     m_Colors:
     - _AddColor: {r: 0.08940014, g: 0.46226418, b: 0.2907782, a: 1}
     - _BaseColor: {r: 0, g: 0.49056602, b: 0.263795, a: 1}
+    - _ColorTint: {r: 1, g: 1, b: 1, a: 1}
+    - _DarkColor: {r: 0, g: 0, b: 0, a: 1}
+    - _ScatterDistance: {r: 0.42, g: 0.85, b: 0.6, a: 1}
   m_BuildTextureStacks: []

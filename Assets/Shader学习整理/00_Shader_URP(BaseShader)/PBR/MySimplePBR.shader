@@ -38,10 +38,7 @@ Shader "URP/MySimplePBR"
     		#pragma multi_compile  _MAIN_LIGHT_SHADOWS
     		#pragma multi_compile  _MAIN_LIGHT_SHADOWS_CASCADE
     		#pragma multi_compile  _SHADOWS_SOFT
-
-    		#pragma shader_feature _EnableSubLayer
-    		#pragma shader_feature _EnableSubLayerMask
-    	
+    		
     		#define kDielectricSpec half4(0.04, 0.04, 0.04, 1.0 - 0.04)
             
             //----------贴图声明开始-----------
@@ -182,10 +179,10 @@ Shader "URP/MySimplePBR"
 				//直接光漫反射部分
 				//漫反射系数
 				float kd = (1-F)*(1-metallic);
-
 				float3 diffColor = kd*Albedo*lightCol*nDotl;//此处为了达到和Unity相近的渲染效果也不去除这个PI
 
-				 float3 DirectLightResult = diffColor + specColor;
+            	//直接光BRDF
+            	float3 DirectLightResult = diffColor + specColor;
 
 				//间接光漫反射
 				half3 ambient_contrib = SampleSH(nDir);
@@ -195,8 +192,8 @@ Shader "URP/MySimplePBR"
 				float3 iblDiffuse = max(half3(0, 0, 0), ambient.rgb + ambient_contrib);
 				float3 Flast = fresnelSchlickRoughness(max(nDotv, 0.0), F0, roughness);
 				 float kdLast = (1 - Flast) * (1 - metallic);
-
-				float3 iblDiffuseResult = iblDiffuse * kdLast * Albedo;
+            	
+				float3 iblDiffuseRsult = iblDiffuse * kdLast * Albedo;
 
 				//间接光镜面反射
 				float mip_roughness = perceptualRoughness * (1.7 - 0.7 * perceptualRoughness);
@@ -207,13 +204,16 @@ Shader "URP/MySimplePBR"
 
 				float3 iblSpecular = DecodeHDREnvironment(rgbm, unity_SpecCube0_HDR);
 
-				float surfaceReduction = 1.0 / (roughness*roughness + 1.0); //Liner空间
+				float surfaceReduction = 1.0 / (squareRoughness + 1.0); //Liner空间
 				//float surfaceReduction = 1.0 - 0.28*roughness*perceptualRoughness; //Gamma空间
 
+            	//间接光BRDF(近似拟合)
 				float oneMinusReflectivity = 1 - max(max(SpecularResult.r, SpecularResult.g), SpecularResult.b);
+            	oneMinusReflectivity = oneMinusReflectivity * (1.0 - metallic);//修改
 				float grazingTerm = saturate(smoothness + (1 - oneMinusReflectivity));
-				float4 IndirectResult = float4(iblDiffuse * kdLast * Albedo + iblSpecular * surfaceReduction * FresnelLerp(F0, grazingTerm, nDotv), 1);
+				float4 IndirectResult = float4(iblDiffuseRsult + iblSpecular * surfaceReduction * FresnelLerp(F0, grazingTerm, nDotv), 1);
             	
+            	//最终结果
             	float3 result_RBR = lerp(DirectLightResult*_DarkColor,DirectLightResult,shadow) + IndirectResult*_MainLightColor.rgb;
 
             	return  result_RBR;
