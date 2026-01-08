@@ -7,15 +7,29 @@ public class PerObjectShadowSystem : MonoBehaviour
 {
     public static PerObjectShadowSystem Instance { get; private set; }
 
+    [System.Serializable]
+    public class RendererGroup
+    {
+        [Tooltip("Optional: used only for display / organization.")]
+        public string groupName;
+
+        [Tooltip("Optional: if you set this, you can rebuild the group from this root (see helper methods).")]
+        public Transform root;
+
+        [Tooltip("Renderers that are treated as ONE model (share ONE atlas tile).")]
+        public List<Renderer> renderers = new List<Renderer>();
+    }
+
     [Header("Scene References")]
-    public Light mainLight;                       
-    public Camera mainCamera;                     
+    public Light mainLight;
+    public Camera mainCamera;
 
     [Header("Auto Collect")]
-    public List<Renderer> candidatesRenderers = new List<Renderer>();
+    // NOTE: Each entry is treated as ONE model and occupies ONE shadow atlas tile.
+    public List<RendererGroup> candidatesRenderers = new List<RendererGroup>();
     public List<Transform> candidateRoots = new List<Transform>();
     public bool autoCollectFromRoots = false;
-    
+
     [Header("Debug")]
     public bool debugDraw = false;
 
@@ -43,7 +57,16 @@ public class PerObjectShadowSystem : MonoBehaviour
     public readonly Vector4[] UVClamp = new Vector4[10];
     public readonly Rect[] TileViewport = new Rect[10];
 
-    private readonly List<Renderer> _selectedRenderers = new();
+    private struct GroupSelection
+    {
+        public RendererGroup group;
+        public Bounds bounds;
+        public float distanceSqr;
+    }
+
+    private readonly List<GroupSelection> _selectionBuffer = new(32);
+    private readonly List<RendererGroup> _selectedGroups = new(10);
+    private readonly List<Bounds> _selectedGroupBounds = new(10);
 
     private void Awake()
     {
@@ -64,7 +87,7 @@ public class PerObjectShadowSystem : MonoBehaviour
         _shadowAtlasSize = settings.shadowAtlasSize;
         _shadowAtlasTileColumns = settings.shadowAtlasTileColumns;
         _shadowAtlasTileBorderPixels = settings.shadowAtlasTileBorderPixels;
-        
+
         if (_shadowAtlasTileColumns > 0)
             _shadowAtlasTileSize = _shadowAtlasSize / _shadowAtlasTileColumns;
         else
@@ -85,7 +108,7 @@ public class PerObjectShadowSystem : MonoBehaviour
             CollectCandidatesFromRoots();
 
         UpdateSelection(cam);
-        UpdateMatricesAndAtlas(cam);
+        UpdateMatricesAndAtlas();
 
         //Debug
         if (debugDraw)
@@ -97,64 +120,81 @@ public class PerObjectShadowSystem : MonoBehaviour
     private void CollectCandidatesFromRoots()
     {
         candidatesRenderers.Clear();
+
         for (int i = 0; i < candidateRoots.Count; i++)
         {
-            var root = candidateRoots[i];
-            if (root == null) 
+            Transform root = candidateRoots[i];
+            if (root == null)
                 continue;
+
+            var group = new RendererGroup
+            {
+                groupName = root.name,
+                root = root
+            };
+
             var childRenderers = root.GetComponentsInChildren<Renderer>(includeInactive: false);
             for (int j = 0; j < childRenderers.Length; j++)
             {
-                if (childRenderers[j] != null) 
-                    candidatesRenderers.Add(childRenderers[j]);
+                var r = childRenderers[j];
+                if (r != null)
+                    group.renderers.Add(r);
             }
+
+            // Even if it's empty, keep it so you can see which root was collected.
+            candidatesRenderers.Add(group);
         }
     }
 
     private void UpdateSelection(Camera cam)
     {
-        _selectedRenderers.Clear();
-        // 增加一个极小值防止除0或完全不可见，虽然实际上距离剔除主要靠sqr比较
+        _selectionBuffer.Clear();
+        _selectedGroups.Clear();
+        _selectedGroupBounds.Clear();
+
         float maxDistSqr = _maxDistance * _maxDistance;
         Vector3 camPos = cam.transform.position;
 
         for (int i = 0; i < candidatesRenderers.Count; i++)
         {
-            var r = candidatesRenderers[i];
-            
-            if (r == null) 
+            RendererGroup g = candidatesRenderers[i];
+            if (g == null)
                 continue;
 
-            // 1. 层级剔除 (Unity GameObject Layer)
-            if (((1 << r.gameObject.layer) & _hideLayerMask.value) != 0)
+            if (!TryGetGroupBounds(g, out Bounds bounds))
                 continue;
 
-            // 2. 距离剔除
-            float d2 = (r.transform.position - camPos).sqrMagnitude;
-            if (d2 > maxDistSqr) 
+            // 距离剔除（使用 Bounds 最近点更稳定）
+            Vector3 closest = bounds.ClosestPoint(camPos);
+            float d2 = (closest - camPos).sqrMagnitude;
+            if (d2 > maxDistSqr)
                 continue;
 
-            _selectedRenderers.Add(r);
+            _selectionBuffer.Add(new GroupSelection
+            {
+                group = g,
+                bounds = bounds,
+                distanceSqr = d2
+            });
         }
 
-        // 3. 排序
-        _selectedRenderers.Sort((a, b) =>
+        // 排序（近的优先）
+        _selectionBuffer.Sort((a, b) => a.distanceSqr.CompareTo(b.distanceSqr));
+
+        // 截断
+        int keepCount = Mathf.Min(_selectionBuffer.Count, _maxTargets);
+        for (int i = 0; i < keepCount; i++)
         {
-            float da = (a.transform.position - camPos).sqrMagnitude;
-            float db = (b.transform.position - camPos).sqrMagnitude;
-            return da.CompareTo(db);
-        });
+            _selectedGroups.Add(_selectionBuffer[i].group);
+            _selectedGroupBounds.Add(_selectionBuffer[i].bounds);
+        }
 
-        // 4. 截断
-        if (_selectedRenderers.Count > _maxTargets)
-            _selectedRenderers.RemoveRange(_maxTargets, _selectedRenderers.Count - _maxTargets);
-
-        ActiveCount = _selectedRenderers.Count;
+        ActiveCount = _selectedGroups.Count;
     }
 
-    private void UpdateMatricesAndAtlas(Camera cam)
+    private void UpdateMatricesAndAtlas()
     {
-        //初始化
+        // 初始化未使用 slot
         for (int i = ActiveCount; i < 10; i++)
         {
             ViewMatrices[i] = Matrix4x4.identity;
@@ -163,14 +203,16 @@ public class PerObjectShadowSystem : MonoBehaviour
             UVClamp[i] = Vector4.zero;
             TileViewport[i] = new Rect(0, 0, 0, 0);
         }
+        
+        // 【修正】Shadow 相机应沿“光线传播方向”观察场景
+        Vector3 lightDir = (mainLight.transform.forward).normalized;
 
-        Vector3 lightDir = mainLight.transform.forward; 
-        Matrix4x4 lightViewMatrix = GetMainLightViewMatrix(lightDir, cam.transform.position);
 
         for (int i = 0; i < ActiveCount; i++)
         {
-            var r = _selectedRenderers[i];
-            Bounds b = r.bounds;
+            Bounds b = _selectedGroupBounds[i];
+
+            Matrix4x4 lightViewMatrix = GetMainLightViewMatrix(lightDir, b.center);
 
             ComputeMinMaxInViewSpace(lightViewMatrix, b,
                 out float xmin, out float xmax,
@@ -210,8 +252,6 @@ public class PerObjectShadowSystem : MonoBehaviour
         }
     }
 
-    // 辅助函数
-    
     private void GetTileRect(int index, out int offsetX, out int offsetY)
     {
         int column = index % _shadowAtlasTileColumns;
@@ -220,21 +260,39 @@ public class PerObjectShadowSystem : MonoBehaviour
         offsetY = row * _shadowAtlasTileSize;
     }
     
-    private Matrix4x4 GetMainLightViewMatrix(Vector3 lightDirWS, Vector3 cameraPosWS)
+    private Matrix4x4 GetMainLightViewMatrix(Vector3 lightDirWS, Vector3 targetPosWS)
     {
-        Vector3 lightPos = cameraPosWS - lightDirWS.normalized * _lightCameraBackDistance;
+        // camera look direction (from camera to target)
         Vector3 forward = lightDirWS.normalized;
-        Vector3 upRef = Mathf.Abs(Vector3.Dot(forward, Vector3.up)) > 0.99f ? Vector3.forward : Vector3.up;
-        Vector3 right = Vector3.Cross(forward, upRef).normalized; 
-        Vector3 up = Vector3.Cross(right, forward).normalized;    
+
+        // 防止你在 Inspector 里把 _lightCameraBackDistance 设成负数导致位置直接翻转
+        float dist = Mathf.Max(0.01f, Mathf.Abs(_lightCameraBackDistance));
+
+        // 相机放在目标点的“上游”，朝 forward 方向看向目标
+        Vector3 lightPos = targetPosWS - forward * dist;
+
+        // 标准 LookAt：用 back 作为相机 Z 轴（world-to-view 的 row2）
+        Vector3 back = -forward;
+
+        // 选择稳定 upRef（注意：这里用 back 来判断是否接近竖直，避免退化）
+        Vector3 upRef = Mathf.Abs(Vector3.Dot(back, Vector3.up)) > 0.99f ? Vector3.forward : Vector3.up;
+
+        // 【关键修正】right/up 都应基于 back(Z轴) 构造，而不是基于 forward
+        Vector3 right = Vector3.Cross(upRef, back).normalized;
+        Vector3 up = Vector3.Cross(back, right).normalized;
+
         Matrix4x4 view = Matrix4x4.identity;
         view.SetRow(0, new Vector4(right.x, right.y, right.z, -Vector3.Dot(right, lightPos)));
         view.SetRow(1, new Vector4(up.x, up.y, up.z, -Vector3.Dot(up, lightPos)));
-        Vector3 back = -forward; 
         view.SetRow(2, new Vector4(back.x, back.y, back.z, -Vector3.Dot(back, lightPos)));
         view.SetRow(3, new Vector4(0, 0, 0, 1));
+        
+        Debug.DrawLine(lightPos, targetPosWS, Color.magenta);
+        
         return view;
     }
+
+
 
     private static void ComputeMinMaxInViewSpace(Matrix4x4 view, Bounds b, out float xmin, out float xmax, out float ymin, out float ymax, out float zmin, out float zmax)
     {
@@ -248,7 +306,7 @@ public class PerObjectShadowSystem : MonoBehaviour
         };
         xmin = ymin = zmin = float.PositiveInfinity;
         xmax = ymax = zmax = float.NegativeInfinity;
-        for (int i = 0; i < 8; i++) 
+        for (int i = 0; i < 8; i++)
         {
             Vector3 v = view.MultiplyPoint3x4(corners[i]);
             xmin = Mathf.Min(xmin, v.x); xmax = Mathf.Max(xmax, v.x);
@@ -261,7 +319,7 @@ public class PerObjectShadowSystem : MonoBehaviour
     {
         Matrix4x4 gpuProj = GL.GetGPUProjectionMatrix(proj, true);
         Matrix4x4 texScaleBias = new Matrix4x4();
-        if (SystemInfo.usesReversedZBuffer) 
+        if (SystemInfo.usesReversedZBuffer)
         {
             texScaleBias.SetRow(0, new Vector4(0.5f, 0.0f, 0.0f, 0.5f));
             texScaleBias.SetRow(1, new Vector4(0.0f, 0.5f, 0.0f, 0.5f));
@@ -280,11 +338,11 @@ public class PerObjectShadowSystem : MonoBehaviour
 
     private static Matrix4x4 GetTileScaleOffsetMatrix(int offsetX, int offsetY, int tileSize, int atlasWidth, int atlasHeight)
     {
-        float sx = (float)tileSize / atlasWidth;    // scale U
-        float sy = (float)tileSize / atlasHeight;   // scale V
-        float tx = (float)offsetX / atlasWidth;     // translate U
-        float ty = (float)offsetY / atlasHeight;    // translate V
-        
+        float sx = (float)tileSize / atlasWidth;
+        float sy = (float)tileSize / atlasHeight;
+        float tx = (float)offsetX / atlasWidth;
+        float ty = (float)offsetY / atlasHeight;
+
         Matrix4x4 tileScaleOffsetMatrix = new Matrix4x4();
         tileScaleOffsetMatrix.SetRow(0, new Vector4(sx, 0.0f, 0.0f, tx));
         tileScaleOffsetMatrix.SetRow(1, new Vector4(0.0f, sy, 0.0f, ty));
@@ -292,25 +350,69 @@ public class PerObjectShadowSystem : MonoBehaviour
         tileScaleOffsetMatrix.SetRow(3, new Vector4(0.0f, 0.0f, 0.0f, 1.0f));
         return tileScaleOffsetMatrix;
     }
-    
+
     public Renderer GetActiveRenderer(int index)
     {
-        if (index >= 0 && index < _selectedRenderers.Count) 
-            return _selectedRenderers[index];
-        
+        RendererGroup g = GetActiveGroup(index);
+        if (g == null || g.renderers == null) return null;
+        for (int i = 0; i < g.renderers.Count; i++)
+        {
+            if (g.renderers[i] != null)
+                return g.renderers[i];
+        }
         return null;
     }
-    
-    //Debug
+
+    public RendererGroup GetActiveGroup(int index)
+    {
+        if (index >= 0 && index < _selectedGroups.Count)
+            return _selectedGroups[index];
+        return null;
+    }
+
+    public Bounds GetActiveGroupBounds(int index)
+    {
+        if (index >= 0 && index < _selectedGroupBounds.Count)
+            return _selectedGroupBounds[index];
+        return new Bounds(Vector3.zero, Vector3.zero);
+    }
+
+    private bool TryGetGroupBounds(RendererGroup group, out Bounds bounds)
+    {
+        bounds = default;
+        if (group == null || group.renderers == null)
+            return false;
+
+        bool hasAny = false;
+
+        for (int i = 0; i < group.renderers.Count; i++)
+        {
+            Renderer r = group.renderers[i];
+            if (r == null)
+                continue;
+
+            if (!r.enabled || !r.gameObject.activeInHierarchy)
+                continue;
+
+            if (((1 << r.gameObject.layer) & _hideLayerMask.value) != 0)
+                continue;
+
+            if (!hasAny)
+            {
+                bounds = r.bounds;
+                hasAny = true;
+            }
+            else
+            {
+                bounds.Encapsulate(r.bounds);
+            }
+        }
+
+        return hasAny;
+    }
+
     private void DebugDrawLightOrthoRanges()
     {
-    #if UNITY_EDITOR
-        const bool kEnableDebug = true;
-    #else
-        const bool kEnableDebug = false;
-    #endif
-        if (!kEnableDebug) return;
-
         int count = ActiveCount;
         if (count <= 0) return;
 
@@ -319,7 +421,7 @@ public class PerObjectShadowSystem : MonoBehaviour
             Matrix4x4 view = ViewMatrices[i];
             Matrix4x4 proj = ProjMatrices[i];
 
-            if (proj == Matrix4x4.identity) 
+            if (proj == Matrix4x4.identity)
                 continue;
 
             float left   = (-proj.m03 - 1f) / proj.m00;

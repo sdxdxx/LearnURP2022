@@ -1,4 +1,4 @@
-Shader "URP/Genshin"
+Shader "URP/NPR/Genshin"
 {
     Properties
     {
@@ -219,7 +219,8 @@ Shader "URP/Genshin"
                 float ao = saturate(lightMap.g*2.0);
                 #ifdef _FACE_MODE
                 float2 faceShaodwMask = SAMPLE_TEXTURE2D(_FaceShadowMap,sampler_FaceShadowMap,i.uv).ra;
-                float faceSDF = step(lightMap.g,mainLightDirectionOS.x)*step(0,mainLightDirectionOS.x)+step(1-lightMap.g,-mainLightDirectionOS.x)*step(mainLightDirectionOS.x,0);
+                float faceSDF = step(lightMap.g,mainLightDirectionOS.z)*step(0,mainLightDirectionOS.x)+step(1-lightMap.g,mainLightDirectionOS.z)*step(mainLightDirectionOS.x,0);
+                faceSDF = saturate(faceSDF);
                 ao= lerp(lerp(1.0,faceSDF,faceShaodwMask.x),1.0,faceShaodwMask.y);
                 lightMap = 0;
                 #endif

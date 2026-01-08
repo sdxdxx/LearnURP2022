@@ -12,7 +12,6 @@ Shader "URP/TestPerObjectShadow_Lambert"
 
         UsePass "Universal Render Pipeline/Lit/DepthOnly"
         UsePass "Universal Render Pipeline/Lit/DepthNormals"
-        UsePass "Universal Render Pipeline/Lit/SHADOWCASTER"
 
         Pass
         {
@@ -21,9 +20,14 @@ Shader "URP/TestPerObjectShadow_Lambert"
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
+            
+            #pragma multi_compile  _MAIN_LIGHT_SHADOWS
+			#pragma multi_compile  _MAIN_LIGHT_SHADOWS_CASCADE
+			#pragma multi_compile  _SHADOWS_SOFT
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
 
             // PerObjectShadow globals
             TEXTURE2D(_CharacterShadowAtlas);
@@ -153,7 +157,11 @@ Shader "URP/TestPerObjectShadow_Lambert"
             {
                 float3 normalWS = normalize(i.normalWS);
                 
+                float4 shadowCoord = TransformWorldToShadowCoord(i.posWS);
+                float shadow = MainLightRealtimeShadow(shadowCoord);
+                
                 float finalVis = ComputePerObjectShadow(i.posWS, normalWS);
+                
                 
                 Light mainLight = GetMainLight();
                 float3 lightDir = mainLight.direction;
@@ -161,12 +169,62 @@ Shader "URP/TestPerObjectShadow_Lambert"
 
                 float NdotL = saturate(dot(normalWS, lightDir));
                 float3 ambient = float3(0.1, 0.1, 0.1) * _BaseColor.rgb;
-                float3 diffuse = _BaseColor.rgb * lightColor * NdotL * finalVis;
+                float3 diffuse = _BaseColor.rgb * lightColor * NdotL * min(finalVis,1);
                 float3 finalColor = ambient + diffuse;
 
                 return half4(finalColor, 1.0);
             }
 
+            ENDHLSL
+        }
+        
+        Pass
+        {
+            Name "ShadowCaster"
+            Tags
+            {
+                "LightMode" = "ShadowCaster"
+            }
+
+            // -------------------------------------
+            // Render State Commands
+            ZWrite On
+            ZTest LEqual
+            ColorMask 0
+            Cull Off
+
+            HLSLPROGRAM
+            #pragma target 2.0
+
+            // -------------------------------------
+            // Shader Stages
+            #pragma vertex ShadowPassVertex
+            #pragma fragment ShadowPassFragment
+
+            // -------------------------------------
+            // Material Keywords
+            #pragma shader_feature_local _ALPHATEST_ON
+            #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
+
+            //--------------------------------------
+            // GPU Instancing
+            #pragma multi_compile_instancing
+            #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
+
+            // -------------------------------------
+            // Universal Pipeline keywords
+
+            // -------------------------------------
+            // Unity defined keywords
+            #pragma multi_compile_fragment _ LOD_FADE_CROSSFADE
+
+            // This is used during shadow map generation to differentiate between directional and punctual light shadows, as they use different formulas to apply Normal Bias
+            #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
+
+            // -------------------------------------
+            // Includes
+            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl"
             ENDHLSL
         }
     }

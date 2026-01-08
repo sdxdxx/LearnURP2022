@@ -24,8 +24,7 @@ Material:
   m_Shader: {fileID: 4800000, guid: e6473d73ac0e88e4a98f9a48f7f19c75, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords:
-  - _ALBEDO_MODE
+  m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -130,7 +129,7 @@ Material:
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EmissionInt: 0
-    - _EnableAlbedo: 1
+    - _EnableAlbedo: 0
     - _EnableRed: 0
     - _EnvironmentReflections: 1
     - _FresnelPow: 5

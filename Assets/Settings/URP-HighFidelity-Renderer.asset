@@ -66,7 +66,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61d9c2b2a87b4584c8af5371d3d7ca4e, type: 3}
   m_Name: PerObjectShadowFeature
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   settings:
     renderPassEvent: 250
     atlasTexName: _CharacterShadowAtlas
@@ -76,16 +76,16 @@ MonoBehaviour:
     hideLayerMask:
       serializedVersion: 2
       m_Bits: 0
-    maxDistance: 50
-    maxTargets: 10
-    shadowAtlasSize: 512
+    maxDistance: 100
+    maxTargets: 4
+    shadowAtlasSize: 2048
     shadowAtlasTileColumns: 2
     shadowAtlasTileBorderPixels: 2
     lightCameraBackDistance: 50
     depthPadding: 0.2
     xyPadding: 0.2
     depthBias: 0.2
-    normalBias: 0.02
+    normalBias: 0
 --- !u!114 &-6623979406184408848
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -136,6 +136,28 @@ MonoBehaviour:
   settings:
     renderPassEvent: 550
     shader: {fileID: 4800000, guid: 67fae0bbe1f66674da30475d39ea3b99, type: 3}
+--- !u!114 &-3430817876551534162
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6672849c969558349853b5345008dadc, type: 3}
+  m_Name: LoopRenderPassFeature
+  m_EditorClassIdentifier: 
+  m_Active: 0
+  settings:
+    renderPassEvent: 500
+    renderQueueType: 1
+    layerMask:
+      serializedVersion: 2
+      m_Bits: 4294967295
+    lightModeTags:
+    - Fur
+    loopTimes: 100
 --- !u!114 &-3379088772835417971
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -148,7 +170,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9df3307ed12bf844ab234033dd7dc973, type: 3}
   m_Name: RenderObjectsToTexturesSSS
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     renderPassEvent: 250
     renderQueueType: 0
@@ -278,7 +300,9 @@ MonoBehaviour:
   - {fileID: -1281093646414199775}
   - {fileID: -6691189070050867988}
   - {fileID: -3379088772835417971}
-  m_RendererFeatureMap: adc0de57c6d2eee5259b5863b1ef40204c16e4bd7233684a14bc2cb61a641ea31299797569247e71b1b2dab0a4cedeeee96589dae5dc6adb2d3a502565dd2253da5fdef21360fb08608d6bf6b5a0bfb9f018e04ed3e512a40d7f6dd47862d79388dddf85458a5eab21c478b91da438eeec44a402fe1e24a38d60a20eaa101bd1
+  - {fileID: -3430817876551534162}
+  - {fileID: 8985631144380114392}
+  m_RendererFeatureMap: adc0de57c6d2eee5259b5863b1ef40204c16e4bd7233684a14bc2cb61a641ea31299797569247e71b1b2dab0a4cedeeee96589dae5dc6adb2d3a502565dd2253da5fdef21360fb08608d6bf6b5a0bfb9f018e04ed3e512a40d7f6dd47862d79388dddf85458a5eab21c478b91da438eeec44a402fe1e24a38d60a20eaa101bd1aef9158b514963d0d8a576fbea5fb37c
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
@@ -430,3 +454,27 @@ MonoBehaviour:
     layerMask:
       serializedVersion: 2
       m_Bits: 2
+--- !u!114 &8985631144380114392
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9df3307ed12bf844ab234033dd7dc973, type: 3}
+  m_Name: HairDepthOnly
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  settings:
+    renderPassEvent: 200
+    renderQueueType: 0
+    layerMask:
+      serializedVersion: 2
+      m_Bits: 4294967295
+    downSample: 1
+    renderTargets:
+    - lightModeTag: HairDepthOnly
+      textureName: _HairShadowDepth
+      textureFormat: 28
