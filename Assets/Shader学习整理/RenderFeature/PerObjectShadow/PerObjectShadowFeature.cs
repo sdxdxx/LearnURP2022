@@ -42,6 +42,9 @@ public class PerObjectShadowFeature : ScriptableRendererFeature
 
         private readonly Settings _settings;
 
+        private float depthBias = 0;
+        private float normalBias = 0;
+
         private RTHandle _cameraColor;
         private RTHandle _cameraDepth;
         private RTHandle _shadowAtlasRT;
@@ -76,6 +79,9 @@ public class PerObjectShadowFeature : ScriptableRendererFeature
 
         public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
         {
+            depthBias = -_settings.depthBias;
+            normalBias = -_settings.normalBias;
+            
             var desc = new RenderTextureDescriptor(
                 _settings.shadowAtlasSize,
                 _settings.shadowAtlasSize,
@@ -146,7 +152,7 @@ public class PerObjectShadowFeature : ScriptableRendererFeature
                     cmd.SetGlobalVectorArray(_idUVArr, sys.UVClamp);
 
                     // Your per-object sampling bias (for receiver-side compare)
-                    cmd.SetGlobalVector(_idShadowBiasGen, new Vector4(_settings.depthBias, _settings.normalBias, 0, 0));
+                    cmd.SetGlobalVector(_idShadowBiasGen, new Vector4(depthBias, normalBias, 0, 0));
 
                     // Prepare light direction for ShadowCasterPass context:
                     // ShadowCaster expects "_LightDirection" = direction from surface -> light
@@ -156,7 +162,7 @@ public class PerObjectShadowFeature : ScriptableRendererFeature
                         surfaceToLightDirWS = (-sys.mainLight.transform.forward).normalized;
 
                     // ShadowCasterPass uses _ShadowBias and sometimes unity_LightShadowBias
-                    Vector4 shadowBias = new Vector4(_settings.depthBias, _settings.normalBias, 0f, 0f);
+                    Vector4 shadowBias = new Vector4(depthBias, normalBias, 0f, 0f);
 
                     for (int i = 0; i < count; i++)
                     {
@@ -168,7 +174,7 @@ public class PerObjectShadowFeature : ScriptableRendererFeature
 
                         Matrix4x4 lightView = sys.ViewMatrices[i];
                         Matrix4x4 lightProj = sys.ProjMatrices[i];
-                        Matrix4x4 gpuProj = GL.GetGPUProjectionMatrix(lightProj, true);
+                        Matrix4x4 gpuProj = GL.GetGPUProjectionMatrix(lightProj, false);
 
                         // 1) Switch VP to the per-object light camera
                         cmd.SetViewProjectionMatrices(lightView, gpuProj);

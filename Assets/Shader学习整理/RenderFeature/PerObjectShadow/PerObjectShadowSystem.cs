@@ -204,9 +204,7 @@ public class PerObjectShadowSystem : MonoBehaviour
             TileViewport[i] = new Rect(0, 0, 0, 0);
         }
         
-        // 【修正】Shadow 相机应沿“光线传播方向”观察场景
-        Vector3 lightDir = (mainLight.transform.forward).normalized;
-
+        Vector3 lightDir = -(mainLight.transform.forward).normalized;
 
         for (int i = 0; i < ActiveCount; i++)
         {
@@ -271,7 +269,7 @@ public class PerObjectShadowSystem : MonoBehaviour
         // 相机放在目标点的“上游”，朝 forward 方向看向目标
         Vector3 lightPos = targetPosWS - forward * dist;
 
-        // 标准 LookAt：用 back 作为相机 Z 轴（world-to-view 的 row2）
+        // 用 back 作为相机 Z 轴
         Vector3 back = -forward;
 
         // 选择稳定 upRef（注意：这里用 back 来判断是否接近竖直，避免退化）
@@ -287,7 +285,7 @@ public class PerObjectShadowSystem : MonoBehaviour
         view.SetRow(2, new Vector4(back.x, back.y, back.z, -Vector3.Dot(back, lightPos)));
         view.SetRow(3, new Vector4(0, 0, 0, 1));
         
-        Debug.DrawLine(lightPos, targetPosWS, Color.magenta);
+        //Debug.DrawLine(lightPos, targetPosWS, Color.magenta);
         
         return view;
     }
@@ -317,7 +315,7 @@ public class PerObjectShadowSystem : MonoBehaviour
 
     private static Matrix4x4 GetWorldToShadowTexMatrixGPU(Matrix4x4 proj, Matrix4x4 view)
     {
-        Matrix4x4 gpuProj = GL.GetGPUProjectionMatrix(proj, true);
+        Matrix4x4 gpuProj = GL.GetGPUProjectionMatrix(proj, false);
         Matrix4x4 texScaleBias = new Matrix4x4();
         if (SystemInfo.usesReversedZBuffer)
         {

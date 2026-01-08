@@ -79,7 +79,7 @@ Shader "URP/TestPerObjectShadow_Lambert"
                 float2 uv = sc.xy;
                 
                 // receiverZ 是当前像素点相对于光源的深度
-                // C# 矩阵已处理好 API 差异，这里保证是 0(Near) -> 1(Far) 的线性值
+                // C# 矩阵已处理好 API 差异，这里保证是  1(Near) -> 0(Far) 的线性值
                 float  receiverZ = sc.z;
                 
                 // 简单的边界检查
@@ -103,20 +103,14 @@ Shader "URP/TestPerObjectShadow_Lambert"
 
                 // 采样原生 Shadowmap (Raw Depth)
                 float rawZ = SAMPLE_TEXTURE2D(_CharacterShadowAtlas, sampler_CharacterShadowAtlas, uv).r;
-
-                // 【平台兼容性处理】
-                // Unity 原生 ShadowMap 在 DX11/Metal/Vulkan 等平台是 Reverse-Z (1=Near, 0=Far)
-                // 而我们的 receiverZ 是 C# 处理过的 (0=Near, 1=Far)
-                // 所以需要把采样到的 rawZ 翻转一下，统一到 0..1 空间进行比较
                 float storedZ = rawZ;
-                #if UNITY_REVERSED_Z
-                    storedZ = 1.0 - rawZ;
-                #endif
+
 
                 // 比较逻辑：
-                // 如果 receiverZ (物体深度) <= storedZ (遮挡物深度) + bias，说明物体在遮挡物前面或重合 -> 被照亮(1.0)
+                // 1(Near) -> 0(Far)
+                // 如果 receiverZ (物体深度) >= storedZ (遮挡物深度) + bias，说明物体在遮挡物前面或重合 -> 被照亮(1.0)
                 // 否则 -> 在阴影中(0.0)
-                vis = (receiverZ <= storedZ + depthBias) ? 1.0 : 0.0;
+                vis = (receiverZ >= storedZ + depthBias ) ? 1.0 : 0.0;
             }
 
             float ComputePerObjectShadow(float3 positionWS, float3 normalWS)
@@ -191,7 +185,7 @@ Shader "URP/TestPerObjectShadow_Lambert"
             ZWrite On
             ZTest LEqual
             ColorMask 0
-            Cull Off
+            Cull Back
 
             HLSLPROGRAM
             #pragma target 2.0
