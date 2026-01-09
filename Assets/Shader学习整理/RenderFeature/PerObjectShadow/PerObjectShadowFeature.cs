@@ -16,13 +16,14 @@ public class PerObjectShadowFeature : ScriptableRendererFeature
         public string countName = "_CharacterShadowCount";
 
         [Header("Culling Settings")]
+        public bool enableBackfaceShadowMapping = false;//背面阴影映射模式
         public LayerMask hideLayerMask;
         public float maxDistance = 35f;
-        [Range(1, 10)] public int maxTargets = 10;
+        // 【优化】范围改为 1-16，刚好对应最大 4x4 的 Atlas 分块
+        [Range(1, 9)] public int maxTargets = 9; 
 
         [Header("Atlas Settings")]
         public int shadowAtlasSize = 2048;
-        [Range(1, 4)] public int shadowAtlasTileColumns = 4;
         public int shadowAtlasTileBorderPixels = 2;
 
         [Header("Light Camera Settings")]
@@ -41,29 +42,28 @@ public class PerObjectShadowFeature : ScriptableRendererFeature
         private readonly ProfilingSampler _profilingSampler = new(ProfilerTag);
 
         private readonly Settings _settings;
-
+        
         private float depthBias = 0;
         private float normalBias = 0;
-
-        private RTHandle _cameraColor;
-        private RTHandle _cameraDepth;
+        
         private RTHandle _shadowAtlasRT;
 
+        private readonly bool enableBackfaceShadowMapping;
+        
         private readonly int _idAtlas;
         private readonly int _idMatArr;
         private readonly int _idUVArr;
         private readonly int _idCount;
         private readonly int _idShadowBiasGen;
+        
 
-        // IDs for ShadowCasterPass context (built-in globals)
-        private static readonly int _idWorldSpaceCameraPos = Shader.PropertyToID("_WorldSpaceCameraPos");
-        private static readonly int _idLightDirection = Shader.PropertyToID("_LightDirection");
+        // IDs for ShadowCasterPass context
         private static readonly int _idShadowBias = Shader.PropertyToID("_ShadowBias");
-        private static readonly int _idUnityLightShadowBias = Shader.PropertyToID("unity_LightShadowBias");
 
         public CustomRenderPass(Settings settings)
         {
             _settings = settings;
+            enableBackfaceShadowMapping = settings.enableBackfaceShadowMapping;
             _idAtlas = Shader.PropertyToID(_settings.atlasTexName);
             _idMatArr = Shader.PropertyToID(_settings.matrixArrayName);
             _idUVArr = Shader.PropertyToID(_settings.uvClampArrayName);
@@ -71,15 +71,10 @@ public class PerObjectShadowFeature : ScriptableRendererFeature
             _idShadowBiasGen = Shader.PropertyToID("_PerObjectShadowBiasGen");
         }
 
-        public void Setup(RTHandle cameraColor, RTHandle cameraDepth)
-        {
-            _cameraColor = cameraColor;
-            _cameraDepth = cameraDepth;
-        }
-
         public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
         {
-            depthBias = -_settings.depthBias;
+            // Bias 处理：深度正偏，法线负偏(收缩)
+            depthBias = _settings.depthBias;
             normalBias = -_settings.normalBias;
             
             var desc = new RenderTextureDescriptor(
@@ -129,39 +124,23 @@ public class PerObjectShadowFeature : ScriptableRendererFeature
                 return;
 
             int count = sys.ActiveCount;
-
-            Rect camViewport = GetCameraViewportRect(ref renderingData);
-            Matrix4x4 camView = renderingData.cameraData.GetViewMatrix();
-            Matrix4x4 camProj = renderingData.cameraData.GetGPUProjectionMatrix();
-            Vector3 camPosWS = renderingData.cameraData.worldSpaceCameraPos;
-
+            
             CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);
 
             try
             {
                 using (new ProfilingScope(cmd, _profilingSampler))
                 {
-                    // Clear atlas depth
                     cmd.SetRenderTarget(_shadowAtlasRT);
                     cmd.ClearRenderTarget(true, false, Color.clear);
 
-                    // Globals for sampling in your forward shader
+                    // 设置 Shader 全局变量
                     cmd.SetGlobalTexture(_idAtlas, _shadowAtlasRT);
                     cmd.SetGlobalInt(_idCount, count);
                     cmd.SetGlobalMatrixArray(_idMatArr, sys.WorldToShadowAtlasMatrices);
                     cmd.SetGlobalVectorArray(_idUVArr, sys.UVClamp);
-
-                    // Your per-object sampling bias (for receiver-side compare)
                     cmd.SetGlobalVector(_idShadowBiasGen, new Vector4(depthBias, normalBias, 0, 0));
 
-                    // Prepare light direction for ShadowCasterPass context:
-                    // ShadowCaster expects "_LightDirection" = direction from surface -> light
-                    // while directional light forward is typically light -> surface, so we negate it.
-                    Vector3 surfaceToLightDirWS = Vector3.back;
-                    if (sys.mainLight != null)
-                        surfaceToLightDirWS = (-sys.mainLight.transform.forward).normalized;
-
-                    // ShadowCasterPass uses _ShadowBias and sometimes unity_LightShadowBias
                     Vector4 shadowBias = new Vector4(depthBias, normalBias, 0f, 0f);
 
                     for (int i = 0; i < count; i++)
@@ -173,40 +152,27 @@ public class PerObjectShadowFeature : ScriptableRendererFeature
                         cmd.EnableScissorRect(tileViewport);
 
                         Matrix4x4 lightView = sys.ViewMatrices[i];
-                        Matrix4x4 lightProj = sys.ProjMatrices[i];
-                        Matrix4x4 gpuProj = GL.GetGPUProjectionMatrix(lightProj, false);
+                        Matrix4x4 lightProj = sys.ProjMatrices[i]; // 标准 [-1, 1] 矩阵
 
-                        // 1) Switch VP to the per-object light camera
-                        cmd.SetViewProjectionMatrices(lightView, gpuProj);
-
-                        // 2) Provide correct ShadowCaster context constants (light direction / bias / camera pos)
-                        cmd.SetGlobalVector(_idLightDirection, new Vector4(surfaceToLightDirWS.x, surfaceToLightDirWS.y, surfaceToLightDirWS.z, 0f));
+                        // 直接交给 Unity 处理硬件适配 (不要手动 GL.GetGPU...)
+                        cmd.SetViewProjectionMatrices(lightView, lightProj);
+                        
                         cmd.SetGlobalVector(_idShadowBias, shadowBias);
-                        cmd.SetGlobalVector(_idUnityLightShadowBias, shadowBias);
+                        
+                        cmd.SetInvertCulling(enableBackfaceShadowMapping);
 
-                        // Ensure _WorldSpaceCameraPos matches the light camera position for this pass
-                        Vector3 lightPosWS = lightView.inverse.MultiplyPoint3x4(Vector3.zero);
-                        cmd.SetGlobalVector(_idWorldSpaceCameraPos, lightPosWS);
-
-                        // 3) If GPU projection flips Y, winding can be inverted. Match culling for consistent draw.
-                        bool invertCulling = gpuProj.m11 < 0f;
-                        cmd.SetInvertCulling(invertCulling);
-
-                        // Draw: each selected entry is a group of renderers (treated as ONE model, share ONE tile)
+                        // Draw
                         var group = sys.GetActiveGroup(i);
                         if (group != null && group.renderers != null)
                         {
                             for (int rIdx = 0; rIdx < group.renderers.Count; rIdx++)
                             {
                                 Renderer activeRenderer = group.renderers[rIdx];
-                                if (activeRenderer == null)
-                                    continue;
-                                if (!activeRenderer.gameObject.activeInHierarchy || !activeRenderer.enabled)
+                                if (activeRenderer == null || !activeRenderer.gameObject.activeInHierarchy || !activeRenderer.enabled)
                                     continue;
 
                                 Material[] mats = activeRenderer.sharedMaterials;
-                                if (mats == null || mats.Length == 0)
-                                    continue;
+                                if (mats == null || mats.Length == 0) continue;
 
                                 int safeSubMeshCount = GetSafeSubMeshCount(activeRenderer);
                                 int drawCount = Mathf.Min(mats.Length, safeSubMeshCount);
@@ -214,8 +180,7 @@ public class PerObjectShadowFeature : ScriptableRendererFeature
                                 for (int j = 0; j < drawCount; j++)
                                 {
                                     Material mat = mats[j];
-                                    if (mat == null)
-                                        continue;
+                                    if (mat == null) continue;
 
                                     int passIndex = mat.FindPass("ShadowCaster");
                                     if (passIndex != -1)
@@ -224,24 +189,17 @@ public class PerObjectShadowFeature : ScriptableRendererFeature
                             }
                         }
 
-                        // Restore state for next tile
-                        cmd.SetInvertCulling(false);
                         cmd.DisableScissorRect();
                     }
-
-                    // Restore camera target / viewport / VP
-                    cmd.SetRenderTarget(_cameraColor, _cameraDepth);
-                    cmd.SetViewport(camViewport);
-                    cmd.SetViewProjectionMatrices(camView, camProj);
-
-                    // Restore camera position global (we changed it during per-tile rendering)
-                    cmd.SetGlobalVector(_idWorldSpaceCameraPos, camPosWS);
+                    
+                    //防止剔除反转
+                    cmd.SetInvertCulling(false);
                 }
 
                 context.ExecuteCommandBuffer(cmd);
                 cmd.Clear();
-
-                // Keep URP camera state consistent
+                
+                //恢复原相机渲染状态
                 context.SetupCameraProperties(renderingData.cameraData.camera);
             }
             finally
@@ -254,14 +212,12 @@ public class PerObjectShadowFeature : ScriptableRendererFeature
         {
             if (r is SkinnedMeshRenderer sk && sk.sharedMesh != null)
                 return sk.sharedMesh.subMeshCount;
-
             if (r is MeshRenderer mr)
             {
                 MeshFilter mf = mr.GetComponent<MeshFilter>();
                 if (mf != null && mf.sharedMesh != null)
                     return mf.sharedMesh.subMeshCount;
             }
-
             return 1;
         }
 
@@ -282,23 +238,14 @@ public class PerObjectShadowFeature : ScriptableRendererFeature
         };
     }
 
-    public override void SetupRenderPasses(ScriptableRenderer renderer, in RenderingData renderingData)
-    {
-        _pass.Setup(renderer.cameraColorTargetHandle, renderer.cameraDepthTargetHandle);
-    }
-
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
     {
         var sys = PerObjectShadowSystem.Instance;
         if (sys == null) return;
+        sys.ApplySettings(settings); // 将配置传给 System (包括自动计算列数)
 
-        sys.ApplySettings(settings);
-
-        if (renderingData.cameraData.renderType == CameraRenderType.Overlay)
-            return;
-
-        if (sys.ActiveCount > 0)
-            renderer.EnqueuePass(_pass);
+        if (renderingData.cameraData.renderType == CameraRenderType.Overlay) return;
+        if (sys.ActiveCount > 0) renderer.EnqueuePass(_pass);
     }
 
     protected override void Dispose(bool disposing)

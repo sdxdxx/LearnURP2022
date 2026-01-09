@@ -24,22 +24,21 @@ Shader "URP/TestPerObjectShadow_Lambert"
             #pragma multi_compile  _MAIN_LIGHT_SHADOWS
 			#pragma multi_compile  _MAIN_LIGHT_SHADOWS_CASCADE
 			#pragma multi_compile  _SHADOWS_SOFT
-
+            
+            // 确保定义了 UNITY_REVERSED_Z 宏
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
-
-            // PerObjectShadow globals
+            
+            
+            // ... (Uniforms 保持不变) ...
             TEXTURE2D(_CharacterShadowAtlas);
             SAMPLER(sampler_CharacterShadowAtlas);
             float4 _CharacterShadowAtlas_TexelSize;
-            float4x4 _CharacterShadowMatrix[10];
-            float4   _CharacterUVClamp[10];
+            float4x4 _CharacterShadowMatrix[9];
+            float4   _CharacterUVClamp[9];
             int      _CharacterShadowCount;
-
-            // x: DepthBias (0-1 range), y: NormalBias (World Unit), z: unused, w: unused
             float4 _PerObjectShadowBiasGen;
-            
+
             CBUFFER_START(UnityPerMaterial)
                 float4 _BaseColor;
             CBUFFER_END
@@ -66,27 +65,26 @@ Shader "URP/TestPerObjectShadow_Lambert"
                 return o;
             }
 
-            // 【核心阴影采样逻辑】
+            // 【核心修正】
             void SampleShadowSingle(float3 positionWS, int idx, float depthBias,
                                    out float vis, out float inTile)
             {
-                // 将世界坐标变换到 Shadow Atlas 的 UV 和 Depth 空间
                 float4 sc = mul(_CharacterShadowMatrix[idx], float4(positionWS, 1.0));
-                
-                // 正交投影除以 w (虽然正交下 w 通常为 1，但保留除法更健壮)
                 sc.xyz /= max(sc.w, 1e-6);
 
                 float2 uv = sc.xy;
                 
-                // receiverZ 是当前像素点相对于光源的深度
-                // C# 矩阵已处理好 API 差异，这里保证是  1(Near) -> 0(Far) 的线性值
-                float  receiverZ = sc.z;
-                
-                // 简单的边界检查
-                receiverZ = saturate(receiverZ);
+                // 1. receiverZ: 经过 C# Bias 处理，保证是 [0=Near, 1=Far]
+                float receiverZ = sc.z;
 
+                // 2. Tile 检查 (保持不变)
                 float4 c = _CharacterUVClamp[idx];
                 bool inside = (uv.x >= c.x && uv.x <= c.y && uv.y >= c.z && uv.y <= c.w);
+                
+                // 增加 Z 轴范围保护 (防止背后的物体投影回来)
+                // 这里的 0 和 1 对应 Near 和 Far
+                inside = inside && (receiverZ >= 0.0 && receiverZ <= 1.0); 
+                
                 inTile = inside ? 1.0 : 0.0;
 
                 if (!inside)
@@ -95,35 +93,41 @@ Shader "URP/TestPerObjectShadow_Lambert"
                     return;
                 }
 
-                // 简单的内缩防止采样溢出
+                // UV Clamp (保持不变)
                 float epsU = _CharacterShadowAtlas_TexelSize.x * 0.5;
                 float epsV = _CharacterShadowAtlas_TexelSize.y * 0.5;
                 uv.x = clamp(uv.x, c.x + epsU, c.y - epsU);
                 uv.y = clamp(uv.y, c.z + epsV, c.w - epsV);
 
-                // 采样原生 Shadowmap (Raw Depth)
+                // 3. 采样原始深度
                 float rawZ = SAMPLE_TEXTURE2D(_CharacterShadowAtlas, sampler_CharacterShadowAtlas, uv).r;
                 float storedZ = rawZ;
 
+                // 【关键修正 1】: 统一硬件深度含义
+                // 如果是 Reverse-Z (DX11/Metal)，硬件存的是 1(Near)->0(Far)
+                // 我们要把它翻转成 0(Near)->1(Far) 来跟 receiverZ 对齐
+                #if UNITY_REVERSED_Z
+                    storedZ = 1.0 - rawZ;
+                #endif
 
-                // 比较逻辑：
-                // 1(Near) -> 0(Far)
-                // 如果 receiverZ (物体深度) >= storedZ (遮挡物深度) + bias，说明物体在遮挡物前面或重合 -> 被照亮(1.0)
-                // 否则 -> 在阴影中(0.0)
-                vis = (receiverZ >= storedZ + depthBias ) ? 1.0 : 0.0;
+                // 【关键修正 2】: 比较逻辑修正
+                // 现在 receiverZ 和 storedZ 都是 0=Near, 1=Far
+                // 只有当 receiverZ <= storedZ (比遮挡物更近或一样) 时，才被照亮
+                // 注意 Bias 的符号：我们希望物体稍微 "靠前" 一点点来避免自阴影，所以是 receiverZ <= storedZ + bias
+                // 或者写成 standard PCF style: receiverZ - bias <= storedZ
+                
+                vis = (receiverZ <= storedZ + depthBias) ? 1.0 : 0.0;
             }
 
             float ComputePerObjectShadow(float3 positionWS, float3 normalWS)
             {
-                float3 nWS = normalize(normalWS);
+                // ... (Normal Bias 逻辑保持不变) ...
+                // 注意：NormalBias 沿着法线推挤顶点，这会改变 positionWS
+                // 从而改变 receiverZ。这部分逻辑是通用的，不需要改。
                 
-                // 获取全局偏差设置
+                float3 nWS = normalize(normalWS);
                 float globalDepthBias  = _PerObjectShadowBiasGen.x;
                 float globalNormalBias = _PerObjectShadowBiasGen.y;
-
-                // 【Normal Bias 原理】
-                // 沿着法线方向偏移采样点，防止“自身阴影斑点”(Shadow Acne)。
-                // 但如果偏移过大(如 0.4m)，采样点就会穿过遮挡物，导致“阴影断层”(Peter Panning)。
                 float3 shadowPosWS = positionWS + nWS * globalNormalBias;
                 
                 int count = _CharacterShadowCount;
@@ -131,19 +135,20 @@ Shader "URP/TestPerObjectShadow_Lambert"
 
                 if (count > 0)
                 {
-                    [unroll]
+                    [unroll] // 循环必须展开以支持 Texture 数组采样(虽然这里是一张大图)
                     for (int idx = 0; idx < 10; idx++)
                     {
                         if (idx >= count) break;
                         float vis, inTile;
-                        // 传入偏移后的位置进行采样
                         SampleShadowSingle(shadowPosWS, idx, globalDepthBias, vis, inTile);
 
-                        finalVis = min(finalVis, vis);
-                        if (finalVis < 0.5) break;
+                        // 简单的混合逻辑：如果在 Tile 内，就取阴影值
+                        if (inTile > 0.5)
+                        {
+                            finalVis = min(finalVis, vis);
+                        }
                     }
                 }
-
                 return finalVis;
             }
 
@@ -151,27 +156,25 @@ Shader "URP/TestPerObjectShadow_Lambert"
             {
                 float3 normalWS = normalize(i.normalWS);
                 
+                // 计算自定义阴影
+                float finalVis = ComputePerObjectShadow(i.posWS, normalWS);
                 float4 shadowCoord = TransformWorldToShadowCoord(i.posWS);
                 float shadow = MainLightRealtimeShadow(shadowCoord);
                 
-                float finalVis = ComputePerObjectShadow(i.posWS, normalWS);
+                // 【修正 3】 Lambert 漫反射必须乘 NdotL
+                float NdotL = saturate(dot(normalWS, _MainLightPosition));
                 
-                
-                Light mainLight = GetMainLight();
-                float3 lightDir = mainLight.direction;
-                float3 lightColor = mainLight.color;
-
-                float NdotL = saturate(dot(normalWS, lightDir));
                 float3 ambient = float3(0.1, 0.1, 0.1) * _BaseColor.rgb;
-                float3 diffuse = _BaseColor.rgb * lightColor * NdotL * min(finalVis,1);
-                float3 finalColor = ambient + diffuse;
-
-                return half4(finalColor, 1.0);
+                
+                // 只有被光照亮的地方(NdotL > 0) 且 没有被遮挡(finalVis=1) 才显示漫反射
+                float3 diffuse = _BaseColor.rgb * NdotL * finalVis * shadow;
+                
+                return half4(ambient + diffuse, 1.0);
             }
 
             ENDHLSL
         }
-        
+
         Pass
         {
             Name "ShadowCaster"

@@ -37,6 +37,7 @@ Shader "URP/PostProcessing/ColorTintTest"
             TEXTURE2D(_MainTex);
             SAMPLER(sampler_MainTex);
             TEXTURE2D(_CameraDepthTexture);
+            TEXTURE2D(_CharacterShadowAtlas);
             //----------贴图声明结束-----------
             
             CBUFFER_START(UnityPerMaterial)
