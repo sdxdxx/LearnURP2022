@@ -73,6 +73,7 @@ MonoBehaviour:
     matrixArrayName: _CharacterShadowMatrix
     uvClampArrayName: _CharacterUVClamp
     countName: _CharacterShadowCount
+    enableBackfaceShadowMapping: 0
     hideLayerMask:
       serializedVersion: 2
       m_Bits: 0

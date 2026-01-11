@@ -446,7 +446,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mainLight: {fileID: 1068465136}
-  mainCamera: {fileID: 1836794818}
   candidatesRenderers:
   - groupName: Cheeta_Fixed
     root: {fileID: 1549387658}
@@ -978,7 +977,7 @@ Transform:
   m_GameObject: {fileID: 1830432436}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 4.23, y: 0.22, z: -8.3}
+  m_LocalPosition: {x: 15.37, y: 0.51, z: -12.2}
   m_LocalScale: {x: 3.9557, y: 3.9557, z: 3.9557}
   m_ConstrainProportionsScale: 0
   m_Children: []

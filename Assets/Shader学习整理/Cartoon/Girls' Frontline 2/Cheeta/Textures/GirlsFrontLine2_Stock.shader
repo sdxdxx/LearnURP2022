@@ -1,4 +1,4 @@
-Shader "URP/NPR/GirlsFrontLine2/Sock"
+Shader "URP/NPR/GirlsFrontLine2/Stock"
 {
     Properties
     {
