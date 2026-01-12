@@ -55,6 +55,7 @@ public class PerObjectShadowSystem : MonoBehaviour
     public readonly Matrix4x4[] ViewMatrices = new Matrix4x4[9];
     public readonly Matrix4x4[] ProjMatrices = new Matrix4x4[9];
     public readonly Matrix4x4[] WorldToShadowAtlasMatrices = new Matrix4x4[9];
+    public readonly Vector4[] DepthRanges = new Vector4[9];
     public readonly Vector4[] UVClamp = new Vector4[9];
     public readonly Rect[] TileViewport = new Rect[9];
 
@@ -255,8 +256,11 @@ public class PerObjectShadowSystem : MonoBehaviour
             float bottom = ymin;
             float top = ymax;
 
-            Matrix4x4 projectionMatrix = Matrix4x4.Ortho(left, right, bottom, top, near, far);
+            float depthRange = Mathf.Abs(far - near);
             
+            Matrix4x4 projectionMatrix = Matrix4x4.Ortho(left, right, bottom, top, near, far);
+
+            DepthRanges[i] = new Vector4(depthRange,near,far,0);
             ViewMatrices[i] = lightViewMatrix;
             ProjMatrices[i] = projectionMatrix;
 

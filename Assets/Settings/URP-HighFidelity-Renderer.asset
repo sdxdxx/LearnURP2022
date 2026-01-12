@@ -78,13 +78,13 @@ MonoBehaviour:
       serializedVersion: 2
       m_Bits: 0
     maxDistance: 100
-    maxTargets: 4
-    shadowAtlasSize: 2048
+    maxTargets: 1
+    shadowAtlasSize: 4096
     shadowAtlasTileBorderPixels: 2
-    lightCameraBackDistance: 50
-    depthPadding: 10
+    lightCameraBackDistance: 20
+    depthPadding: 50
     xyPadding: 0
-    depthBias: 0.005
+    depthBias: 0.001
     normalBias: 0
 --- !u!114 &-6623979406184408848
 MonoBehaviour:

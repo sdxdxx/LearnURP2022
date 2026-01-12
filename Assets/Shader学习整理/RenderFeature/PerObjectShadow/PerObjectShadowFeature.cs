@@ -54,11 +54,13 @@ public class PerObjectShadowFeature : ScriptableRendererFeature
         private readonly int _idMatArr;
         private readonly int _idUVArr;
         private readonly int _idCount;
-        private readonly int _idShadowBiasGen;
-        
+        private readonly int _idPerObjectShadowBias;
+        private readonly int _idDepthRanges;        
 
         // IDs for ShadowCasterPass context
         private static readonly int _idShadowBias = Shader.PropertyToID("_ShadowBias");
+        
+        
 
         public CustomRenderPass(Settings settings)
         {
@@ -68,7 +70,8 @@ public class PerObjectShadowFeature : ScriptableRendererFeature
             _idMatArr = Shader.PropertyToID(_settings.matrixArrayName);
             _idUVArr = Shader.PropertyToID(_settings.uvClampArrayName);
             _idCount = Shader.PropertyToID(_settings.countName);
-            _idShadowBiasGen = Shader.PropertyToID("_PerObjectShadowBiasGen");
+            _idPerObjectShadowBias = Shader.PropertyToID("_PerObjectShadowBias");
+            _idDepthRanges = Shader.PropertyToID("_DepthRanges");
         }
 
         public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
@@ -81,7 +84,7 @@ public class PerObjectShadowFeature : ScriptableRendererFeature
                 _settings.shadowAtlasSize,
                 _settings.shadowAtlasSize,
                 RenderTextureFormat.Shadowmap,
-                16)
+                32)
             {
                 msaaSamples = 1,
                 useMipMap = false,
@@ -139,7 +142,8 @@ public class PerObjectShadowFeature : ScriptableRendererFeature
                     cmd.SetGlobalInt(_idCount, count);
                     cmd.SetGlobalMatrixArray(_idMatArr, sys.WorldToShadowAtlasMatrices);
                     cmd.SetGlobalVectorArray(_idUVArr, sys.UVClamp);
-                    cmd.SetGlobalVector(_idShadowBiasGen, new Vector4(depthBias, normalBias, 0, 0));
+                    cmd.SetGlobalVector(_idPerObjectShadowBias, new Vector4(depthBias, normalBias, 0, 0));
+                    cmd.SetGlobalVectorArray(_idDepthRanges,sys.DepthRanges);
 
                     Vector4 shadowBias = new Vector4(depthBias, normalBias, 0f, 0f);
 
