@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: URP_ShaderURP_Water 1
-  m_Shader: {fileID: 4800000, guid: 7128ca0928286ab4fabc945eafd76abe, type: 3}
+  m_Shader: {fileID: 4800000, guid: a41ec8660b24f584088e220aaf88c93f, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -76,6 +76,8 @@ Material:
     - _CausiticsRange: 5.5
     - _CausiticsScale: 5.7
     - _CausiticsSpeed: 1
+    - _ColorGradientRange: 1
+    - _DepthDensity: 1
     - _FlowSpeed: 0
     - _FlowStrength: 0
     - _FoamBend: 0.2
@@ -105,6 +107,7 @@ Material:
     - _ShoreNoiseScale: 1
     - _ShoreNoiseSpeed: 1.45
     - _ShoreRange: 0.29
+    - _Smoothness: 0.5
     - _Smothness: 0.7
     - _SpecEnd: 200
     - _SpecInt: 1
