@@ -205,59 +205,68 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 			    float3 nDir, 
 			    float3 lDir, 
 			    float3 vDir, 
-			    half3 waterColor,    // 水体固有色 (Volume Color)
+			    half3 waterColor,    // 水体固有色 (现在它会受光照影响变明暗)
 			    half3 lightCol, 
 			    float smoothness, 
 			    half3 refractionCol, // 背景色 (Background)
-			    half3 refCol,        // 表面反射 (Skybox/Reflection Probe)
+			    half3 refCol,        // 表面反射 (Skybox)
 			    float shadow,
-			    float transmission   // ⭐改名: 叫 transmission 更不容易搞混 (1=清澈, 0=浑浊)
+			    float transmission   // 1=清澈, 0=浑浊
 			)
 			{
+            	float shadowRamp = 1;
 			    float3 hDir = normalize(vDir + lDir);
-			    float nDotl = max(saturate(dot(nDir, lDir)), 0.000001);
+			    float nDotl = max(saturate(dot(nDir, lDir)), 0.000001); // 0~1 的光照强度
 			    float nDotv = max(saturate(dot(nDir, vDir)), 0.000001);
-			    float hDotv = max(saturate(dot(vDir, hDir)), 0.000001);
-
-			    // --- 1. 粗糙度准备 ---
+			    
+			    // --- 1. 粗糙度与菲涅尔 ---
 			    float perceptualRoughness = 1 - smoothness;
 			    float roughness = perceptualRoughness * perceptualRoughness;
 			    float lerpSquareRoughness = pow(lerp(0.002, 1, roughness), 2);
 
-			    // --- 2. 菲涅尔 (Fresnel) ---
-			    float F0_val = 0.02; // 水的 F0
+			    float F0_val = 0.02; 
 			    float fresnelTerm = F0_val + (1.0 - F0_val) * pow(1.0 - nDotv, 5.0); 
 			    
-			    // --- 3. 太阳高光 (Direct Specular) ---
-			    // D (GGX)
+			    // --- 2. 漫反射 (Diffuse) - 卡通海洋的核心 ---
+			    // 💡 技巧：对于卡通水，可以使用 Half-Lambert 防止背光面死黑
+			    // float halfLambert = nDotl * 0.5 + 0.5; 
+			    // float3 diffuseTerm = lightCol * halfLambert * shadow;
+			    
+			    // 标准 Lambert:
+			    // Kd: 能量守恒系数。在PBR中，反射越强，折射(漫反射)越弱
+			    // 如果想要更"卡通/塑料"的感觉，可以去掉 (1-fresnelTerm)
+			    float3 kd = (1 - fresnelTerm) * (1.0 - 0.0); // assuming metallic is 0
+			    float3 diffuseTerm = kd * lightCol * (nDotl*0.5+0.5) * shadowRamp; // 这里没有乘PI，防止过曝
+
+			    // --- 3. 照亮水体 (Lit Water Volume) ---
+			    // 关键逻辑：漫反射是用来照亮"浑浊水体"的，而不是照亮"水底石头"的
+			    // 加上环境光(这里简单模拟为0.1的亮度，你可以传入专门的Ambient)
+			    float3 ambient = lightCol * 0.1; 
+			    float3 litWaterBody = waterColor * (diffuseTerm + ambient);
+
+			    // --- 4. 高光 (Specular) ---
 			    float D_denom = (pow(dot(nDir, hDir), 2) * (lerpSquareRoughness - 1) + 1);
 			    float D = lerpSquareRoughness / (D_denom * D_denom * PI);
 			    
-			    // G (Smith)
 			    float k = pow(roughness + 1, 2) / 8.0;
 			    float G = (nDotl / (nDotl * (1-k) + k)) * (nDotv / (nDotv * (1-k) + k));
 			    
-			    // Specular Term (D * G * F / 4*NdotV*NdotL)
-			    // 注意：这里已经包含 F 了
+			    // Specular Term
 			    float3 directSpecular = (D * G * fresnelTerm) / (4 * nDotv * nDotl + 0.0001);
 			    
-			    // 组合光照 (去掉 PI，加上阴影)
-			    // 太阳高光直接叠加，不参与背景混合，因为它是光源的直接反射
-			    float3 specularResult = directSpecular * lightCol * nDotl * PI * shadow;
+			    // ⚠️ 你之前保留了 PI，我把它加回来了，如果你觉得高光太爆可以去掉
+			    float3 specularResult = directSpecular * lightCol * nDotl * PI * shadowRamp;
 
-			    // --- 4. 水下部分 (Under Water) ---
-			    // ✅ 修复点：Lerp 顺序
-			    // transmission=1 (清澈) -> 显示 refractionCol
-			    // transmission=0 (浑浊) -> 显示 waterColor
-			    half3 underWaterColor = lerp(waterColor, refractionCol, transmission); 
+			    // --- 5. 水下混合 (Under Water Mix) ---
+			    // 逻辑：
+			    // 如果水清澈 (transmission=1) -> 显示 refractionCol (不受水面法线漫反射影响)
+			    // 如果水浑浊 (transmission=0) -> 显示 litWaterBody (受漫反射影响，有波浪立体感)
+			    half3 underWaterColor = lerp(litWaterBody, refractionCol, transmission); 
 			    
-			    // --- 5. 最终混合 (Grand Mix) ---
-			    // 根据菲涅尔效应，在折射(水下)和反射(天空)之间混合
-			    // 垂直看(F小) -> 看水底
-			    // 侧面看(F大) -> 看倒影
+			    // --- 6. 最终菲涅尔混合 ---
 			    half3 finalColor = lerp(underWaterColor, refCol, fresnelTerm);
 			    
-			    // --- 6. 叠加太阳高光 ---
+			    // --- 7. 叠加高光 ---
 			    finalColor += specularResult;
 
 			    return finalColor;
@@ -525,10 +534,10 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 	            float3 posWS_frag1 = ReconstructWorldPositionFromDepth(i.screenPos,rawDepth1);
 
 	            // Get Reflection And Refraction Mask
-	            float ReflectionAndReflectionMask = step(posWS_frag1.y, i.posWS.y);
+	            float refractionMask = step(posWS_frag1.y, i.posWS.y);
 	            // Apply mask to UV jitter
 	            grabUV = screenPos;
-	            grabUV.x += noiseUV*_NormalNoise/max(i.screenPos.w,1.2f) * ReflectionAndReflectionMask;
+	            grabUV.x += noiseUV*_NormalNoise/max(i.screenPos.w,1.2f) * refractionMask;
 
 	            // Secondly Sample Depth Texture (The clean depth for logic)
 	            float rawDepth2 =  SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,grabUV).r;
@@ -556,9 +565,8 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 	            
 	            // Reflection Color
 	            float2 reflectUV = screenPos;
-	            reflectUV.x += noiseUV*_NormalNoise*ReflectionAndReflectionMask;
 	            half4 refCol = SAMPLE_TEXTURE2D(_ScreenSpaceReflectionTexture,sampler_ScreenSpaceReflectionTexture,reflectUV);
-
+            	
 	            // ==========================================================
 	            // --- 5. Water Physics Color (Corrected Logic) ---
 	            // ==========================================================
@@ -578,9 +586,8 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 	            // C. 计算水体固有色 (Volume Color)
 	            // 仅基于垂直深度决定是浅水色还是深水色
 	            // _ColorGradientRange 控制颜色过渡的深度 (建议范围 1.0 ~ 10.0)
-	            float colorGradient = saturate(verticalDepth / _ColorGradientRange);
+            	float colorGradient =1-clamp(exp(-max(0,verticalDepth)/_ColorGradientRange),0,1);
 	            half3 volumeColor = lerp(_ShallowColor.rgb, _DeepColor.rgb, colorGradient);
-            	
             	
 	            // ==========================================================
 
@@ -873,8 +880,8 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 	            float2 normalUV2 = normalUV/_NormalScale2 + frac(_NormalSpeed.zw*0.1*_Time.y);
 	            float4 NormalMap1 = SAMPLE_TEXTURE2D(_NormalMap,sampler_NormalMap,normalUV1);
 	            float4 NormalMap2 = SAMPLE_TEXTURE2D(_NormalMap,sampler_NormalMap,normalUV2);
-	            float3 var_NormalMap1 = UnpackScaleNormal(NormalMap1,_NormalIntensity);
-	            float3 var_NormalMap2 = UnpackScaleNormal(NormalMap2,_NormalIntensity);
+	            float3 var_NormalMap1 = UnpackScaleNormal(NormalMap1,_NormalIntensity*_NormalNoise);
+	            float3 var_NormalMap2 = UnpackScaleNormal(NormalMap2,_NormalIntensity*_NormalNoise);
 	            float3 waterNormal = NormalBlendReoriented(var_NormalMap1,var_NormalMap2);
 				
 	            float3 rippleNormal= SAMPLE_TEXTURE2D(_WaterRipple,sampler_WaterRipple,screenPos);
