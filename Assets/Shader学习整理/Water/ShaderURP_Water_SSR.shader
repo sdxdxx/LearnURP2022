@@ -541,8 +541,6 @@ Shader "URP/ShaderURP_Water_SSR"
                 float waterShallow_range =clamp(exp(-max(waterDepth0,waterDepth)/_WaterShallowRange),0,1);
                 half4 waterCol = lerp(_DeepColor,_ShallowColor,waterShallow_range);
             	
-            	return waterShallow_range;
-            	
             	//Light
                 float3 nDir = waterNormal;
             	float3 lDir = _MainLightPosition.xyz;
