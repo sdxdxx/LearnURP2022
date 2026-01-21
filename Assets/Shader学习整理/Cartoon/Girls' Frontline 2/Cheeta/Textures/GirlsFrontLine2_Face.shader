@@ -224,32 +224,36 @@ Shader "URP/NPR/GirlsFrontLine2/Face"
             	
             	//直接光结果
             	float3 DirectLightResult = diffColor + specColor;
+            	
+            	float3 IndirectResult = 0;
+            	if (!isAd)
+            	{
+            		//间接光漫反射
+					half3 ambient_contrib = SampleSH(nDir);//反射探针接收
+					float3 ambient = 0.03 * Albedo;
+					float3 iblDiffuse = max(half3(0, 0, 0), ambient.rgb + ambient_contrib);
+            		float nDotv_Ramp = SAMPLE_TEXTURE2D(_RampTex,sampler_RampTex,float2(nDotv,0.6)).r;
+					float3 Flast = fresnelSchlickRoughness(max(nDotv_Ramp, 0.0), F0, roughness);
+            		float kdLast = (1 - Flast) * (1 - metallic);
+            		float3 iblDiffColor = iblDiffuse * kdLast * Albedo * lightCol;
+            		
+					//间接光镜面反射
+					float mip_roughness = perceptualRoughness * (1.7 - 0.7 * perceptualRoughness);
+					float3 reflectVec = reflect(-vDir, nDir);
+					half mip = mip_roughness * UNITY_SPECCUBE_LOD_STEPS;
+					half4 rgbm =  SAMPLE_TEXTURECUBE_LOD(unity_SpecCube0,samplerunity_SpecCube0, reflectVec, mip);
+					float3 iblSpecular = DecodeHDREnvironment(rgbm, unity_SpecCube0_HDR);
+            		
+					float surfaceReduction = 1.0 / (roughness*roughness + 1.0); //Liner空间
+					//float surfaceReduction = 1.0 - 0.28*roughness*perceptualRoughness; //Gamma空间
 
-				//间接光漫反射
-				half3 ambient_contrib = SampleSH(nDir);//反射探针接收
-				float3 ambient = 0.03 * Albedo;
-				float3 iblDiffuse = max(half3(0, 0, 0), ambient.rgb + ambient_contrib);
-            	float nDotv_Ramp = SAMPLE_TEXTURE2D(_RampTex,sampler_RampTex,float2(nDotv,0.4)).r;
-				float3 Flast = fresnelSchlickRoughness(max(nDotv_Ramp, 0.0), F0, roughness);
-            	float kdLast = (1 - Flast) * (1 - metallic);
-            	float3 iblDiffColor = iblDiffuse * kdLast * Albedo * lightCol;
-            	
-				//间接光镜面反射
-				float mip_roughness = perceptualRoughness * (1.7 - 0.7 * perceptualRoughness);
-				float3 reflectVec = reflect(-vDir, nDir);
-				half mip = mip_roughness * UNITY_SPECCUBE_LOD_STEPS;
-				half4 rgbm =  SAMPLE_TEXTURECUBE_LOD(unity_SpecCube0,samplerunity_SpecCube0, reflectVec, mip);
-				float3 iblSpecular = DecodeHDREnvironment(rgbm, unity_SpecCube0_HDR);
-            	
-				float surfaceReduction = 1.0 / (roughness*roughness + 1.0); //Liner空间
-				//float surfaceReduction = 1.0 - 0.28*roughness*perceptualRoughness; //Gamma空间
-
-				float oneMinusReflectivity = 1 - max(max(SpecularResult.r, SpecularResult.g), SpecularResult.b);
-				float grazingTerm = saturate(smoothness + (1 - oneMinusReflectivity));
-            	float3 iblSpecColor =  iblSpecular * surfaceReduction * FresnelLerp(F0, grazingTerm, nDotv_Ramp);
-            	
-            	//间接光结果
-				float3 IndirectResult = iblDiffColor + iblSpecColor;
+					float oneMinusReflectivity = 1 - max(max(SpecularResult.r, SpecularResult.g), SpecularResult.b);
+					float grazingTerm = saturate(smoothness + (1 - oneMinusReflectivity));
+            		float3 iblSpecColor =  iblSpecular * surfaceReduction * FresnelLerp(F0, grazingTerm, nDotv_Ramp);
+            		
+            		//间接光结果
+					IndirectResult = iblDiffColor + iblSpecColor;
+            	}
             	
             	//temp
             	float3 result_RBR = DirectLightResult*lerp(shadow,1,0.2) + IndirectResult;

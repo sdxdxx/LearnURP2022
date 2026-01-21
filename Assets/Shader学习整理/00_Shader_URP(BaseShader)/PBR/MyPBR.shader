@@ -71,8 +71,8 @@ Shader "URP/MyPBR"
             CBUFFER_END
     	
     		float3 fresnelSchlickRoughness(float cosTheta, float3 F0, float roughness)
-			 {
-			 return F0 + (max(float3(1 ,1, 1) * (1 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
+            {
+				return F0 + (max(float3(1 ,1, 1) * (1 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
 			}
     	
 			float3 FresnelLerp (half3 F0, half3 F90, half cosA)
@@ -171,8 +171,7 @@ Shader "URP/MyPBR"
 				 
 				//直接光漫反射部分
 				//漫反射系数
-				float kd = (1-F)*(1-metallic);
-
+				float3 kd = (1-F)*(1-metallic);
 				float3 diffColor = kd*Albedo*lightCol*nDotl;//此处为了达到和Unity相近的渲染效果也不去除这个PI
 
 				 float3 DirectLightResult = diffColor + specColor;
@@ -184,7 +183,7 @@ Shader "URP/MyPBR"
 
 				float3 iblDiffuse = max(half3(0, 0, 0), ambient.rgb + ambient_contrib);
 				float3 Flast = fresnelSchlickRoughness(max(nDotv, 0.0), F0, roughness);
-				 float kdLast = (1 - Flast) * (1 - metallic);
+            	float3 kdLast = (1 - Flast) * (1 - metallic);
             	
 				//间接光镜面反射
 				float mip_roughness = perceptualRoughness * (1.7 - 0.7 * perceptualRoughness);
@@ -199,6 +198,7 @@ Shader "URP/MyPBR"
 				//float surfaceReduction = 1.0 - 0.28*roughness*perceptualRoughness; //Gamma空间
 
 				float oneMinusReflectivity = 1 - max(max(SpecularResult.r, SpecularResult.g), SpecularResult.b);
+            	oneMinusReflectivity = oneMinusReflectivity * (1.0 - metallic);//修改
 				float grazingTerm = saturate(smoothness + (1 - oneMinusReflectivity));
 				float4 IndirectResult = float4(iblDiffuse * kdLast * Albedo + iblSpecular * surfaceReduction * FresnelLerp(F0, grazingTerm, nDotv), 1);
             	

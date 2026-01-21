@@ -3,251 +3,207 @@ using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
-using UnityEngine.Serialization;
 
-public class CustomDepthNormalsRendererFeature : ScriptableRendererFeature
+public sealed class CustomDepthNormalsRendererFeature : ScriptableRendererFeature
 {
+    public enum QueueRange
+    {
+        OpaqueOnly,
+        All
+    }
+
     [System.Serializable]
-     public class Settings
+    public sealed class Settings
     {
+        [Header("When")]
         public RenderPassEvent renderPassEvent = RenderPassEvent.AfterRenderingPrePasses;
-        public LayerMask layerMask = 1;
+
+        [Header("What")]
+        public LayerMask layerMask = ~0;
+        public QueueRange queueRange = QueueRange.OpaqueOnly;
+
+        [Header("Output (Global Texture Names)")]
+        public string depthTextureName = "_m_CameraDepthTexture";
+        public string normalsTextureName = "_m_CameraNormalsTexture";
+
+        [Header("Formats")]
+        public GraphicsFormat normalsFormat = GraphicsFormat.R16G16B16A16_SNorm;
+
+        public enum DepthBits
+        {
+            Depth16 = 16,
+            Depth32 = 32
+        }
+
+        [Tooltip("Depth RT precision. Choose 16 or 32 to avoid invalid values.")]
+        public DepthBits depthBits = DepthBits.Depth32;
+
+        [Header("Cameras")]
+        [Tooltip("Usually you only want this on Base camera, otherwise camera stack overlays will overwrite globals.")]
+        public bool baseCameraOnly = true;
     }
-     
-     //自定义的Pass
-    class NormalPass : ScriptableRenderPass
-    {
-        FilteringSettings filtering;
-        private List<ShaderTagId> shaderTagsList = new List<ShaderTagId>();
-        
-        //定义一个 ProfilingSampler 方便设置在FrameDebugger里查看
-        private const string ProfilerTag = "M_DepthNormalsPass";
-        private ProfilingSampler m_ProfilingSampler = new(ProfilerTag);
-        
-        private RTHandle cameraColorRTHandle;//可以理解为GameView_RenderTarget的句柄
-        private RTHandle depthTarget;
-        private RTHandle tempRTHandle;
 
-        //自定义Pass的构造函数(用于传参)
-        public NormalPass(Settings settings)
-        {
-            filtering = new FilteringSettings(RenderQueueRange.all, settings.layerMask);//设置过滤器
-            shaderTagsList.Add(new ShaderTagId("DepthNormals"));
-            renderPassEvent = settings.renderPassEvent; //传入设置的渲染事件顺序(renderPassEvent在基类ScriptableRenderPass中)
-        }
+    [SerializeField] private Settings settings = new Settings();
 
-        public void GetDepthTempRT(ref RTHandle temp, in RenderingData data)
-        {
-            RenderTextureDescriptor desc = data.cameraData.cameraTargetDescriptor;
-            desc.depthBufferBits = 32;
-            desc.colorFormat = RenderTextureFormat.Depth;
-            if (desc.msaaSamples>1)
-            {
-                desc.bindMS = true;
-                desc.msaaSamples = 2;
-            }
-            else
-            {
-                desc.bindMS = false;
-                desc.msaaSamples = 1;
-            }
-            
-            RenderingUtils.ReAllocateIfNeeded(ref temp, desc);
-            
-        }
-        public void GetTempRT(ref RTHandle temp, in RenderingData data)
-        {
-            RenderTextureDescriptor desc = data.cameraData.cameraTargetDescriptor;
-            desc.depthBufferBits = 0;
-            desc.graphicsFormat = GraphicsFormat.R16G16B16A16_SNorm;
-            RenderingUtils.ReAllocateIfNeeded(ref temp, desc);//使用该函数申请一张与相机大小一致的TempRT;
-        }
+    private RTHandle m_DepthRT;
+    private RTHandle m_NormalsRT;
 
-        public void Setup(RTHandle cameraColor)
-        {
-            cameraColorRTHandle = cameraColor;
-        }
-        
-        //此方法由渲染器在渲染相机之前调用
-        public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
-        {
-            GetDepthTempRT(ref depthTarget, renderingData);
-            ConfigureInput(ScriptableRenderPassInput.Color);
-            GetTempRT(ref tempRTHandle,renderingData);//获取与摄像机大小一致的临时RT
-            ConfigureTarget(tempRTHandle,depthTarget);
-            ConfigureClear(ClearFlag.All, Color.black);
-        }
-        
-        //执行传递。这是自定义渲染发生的地方
-        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
-        {
-            
-            CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);//获得一个为ProfilerTag的CommandBuffer
-            
-            //性能分析器(自带隐式垃圾回收),之后可以在FrameDebugger中查看
-            using (new ProfilingScope(cmd, m_ProfilingSampler))
-            {
-                // Ensure we flush our command-buffer before we render...
-                context.ExecuteCommandBuffer(cmd);
-                cmd.Clear();
-            
-                var depthParams = new RenderStateBlock(RenderStateMask.Depth);
-                DepthState depthState = new DepthState(writeEnabled: true, CompareFunction.LessEqual);
-                depthParams.depthState = depthState;
-            
-                SortingCriteria sortingCriteria = SortingCriteria.CommonOpaque;
-                var draw = CreateDrawingSettings(shaderTagsList, ref renderingData, sortingCriteria);
-                context.DrawRenderers(renderingData.cullResults, ref draw, ref filtering);
-            }
-            cmd.SetGlobalTexture("_m_CameraNormalsTexture",tempRTHandle);
-            
-            context.ExecuteCommandBuffer(cmd);//执行CommandBuffer
-            cmd.Clear();
-            CommandBufferPool.Release(cmd);//释放CommandBuffer
-        }
-        
-        //在完成渲染相机时调用
-        public override void OnCameraCleanup(CommandBuffer cmd)
-        {
-           
-        }
-        
-        public void OnDispose() 
-        {
-            tempRTHandle?.Release();//如果tempRTHandle没被释放的话，会被释放
-            depthTarget?.Release();
-        }
-    }
-    
-    class DepthPass : ScriptableRenderPass
-    {
-        FilteringSettings filtering;
-        private List<ShaderTagId> shaderTagsList = new List<ShaderTagId>();
-        
-        //定义一个 ProfilingSampler 方便设置在FrameDebugger里查看
-        private const string ProfilerTag = "M_DepthPass";
-        private ProfilingSampler m_ProfilingSampler = new(ProfilerTag);
-        
-        private RTHandle depthTarget;
-        private RTHandle tempRTHandle;
+    private int m_DepthTexId;
+    private int m_NormalsTexId;
 
-        //自定义Pass的构造函数(用于传参)
-        public DepthPass(Settings settings)
-        {
-            filtering = new FilteringSettings(RenderQueueRange.all, settings.layerMask);//设置过滤器
-            shaderTagsList.Add(new ShaderTagId("DepthOnly"));
-            renderPassEvent = settings.renderPassEvent; //传入设置的渲染事件顺序(renderPassEvent在基类ScriptableRenderPass中)
-        }
+    private DepthNormalsPass m_DepthNormalsPass;
 
-        public void GetDepthTempRT(ref RTHandle temp, in RenderingData data)
-        {
-            RenderTextureDescriptor desc = data.cameraData.cameraTargetDescriptor;
-            desc.depthBufferBits = 32;
-            desc.colorFormat = RenderTextureFormat.Depth;
-            if (desc.msaaSamples>1)
-            {
-                desc.bindMS = true;
-                desc.msaaSamples = 2;
-            }
-            else
-            {
-                desc.bindMS = false;
-                desc.msaaSamples = 1;
-            }
-            
-            RenderingUtils.ReAllocateIfNeeded(ref temp, desc);
-            
-        }
-        public void GetTempRT(ref RTHandle temp, in RenderingData data)
-        {
-            RenderTextureDescriptor desc = data.cameraData.cameraTargetDescriptor;
-            desc.depthBufferBits = 0;
-            desc.colorFormat = RenderTextureFormat.R16;
-            RenderingUtils.ReAllocateIfNeeded(ref temp, desc);//使用该函数申请一张与相机大小一致的TempRT;
-        }
-
-        //此方法由渲染器在渲染相机之前调用
-        public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
-        {
-            GetDepthTempRT(ref depthTarget, renderingData);
-            //depthTarget = renderingData.cameraData.renderer.cameraDepthTargetHandle;
-            ConfigureInput(ScriptableRenderPassInput.Color);
-            GetTempRT(ref tempRTHandle, renderingData);//获取与摄像机大小一致的临时RT
-            ConfigureTarget(tempRTHandle,depthTarget);
-            ConfigureClear(ClearFlag.All, Color.black);
-        }
-        
-        //执行传递。这是自定义渲染发生的地方
-        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
-        {
-            CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);//获得一个为ProfilerTag的CommandBuffer
-            
-            //性能分析器(自带隐式垃圾回收),之后可以在FrameDebugger中查看
-            using (new ProfilingScope(cmd, m_ProfilingSampler))
-            {
-                // Ensure we flush our command-buffer before we render...
-                context.ExecuteCommandBuffer(cmd);
-                cmd.Clear();
-            
-                //var depthParams = new RenderStateBlock(RenderStateMask.Depth);
-                //DepthState depthState = new DepthState(writeEnabled: true, CompareFunction.LessEqual);
-                //depthParams.depthState = depthState;
-            
-                SortingCriteria sortingCriteria = SortingCriteria.CommonOpaque;
-                var draw = CreateDrawingSettings(shaderTagsList, ref renderingData, sortingCriteria);
-                context.DrawRenderers(renderingData.cullResults, ref draw, ref filtering);
-            }
-            cmd.SetGlobalTexture("_m_CameraDepthTexture",tempRTHandle);
-            
-            context.ExecuteCommandBuffer(cmd);//执行CommandBuffer
-            cmd.Clear();
-            CommandBufferPool.Release(cmd);//释放CommandBuffer
-        }
-        
-        //在完成渲染相机时调用
-        public override void OnCameraCleanup(CommandBuffer cmd)
-        {
-           
-        }
-        
-        public void OnDispose() 
-        {
-            tempRTHandle?.Release();//如果tempRTHandle没被释放的话，会被释放
-            depthTarget?.Release();
-        }
-    }
-    
-    //-------------------------------------------------------------------------------------------------------
-    private NormalPass m_NormalPass;
-    private DepthPass m_DepthPass;
-    public Settings settings = new Settings();
-    
-    //初始化时调用
     public override void Create()
     {
-        m_NormalPass = new NormalPass(settings);
-        m_DepthPass = new DepthPass(settings);
-    }
-    
-    //每帧调用,将pass添加进流程
-    public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
-    {
-        renderer.EnqueuePass(m_NormalPass);
-        renderer.EnqueuePass(m_DepthPass);
+        m_DepthTexId = Shader.PropertyToID(settings.depthTextureName);
+        m_NormalsTexId = Shader.PropertyToID(settings.normalsTextureName);
+
+        m_DepthNormalsPass = new DepthNormalsPass(settings, m_DepthTexId, m_NormalsTexId)
+        {
+            renderPassEvent = settings.renderPassEvent
+        };
     }
 
-    //每帧调用,渲染目标初始化后的回调。这允许在创建并准备好目标后从渲染器访问目标
     public override void SetupRenderPasses(ScriptableRenderer renderer, in RenderingData renderingData)
     {
-        m_NormalPass.Setup(renderer.cameraColorTargetHandle);//可以理解为传入GameView_RenderTarget的句柄和相机渲染数据（相机渲染数据用于创建TempRT）
+        if (ShouldSkip(renderingData))
+            return;
+
+        AllocateTargets(in renderingData);
+        m_DepthNormalsPass.Setup(normals: m_NormalsRT, depth: m_DepthRT);
     }
-    
+
+    public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
+    {
+        if (ShouldSkip(renderingData))
+            return;
+
+        renderer.EnqueuePass(m_DepthNormalsPass);
+    }
+
     protected override void Dispose(bool disposing)
     {
-        base.Dispose(disposing);
-        m_NormalPass.OnDispose();
-        m_DepthPass.OnDispose();
+        m_DepthRT?.Release();
+        m_DepthRT = null;
+
+        m_NormalsRT?.Release();
+        m_NormalsRT = null;
+        
+        m_DepthNormalsPass = null;
+    }
+
+    private bool ShouldSkip(RenderingData renderingData)
+    {
+        var camData = renderingData.cameraData;
+
+        //  Skip preview cameras.
+        if (camData.cameraType == CameraType.Preview)
+            return true;
+
+        if (settings.baseCameraOnly && camData.renderType != CameraRenderType.Base)
+            return true;
+
+        return false;
+    }
+
+    private void AllocateTargets(in RenderingData renderingData)
+    {
+        var camDesc = renderingData.cameraData.cameraTargetDescriptor;
+
+        // Depth RT (depth attachment, sample-able)
+        var depthDesc = camDesc;
+        depthDesc.msaaSamples = 1;
+        depthDesc.bindMS = false;
+        depthDesc.depthBufferBits = (int)settings.depthBits;
+        depthDesc.colorFormat = RenderTextureFormat.Depth;
+        depthDesc.graphicsFormat = GraphicsFormat.None;
+        depthDesc.sRGB = false;
+
+        RenderingUtils.ReAllocateIfNeeded(ref m_DepthRT, depthDesc);
+
+        // Normals RT (color attachment)
+        var normalsDesc = camDesc;
+        normalsDesc.msaaSamples = 1;
+        normalsDesc.bindMS = false;
+        normalsDesc.depthBufferBits = 0;
+        normalsDesc.graphicsFormat = settings.normalsFormat;
+        normalsDesc.sRGB = false;
+
+        RenderingUtils.ReAllocateIfNeeded(ref m_NormalsRT, normalsDesc);
+    }
+    
+    
+    private sealed class DepthNormalsPass : ScriptableRenderPass
+    {
+        private static readonly ShaderTagId k_ShaderTag = new ShaderTagId("DepthNormals");
+
+        private const string ProfilerTag = "M_CustomDepthNormalsPass";
+        private readonly ProfilingSampler m_ProfilingSampler = new ProfilingSampler(ProfilerTag);
+
+        private readonly FilteringSettings m_Filtering;
+        private readonly int m_GlobalDepthTexId;
+        private readonly int m_GlobalNormalsTexId;
+
+        private RTHandle m_Normals;
+        private RTHandle m_Depth;
+
+        public DepthNormalsPass(Settings settings, int globalDepthTexId, int globalNormalsTexId)
+        {
+            var queue = (settings.queueRange == QueueRange.OpaqueOnly)
+                ? RenderQueueRange.opaque
+                : RenderQueueRange.all;
+
+            m_Filtering = new FilteringSettings(queue, settings.layerMask);
+
+            m_GlobalDepthTexId = globalDepthTexId;
+            m_GlobalNormalsTexId = globalNormalsTexId;
+
+            ConfigureInput(ScriptableRenderPassInput.None);
+        }
+
+        public void Setup(RTHandle normals, RTHandle depth)
+        {
+            m_Normals = normals;
+            m_Depth = depth;
+        }
+
+        public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
+        {
+            ConfigureTarget(m_Normals, m_Depth);
+
+            // 清除法线和深度数据避免出现错误
+            ConfigureClear(ClearFlag.Color | ClearFlag.Depth, Color.black);
+        }
+
+        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
+        {
+            var cmd = CommandBufferPool.Get(ProfilerTag);
+
+            using (new ProfilingScope(cmd, m_ProfilingSampler))
+            {
+                context.ExecuteCommandBuffer(cmd);
+                cmd.Clear();
+
+                var sorting = renderingData.cameraData.defaultOpaqueSortFlags;
+                var drawing = CreateDrawingSettings(k_ShaderTag, ref renderingData, sorting);
+
+                var rsb = new RenderStateBlock(RenderStateMask.Depth)
+                {
+                    depthState = new DepthState(true, CompareFunction.LessEqual)
+                };
+
+                // readonly field cannot be passed by ref -> local copy
+                var filtering = m_Filtering;
+                context.DrawRenderers(renderingData.cullResults, ref drawing, ref filtering, ref rsb);
+
+                cmd.SetGlobalTexture(m_GlobalDepthTexId, m_Depth);
+                cmd.SetGlobalTexture(m_GlobalNormalsTexId, m_Normals);
+            }
+
+            context.ExecuteCommandBuffer(cmd);
+            cmd.Clear();
+            CommandBufferPool.Release(cmd);
+        }
+        
     }
 }
-
-

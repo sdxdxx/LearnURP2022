@@ -79,7 +79,7 @@ MonoBehaviour:
       m_Bits: 0
     maxDistance: 100
     maxTargets: 1
-    shadowAtlasSize: 4096
+    shadowAtlasSize: 1024
     shadowAtlasTileBorderPixels: 2
     lightCameraBackDistance: 20
     depthPadding: 50
@@ -114,7 +114,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1dd661e3e19d6354b87e4c3379b16bfd, type: 3}
   m_Name: UnderWaterRenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   settings:
     renderPassEvent: 550
     waterLayer:
@@ -212,12 +212,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 828a9754f8867d847a3a6b204a18a19c, type: 3}
   m_Name: CustomDepthNormalsRendererFeature
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   settings:
     renderPassEvent: 220
     layerMask:
       serializedVersion: 2
       m_Bits: 17
+    queueRange: 1
+    depthTextureName: _m_CameraDepthTexture
+    normalsTextureName: _m_CameraNormalsTexture
+    normalsFormat: 28
+    depthBits: 32
+    baseCameraOnly: 1
 --- !u!114 &-1878332245247344467
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -318,7 +324,8 @@ MonoBehaviour:
   - {fileID: -3430817876551534162}
   - {fileID: 8985631144380114392}
   - {fileID: -3808527443434930453}
-  m_RendererFeatureMap: adc0de57c6d2eee5259b5863b1ef40204c16e4bd7233684a14bc2cb61a641ea31299797569247e71b1b2dab0a4cedeeee96589dae5dc6adb2d3a502565dd2253da5fdef21360fb08608d6bf6b5a0bfb9f018e04ed3e512a40d7f6dd47862d79388dddf85458a5eab21c478b91da438eeec44a402fe1e24a38d60a20eaa101bd1aef9158b514963d0d8a576fbea5fb37cebfebbf8776425cb
+  - {fileID: 6596120285823225568}
+  m_RendererFeatureMap: adc0de57c6d2eee5259b5863b1ef40204c16e4bd7233684a14bc2cb61a641ea31299797569247e71b1b2dab0a4cedeeee96589dae5dc6adb2d3a502565dd2253da5fdef21360fb08608d6bf6b5a0bfb9f018e04ed3e512a40d7f6dd47862d79388dddf85458a5eab21c478b91da438eeec44a402fe1e24a38d60a20eaa101bd1aef9158b514963d0d8a576fbea5fb37cebfebbf8776425cbe0ce3dc473208a5b
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
@@ -395,7 +402,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c7510a59a3543d438c9d936a5165cd1, type: 3}
   m_Name: WaterRippleRF
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   settings:
     layerMask:
       serializedVersion: 2
@@ -446,6 +453,22 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 25abd6a4fb4880145a4b4bb8f66cf44d, type: 3}
   m_Name: WaterScreenSpaceReflectionRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  settings:
+    renderPassEvent: 450
+    reflectionTexName: _ScreenSpaceReflectionTexture
+--- !u!114 &6596120285823225568
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78434f8baf84542a196bb6e69aef22d3, type: 3}
+  m_Name: ScreenSpaceReflectionRenderFeature
   m_EditorClassIdentifier: 
   m_Active: 0
   settings:

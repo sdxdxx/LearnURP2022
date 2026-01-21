@@ -19,12 +19,11 @@ Shader "URP/NPR/GirlsFrontLine2/Base"
 	    
     	[Header(Ramp)]
     	_RampTex("Ramp Texture",2D) = "white"{}
-    	
-    	
+	    
     	[Header(Matcap)]
     	_MetalMatCap("Metal Mat Cap",2D) = "black"{}
     	_SatinMatCap("Satin Mat Cap",2D) = "black"{}
-    	_MatCapLerp("Mat Cap Lerp",Range(0,1)) = 0.5
+    	_MatCapLerp("Mat Cap Lerp",Range(0,1)) = 0
 	    
     	[Header(Outline)]
         _OutlineColor("Outline Color",Color) = (0.0,0.0,0.0,0.0)
@@ -214,6 +213,7 @@ Shader "URP/NPR/GirlsFrontLine2/Base"
 				//因为之前少给漫反射除了一个PI，为保证漫反射和镜面反射比例所以多乘一个PI
             	half3 specRamp = SAMPLE_TEXTURE2D(_RampTex,sampler_RampTex,float2(nDotl,0.4)).rgb;
 				float3 specColor = SpecularResult * lightCol * specRamp * PI;
+            	
 				 
 				//直接光漫反射部分
 				//漫反射系数
@@ -224,35 +224,40 @@ Shader "URP/NPR/GirlsFrontLine2/Base"
             	//直接光结果
             	float3 DirectLightResult = diffColor + specColor;
 
-				//间接光漫反射
-				half3 ambient_contrib = SampleSH(nDir);//反射探针接收
-				float3 ambient = 0.03 * Albedo;
-				float3 iblDiffuse = max(half3(0, 0, 0), ambient.rgb + ambient_contrib);
-            	float nDotv_Ramp = SAMPLE_TEXTURE2D(_RampTex,sampler_RampTex,float2(nDotv,0.4)).r;
-				float3 Flast = fresnelSchlickRoughness(max(nDotv_Ramp, 0.0), F0, roughness);
-            	float kdLast = (1 - Flast) * (1 - metallic);
-            	float3 iblDiffColor = iblDiffuse * kdLast * Albedo * lightCol;
-            	
-				//间接光镜面反射
-				float mip_roughness = perceptualRoughness * (1.7 - 0.7 * perceptualRoughness);
-				float3 reflectVec = reflect(-vDir, nDir);
-				half mip = mip_roughness * UNITY_SPECCUBE_LOD_STEPS;
-				half4 rgbm =  SAMPLE_TEXTURECUBE_LOD(unity_SpecCube0,samplerunity_SpecCube0, reflectVec, mip);
-				float3 iblSpecular = DecodeHDREnvironment(rgbm, unity_SpecCube0_HDR);
-            	
-            	//ibl Specular MatCap
-            	float3 iblMatCap = lerp(satinMatCap,metalMatCap,metallic);
-            	iblSpecular = lerp(iblSpecular,iblMatCap,_MatCapLerp);
-            	
-				float surfaceReduction = 1.0 / (roughness*roughness + 1.0); //Liner空间
-				//float surfaceReduction = 1.0 - 0.28*roughness*perceptualRoughness; //Gamma空间
+            	float3 IndirectResult = 0;
+				if (!isAd)
+				{
+					//间接光漫反射
+					half3 ambient_contrib = SampleSH(nDir);//反射探针接收
+					float3 ambient = 0.03 * Albedo;
+					float3 iblDiffuse = max(half3(0, 0, 0), ambient.rgb + ambient_contrib);
+            		float nDotv_Ramp = SAMPLE_TEXTURE2D(_RampTex,sampler_RampTex,float2(nDotv,0.6)).r;
+					float3 Flast = fresnelSchlickRoughness(max(nDotv_Ramp, 0.0), F0, roughness);
+            		float kdLast = (1 - Flast) * (1 - metallic);
+            		float3 iblDiffColor = iblDiffuse * kdLast * Albedo * lightCol;
+            		
+					//间接光镜面反射
+					float mip_roughness = perceptualRoughness * (1.7 - 0.7 * perceptualRoughness);
+					float3 reflectVec = reflect(-vDir, nDir);
+					half mip = mip_roughness * UNITY_SPECCUBE_LOD_STEPS;
+					half4 rgbm =  SAMPLE_TEXTURECUBE_LOD(unity_SpecCube0,samplerunity_SpecCube0, reflectVec, mip);
+					float3 iblSpecular = DecodeHDREnvironment(rgbm, unity_SpecCube0_HDR);
+            		
+            		//ibl Specular MatCap
+            		float3 iblMatCap = lerp(satinMatCap,metalMatCap,metallic);
+            		iblSpecular = lerp(iblSpecular,iblMatCap,_MatCapLerp);
+            		
+					float surfaceReduction = 1.0 / (roughness*roughness + 1.0); //Liner空间
+					//float surfaceReduction = 1.0 - 0.28*roughness*perceptualRoughness; //Gamma空间
 
-				float oneMinusReflectivity = 1 - max(max(SpecularResult.r, SpecularResult.g), SpecularResult.b);
-				float grazingTerm = saturate(smoothness + (1 - oneMinusReflectivity));
-            	float3 iblSpecColor =  iblSpecular * surfaceReduction * FresnelLerp(F0, grazingTerm, nDotv_Ramp) * lightCol;
-            	
-            	//间接光结果
-				float3 IndirectResult = iblDiffColor + iblSpecColor;
+					float oneMinusReflectivity = 1 - max(max(SpecularResult.r, SpecularResult.g), SpecularResult.b);
+					float grazingTerm = saturate(smoothness + (1 - oneMinusReflectivity));
+            		float3 iblSpecColor =  iblSpecular * surfaceReduction * FresnelLerp(F0, grazingTerm, nDotv_Ramp) * lightCol;
+					
+					//间接光结果
+					IndirectResult = iblDiffColor + iblSpecColor;
+				}
+				
             	
             	float3 result_RBR = DirectLightResult*shadow + IndirectResult*ao;
 
@@ -286,7 +291,6 @@ Shader "URP/NPR/GirlsFrontLine2/Base"
             	float3 vDirWS = normalize(_WorldSpaceCameraPos.xyz - i.posWS.xyz);
             	
             	// Metallic & Smoothness
-            	
             	float metallic = _Metallic;
             	float smoothness = _Smoothness;
             	float ao = 1;

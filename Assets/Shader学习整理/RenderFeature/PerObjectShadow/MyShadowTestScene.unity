@@ -454,7 +454,7 @@ MonoBehaviour:
   candidateRoots:
   - {fileID: 1549387658}
   autoCollectFromRoots: 0
-  debugDraw: 0
+  debugDraw: 1
 --- !u!137 &437957311 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 2090833103471190574, guid: 6c091b1897e7ef04b893a0300fdfa7dd,

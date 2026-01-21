@@ -206,6 +206,7 @@ Shader "URP/NPR/GirlsFrontLine2/Hair"
             	half3 specRamp = SAMPLE_TEXTURE2D(_RampTex,sampler_RampTex,float2(normalizedBlinnPhong,0.4)).rgb;
             	float3 specColor = specRamp * lightCol * nDotl * PI * F;
             	
+            	
 				//直接光漫反射部分
 				//漫反射系数
 				float kd = (1-F)*(1-metallic);
@@ -219,7 +220,7 @@ Shader "URP/NPR/GirlsFrontLine2/Hair"
 				half3 ambient_contrib = SampleSH(nDir);//反射探针接收
 				float3 ambient = 0.03 * Albedo;
 				float3 iblDiffuse = max(half3(0, 0, 0), ambient.rgb + ambient_contrib);
-            	float nDotv_Ramp = SAMPLE_TEXTURE2D(_RampTex,sampler_RampTex,float2(nDotv,0.4)).r;
+            	float nDotv_Ramp = SAMPLE_TEXTURE2D(_RampTex,sampler_RampTex,float2(nDotv,0.6)).r;
 				float3 Flast = fresnelSchlickRoughness(max(nDotv_Ramp, 0.0), F0, roughness);
             	float kdLast = (1 - Flast) * (1 - metallic);
             	float3 iblDiffColor = iblDiffuse * kdLast * Albedo * lightCol;

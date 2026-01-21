@@ -2,119 +2,129 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
-public class ColorTintRenderFeature : ScriptableRendererFeature
+public sealed class ColorTintRenderFeature : ScriptableRendererFeature
 {
     [System.Serializable]
-     public class Settings
+    public sealed class Settings
     {
         public RenderPassEvent renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
         public Shader shader;
     }
-     
-     //自定义的Pass
-    class CustomRenderPass : ScriptableRenderPass
-    {
-        private RenderingData renderingData;
-        
-        //定义一个 ProfilingSampler 方便设置在FrameDebugger里查看
-        private const string ProfilerTag = "ColorTint";
-        private ProfilingSampler m_ProfilingSampler = new(ProfilerTag);
-        
-        private Material material;
-        private ColorTintVolume colorTintVolume;
 
-        private RTHandle cameraColorRTHandle;//可以理解为GameView_RenderTarget的句柄
-        private RTHandle tempRTHandle;
+    [SerializeField] public Settings settings = new Settings();
 
-        //自定义Pass的构造函数(用于传参)
-        public CustomRenderPass(RenderPassEvent evt, Shader shader)
-        {
-            renderPassEvent = evt; //传入设置的渲染事件顺序(renderPassEvent在基类ScriptableRenderPass中)
-            material = CoreUtils.CreateEngineMaterial(shader);//根据传入的Shader创建material;
-        }
+    private ColorTintPass m_Pass;
 
-        public void GetTempRT(ref RTHandle temp, in RenderingData data)
-        {
-            RenderTextureDescriptor desc = data.cameraData.cameraTargetDescriptor;
-            desc.depthBufferBits = 0; //这步很重要！！！
-            RenderingUtils.ReAllocateIfNeeded(ref temp, desc);//使用该函数申请一张与相机大小一致的TempRT;
-        }
-
-        public void Setup(RTHandle cameraColor, RenderingData data)
-        {
-            cameraColorRTHandle = cameraColor;
-            renderingData = data;
-        }
-        
-        //此方法由渲染器在渲染相机之前调用
-        public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
-        {
-            ConfigureInput(ScriptableRenderPassInput.Color); //确认传入的参数类型为Color
-            ConfigureTarget(cameraColorRTHandle);//确认传入的目标为cameraColorRT
-            
-            GetTempRT(ref tempRTHandle,this.renderingData);//获取与摄像机大小一致的临时RT
-        }
-        
-        //执行传递。这是自定义渲染发生的地方
-        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
-        {
-            CommandBuffer cmd = CommandBufferPool.Get(ProfilerTag);//获得一个为ProfilerTag的CommandBuffer
-            
-            var stack = VolumeManager.instance.stack;//获取Volume的栈
-            colorTintVolume = stack.GetComponent<ColorTintVolume>();//从栈中获取到ColorTintVolume
-            material.SetColor("_BaseColor", colorTintVolume.ColorChange.value);//将材质颜色设置为volume中的值
-            
-            //性能分析器(自带隐式垃圾回收),之后可以在FrameDebugger中查看
-            using (new ProfilingScope(cmd, m_ProfilingSampler))
-            {
-                Blitter.BlitCameraTexture(cmd,cameraColorRTHandle,tempRTHandle);
-                Blitter.BlitCameraTexture(cmd,tempRTHandle,cameraColorRTHandle,material,0);//写入渲染命令进CommandBuffer
-            }
-            
-            context.ExecuteCommandBuffer(cmd);//执行CommandBuffer
-            cmd.Clear();
-            CommandBufferPool.Release(cmd);//释放CommandBuffer
-        }
-        
-        //在完成渲染相机时调用
-        public override void OnCameraCleanup(CommandBuffer cmd)
-        {
-            
-        }
-        
-        public void OnDispose() 
-        {
-            tempRTHandle?.Release();//如果tempRTHandle没被释放的话，会被释放
-        }
-    }
-
-    //-------------------------------------------------------------------------------------------------------
-    private CustomRenderPass m_ScriptablePass;
-    public Settings settings = new Settings();
-    
-    //初始化时调用
     public override void Create()
     {
-        m_ScriptablePass = new CustomRenderPass(settings.renderPassEvent,settings.shader);
-    }
-    
-    //每帧调用,将pass添加进流程
-    public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
-    {
-        renderer.EnqueuePass(m_ScriptablePass);
+        // 如果 shader 没配，pass 仍然创建，但会在执行时跳过
+        m_Pass = new ColorTintPass(settings.renderPassEvent, settings.shader);
     }
 
-    //每帧调用,渲染目标初始化后的回调。这允许在创建并准备好目标后从渲染器访问目标
     public override void SetupRenderPasses(ScriptableRenderer renderer, in RenderingData renderingData)
     {
-        m_ScriptablePass.Setup(renderer.cameraColorTargetHandle,renderingData);//可以理解为传入GameView_RenderTarget的句柄和相机渲染数据（相机渲染数据用于创建TempRT）
+        // 直接把 cameraColor 传进去即可；
+        m_Pass.Setup(renderer.cameraColorTargetHandle);
     }
-    
+
+    public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
+    {
+        renderer.EnqueuePass(m_Pass);
+    }
+
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
-        m_ScriptablePass.OnDispose();
+        m_Pass?.Dispose();
+        m_Pass = null;
+    }
+
+    // ============================================================================================
+    // Pass
+    // ============================================================================================
+    private sealed class ColorTintPass : ScriptableRenderPass
+    {
+        private const string k_ProfilerTag = "M_ColorTint";
+        private static readonly int k_BaseColorId = Shader.PropertyToID("_BaseColor");
+
+        private readonly ProfilingSampler m_ProfilingSampler = new ProfilingSampler(k_ProfilerTag);
+
+        private Material m_Material;
+        private RTHandle m_CameraColor;
+        private RTHandle m_TempRT;
+
+        public ColorTintPass(RenderPassEvent evt, Shader shader)
+        {
+            renderPassEvent = evt;
+
+            // 这个 pass 需要读取 camera color
+            ConfigureInput(ScriptableRenderPassInput.Color);
+
+            if (shader != null)
+                m_Material = CoreUtils.CreateEngineMaterial(shader);
+        }
+
+        public void Setup(RTHandle cameraColor)
+        {
+            m_CameraColor = cameraColor;
+        }
+
+        public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
+        {
+            // 如果没有材质（shader 没配或创建失败），不分配 RT，直接在 Execute 里跳过
+            if (m_Material == null)
+                return;
+            
+            ConfigureTarget(m_CameraColor);
+
+            // 临时 RT：与相机一致，且不需要 depth
+            var desc = renderingData.cameraData.cameraTargetDescriptor;
+            desc.depthBufferBits = 0;
+
+            RenderingUtils.ReAllocateIfNeeded(
+                ref m_TempRT,
+                desc,
+                FilterMode.Bilinear,
+                TextureWrapMode.Clamp,
+                name: "_M_ColorTint_Temp"
+            );
+        }
+
+        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
+        {
+            // 取 Volume 参数
+            var stack = VolumeManager.instance.stack;
+            var volume = stack.GetComponent<ColorTintVolume>();
+
+            // 没有组件或未启用时，跳过（避免每帧无意义 blit）
+            // if (volume == null || !volume.active)
+            //     return;
+
+            m_Material.SetColor(k_BaseColorId, volume.ColorChange.value);
+
+            var cmd = CommandBufferPool.Get(k_ProfilerTag);
+
+            using (new ProfilingScope(cmd, m_ProfilingSampler))
+            {
+                
+                Blitter.BlitCameraTexture(cmd, m_CameraColor, m_TempRT);
+
+                
+                Blitter.BlitCameraTexture(cmd, m_TempRT, m_CameraColor, m_Material, 0);
+            }
+
+            context.ExecuteCommandBuffer(cmd);
+            cmd.Clear();
+            CommandBufferPool.Release(cmd);
+        }
+
+        public void Dispose()
+        {
+            m_TempRT?.Release();
+            m_TempRT = null;
+
+            CoreUtils.Destroy(m_Material);
+            m_Material = null;
+        }
     }
 }
-
-
