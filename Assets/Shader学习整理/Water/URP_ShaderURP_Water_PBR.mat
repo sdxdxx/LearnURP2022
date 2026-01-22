@@ -102,18 +102,19 @@ Material:
     - _RefIntensity: 0.5
     - _RefractionInt: 0.2
     - _RippleInt: 0.825
-    - _ShoreEdgeIntensity: 0.587
+    - _ShoreEdgeIntensity: 1
     - _ShoreEdgeWidth: 0
     - _ShoreNoiseScale: 1
     - _ShoreNoiseSpeed: 1.45
     - _ShoreRange: 0.29
-    - _Smoothness: 0.8
+    - _Smoothness: 1
     - _Smothness: 0.7
     - _SpecEnd: 200
     - _SpecInt: 1
     - _SpecStart: 0
     - _SpecularPow: 44.8
     - _Tess: 16
+    - _Test: 0
     - _WaterShallowRange: 0.48
     - _WaveInt: 1
     - _phaseOffset: 0.3

@@ -46,6 +46,9 @@ MonoBehaviour:
   DitherIntensity:
     m_OverrideState: 1
     m_Value: 2
+  BlurSize:
+    m_OverrideState: 1
+    m_Value: 0.75
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0

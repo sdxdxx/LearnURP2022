@@ -142,7 +142,6 @@ public sealed class WaterScreenSpaceReflectionRenderFeature : ScriptableRenderer
                     ref renderingData,
                     SortingCriteria.CommonTransparent
                 );
-                drawingSettings.perObjectData = PerObjectData.None;
 
                 var filteringSettings = m_FilteringSettings;
                 var renderStateBlock = m_RenderStateBlock;

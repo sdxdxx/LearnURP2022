@@ -455,7 +455,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Active: 1
   settings:
-    renderPassEvent: 300
+    renderPassEvent: 450
     reflectionTexName: _ScreenSpaceReflectionTexture
 --- !u!114 &6596120285823225568
 MonoBehaviour:

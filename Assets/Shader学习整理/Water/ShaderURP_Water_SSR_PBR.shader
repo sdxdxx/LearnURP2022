@@ -4,8 +4,6 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
     {
     	[Header(Light)]
         _Smoothness("Smoothness",range(0,1)) = 0.5
-        _BlinkIntensity("Blink Intensity",float) = 1
-        _BlinkThreshold("Blink Threshold",float) = 1
     	
     	[Header(Water Color)]
         _ShallowColor("Shallow Color",color) = (1.0,1.0,1.0,1.0)
@@ -30,7 +28,6 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
         _CausiticsRange("Causitics Range",float) = 2.15
          _CausiticsIntensity("Causitics Intensity",float) = 1.54
         _CausiticsSpeed("Causitics Speed",float) = 1
-        _CausiticsSpeed("Causitics Speed",float) = 1
         
         [Header(Shore)]
         _ShoreCol("Shore Col",color) = (0,0,0,0)
@@ -52,6 +49,9 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
     	_Tess("Tessellation", Range(1, 32)) = 20
     	_MaxTessDistance("Max Tess Distance", Range(1, 32)) = 20
         _MinTessDistance("Min Tess Distance", Range(1, 32)) = 1
+    	
+    	[Header(Test)]
+    	_Test("Test",Range(0,1)) = 0
     	
 //    	[Header(Wave)]
 //    	_WaveA ("Wave A (dir, steepness, wavelength)", Vector) = (0.2,0,0.1,2)
@@ -145,8 +145,6 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
             float4 _FoamNoise_ST;
     		
             float _Smoothness;
-            float _BlinkIntensity;
-            float _BlinkThreshold;
 
     		float _Tess;
     		float _MaxTessDistance;
@@ -156,6 +154,8 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
             float4 _WaveB;
             float4 _WaveC;
             float _WaveInt;
+    		
+    		float _Test;
             //----------变量声明结束-----------
             CBUFFER_END
 
@@ -191,17 +191,6 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 				);
 			}
     		
-    		float3 fresnelSchlickRoughness(float cosTheta, float3 F0, float roughness)
-            {
-				return F0 + (max(float3(1 ,1, 1) * (1 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
-			}
-    	
-			float3 FresnelLerp (half3 F0, half3 F90, half cosA)
-			{
-			    half t = Pow4 (1 - cosA);   // FAST WAY
-			    return lerp (F0, F90, t);
-			}
-
 			half3 CalculateWaterBxDF(
 			    float3 nDir, 
 			    float3 lDir, 
@@ -236,7 +225,7 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 			    // 标准 Lambert:
 			    // Kd: 能量守恒系数。在PBR中，反射越强，折射(漫反射)越弱
 			    // 如果想要更"卡通/塑料"的感觉，可以去掉 (1-fresnelTerm)
-			    float3 kd = 1 - fresnelTerm; // assuming metallic is 0
+			    float3 kd = 1 - fresnelTerm;
 			    float3 diffuseTerm = kd * lightCol * (nDotl*0.5+0.5) * shadowRamp; // 这里没有乘PI，防止过曝
 
 			    // --- 3. 照亮水体 (Lit Water Volume) ---
@@ -447,7 +436,7 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
                 posCS = TransformObjectToHClip(v.vertex.xyz);
                 o.pos = posCS;
                 o.nDirWS = TransformObjectToWorldNormal(v.normal);
-            	o.tDirWS = normalize(TransformObjectToWorld(v.tangent));
+            	o.tDirWS = TransformObjectToWorldDir(v.tangent.xyz);
             	o.bDirWS = normalize(cross(o.nDirWS,o.tDirWS)*v.tangent.w);
                 o.uv = v.uv;
                 o.screenPos = ComputeScreenPos(posCS);
@@ -488,283 +477,172 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
                     return AfterTessVertProgram(v);
             }
     		
-            half4 frag (vertexOutput i) : SV_TARGET
-            {
-				float2 screenPos = i.screenPos.xy/i.screenPos.w;
-	            
-	            // --- 1. Vector Setup (Moved Up for Physics Calc) ---
-	            float3 vDirWS = normalize(_WorldSpaceCameraPos.xyz - i.posWS.xyz);
-	            
-	            float3x3 TBN = float3x3(
-	              i.tDirWS.x, i.bDirWS.x, i.nDirWS.x,
-	              i.tDirWS.y, i.bDirWS.y, i.nDirWS.y,
-	              i.tDirWS.z, i.bDirWS.z, i.nDirWS.z
-	            );
-	            
-	            // --- 2. Water Normal ---
-	            float2 normalUV = i.posWS.xz;
-	            float2 normalUV1 = normalUV/_NormalScale1 + frac(_NormalSpeed.xy*0.1*_Time.y);
-	            float2 normalUV2 = normalUV/_NormalScale2 + frac(_NormalSpeed.zw*0.1*_Time.y);
-	            float4 NormalMap1 = SAMPLE_TEXTURE2D(_NormalMap,sampler_NormalMap,normalUV1);
-	            float4 NormalMap2 = SAMPLE_TEXTURE2D(_NormalMap,sampler_NormalMap,normalUV2);
-	            float3 var_NormalMap1 = UnpackScaleNormal(NormalMap1,_NormalIntensity);
-	            float3 var_NormalMap2 = UnpackScaleNormal(NormalMap2,_NormalIntensity);
-	            float3 waterNormal = NormalBlendReoriented(var_NormalMap1,var_NormalMap2);
-            	
-	            // Interactive Ripples
-	            float3 rippleNormal= SAMPLE_TEXTURE2D(_WaterRipple,sampler_WaterRipple,screenPos);
-	            
-	            // Blend & Transform Normal
-	            waterNormal = waterNormal + rippleNormal;
-	            waterNormal = mul(TBN, waterNormal);
-	            waterNormal = normalize(waterNormal);
-            	
-	            
-	            float2 noiseUV = waterNormal.xz/(1+i.pos.w);
-	            
-	            // --- 3. Depth & Distortion ---
-	            // Get Original Depth
-	            float rawDepth0 = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,screenPos).r;
-	            float3 posWS_frag0 = ReconstructWorldPositionFromDepth(i.screenPos,rawDepth0);
-	            float waterDepth0 = i.posWS.y - posWS_frag0.y;
-	            
-	            // Firstly Sample Depth Texture (Distortion)
-	            float2 grabUV = screenPos;
-	            grabUV.x += noiseUV*_NormalNoise;
-	            float rawDepth1 =  SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,grabUV).r;
-	            float3 posWS_frag1 = ReconstructWorldPositionFromDepth(i.screenPos,rawDepth1);
+			half4 frag(vertexOutput i, bool isFrontFace : SV_IsFrontFace) : SV_TARGET
+			{
+			    // ==========================================================
+			    // 0. 基础输入：屏幕UV / 视线方向 / 两面符号
+			    // ==========================================================
+			    float2 screenUV = i.screenPos.xy / i.screenPos.w;
+			    float3 viewDirWS = normalize(_WorldSpaceCameraPos.xyz - i.posWS.xyz);
 
-	            // Get Reflection And Refraction Mask
-	            float refractionMask = step(posWS_frag1.y, i.posWS.y);
-	            // Apply mask to UV jitter
-	            grabUV = screenPos;
-	            grabUV.x += noiseUV*_NormalNoise/max(i.screenPos.w,1.2f) * refractionMask;
+			    // sideSign: 正面(从上往下看水面) = +1；背面(从水下看 underside) = -1
+			    float sideSign = isFrontFace ? 1.0 : -1.0;
 
-	            // Secondly Sample Depth Texture (The clean depth for logic)
-	            float rawDepth2 =  SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,grabUV).r;
-	            float3 posWS_frag2 = ReconstructWorldPositionFromDepth(i.screenPos,rawDepth2);
-	            
-	            // 最终用于计算颜色的物理深度 (Vertical Depth)
-	            float waterDepth = i.posWS.y - posWS_frag2.y;
-	            
-	            // --- 4. Caustics & Background ---
-	            float causitics_range = saturate(exp(-waterDepth/_CausiticsRange));
-	            float2 causiticsUV = posWS_frag2.xz/_CausiticsScale;
-	            float2 causiticsUV1 = causiticsUV+frac(_Time.x*_CausiticsSpeed);
-	            float2 causiticsUV2 = causiticsUV-frac(_Time.x*_CausiticsSpeed);
-	            half3 CausiticsCol1 = SAMPLE_TEXTURE2D(_CausiticsTex,sampler_CausiticsTex,causiticsUV1+float2(0.1f,0.2f));
-	            half3 CausiticsCol2 = SAMPLE_TEXTURE2D(_CausiticsTex,sampler_CausiticsTex,causiticsUV2);
-	            float3 CameraNormal = SAMPLE_TEXTURE2D(_CameraNormalsTexture,sampler_CameraNormalsTexture,grabUV);
-	            float CausticsMask1 = saturate(CameraNormal.y*CameraNormal.y);
-	            float CausticsMask2 = saturate(dot(CameraNormal,_MainLightPosition));
-	            float CausticsMask = CausticsMask1*CausticsMask2;
-	            half3 CausiticsCol = min(CausiticsCol1,CausiticsCol2)*causitics_range*_CausiticsIntensity*CausticsMask;
+			    // ==========================================================
+			    // 1. 计算水面法线（TS -> WS）
+			    //    - normalWS：用于折射扰动/几何判断（不翻面）
+			    //    - normalForBxDF：用于 BxDF（保证 N·V 为正，避免背面 Fresnel/Transmission 崩）
+			    // ==========================================================
+			    float3x3 tbn = float3x3(
+			        i.tDirWS.x, i.bDirWS.x, i.nDirWS.x,
+			        i.tDirWS.y, i.bDirWS.y, i.nDirWS.y,
+			        i.tDirWS.z, i.bDirWS.z, i.nDirWS.z
+			    );
 
-	            // Refraction UnderWater (Background + Caustics)
-	            half3 underWaterCol = SAMPLE_TEXTURE2D(_CameraOpaqueTexture,sampler_CameraOpaqueTexture,grabUV);
-	            underWaterCol = saturate(underWaterCol + CausiticsCol);
-	            
-	            // Reflection Color
-	            float2 reflectUV = screenPos;
-	            half4 refCol = SAMPLE_TEXTURE2D(_ScreenSpaceReflectionTexture,sampler_ScreenSpaceReflectionTexture,reflectUV);
-            	
-	            // ==========================================================
-	            // --- 5. Water Physics Color (Corrected Logic) ---
-	            // ==========================================================
-	            
-	            // A. 计算光线在水下的实际路径长度 (View Path Length)
-	            // 垂直深度 (Vertical Depth)
-	            float verticalDepth = max(waterDepth, 0.0);
-	            // 视线角度修正 (Slant Factor): 角度越平，NdotV越小，路径越长
-	            float NdotV = max(dot(waterNormal, vDirWS), 0.001); 
-	            float viewPathLength = verticalDepth / NdotV;
+			    float2 normalUV = i.posWS.xz;
+			    float2 normalUV1 = normalUV / _NormalScale1 + frac(_NormalSpeed.xy * 0.1 * _Time.y);
+			    float2 normalUV2 = normalUV / _NormalScale2 + frac(_NormalSpeed.zw * 0.1 * _Time.y);
 
-	            // B. 计算透光率 (Transmission) - Beer-Lambert Law
-	            // _DepthDensity 越大，水越混浊，吸收越快 (建议范围 0.1 ~ 5.0)
-            	// transmission = 1 (清澈/浅), transmission = 0 (浑浊/深)
-	            float transmission = exp(-viewPathLength * _DepthDensity);
+			    float4 normalMap1 = SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, normalUV1);
+			    float4 normalMap2 = SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, normalUV2);
 
-	            // C. 计算水体固有色 (Volume Color)
-	            // 仅基于垂直深度决定是浅水色还是深水色
-	            // _ColorGradientRange 控制颜色过渡的深度 (建议范围 1.0 ~ 10.0)
-            	float colorGradient =1-clamp(exp(-max(0,verticalDepth)/_ColorGradientRange),0,1);
-	            half3 volumeColor = lerp(_ShallowColor.rgb, _DeepColor.rgb, colorGradient);
-            	
-	            // ==========================================================
+			    float3 n1 = UnpackScaleNormal(normalMap1, _NormalIntensity);
+			    float3 n2 = UnpackScaleNormal(normalMap2, _NormalIntensity);
+			    float3 waterNormalTS = NormalBlendReoriented(n1, n2);
 
-	            // Metallic & Smoothness
-	            float smoothness = _Smoothness;
-	            
-	            // MainLight
-	            float4 shadowCoord = TransformWorldToShadowCoord(i.posWS);
-	            Light mainLight = GetMainLight(shadowCoord);
-	            half3 mainLightColor = mainLight.color;
-	            float3 mainLightDir = mainLight.direction;
-	            float mainLightShadow = MainLightRealtimeShadow(shadowCoord);
-	            float3 mainLightRadiance = mainLightColor * mainLight.distanceAttenuation;
-	            
-	            // Final Physics Calculation
-	            // 注意：参数已更新，不再传递错误的 Lerp 结果，而是传递物理参数
-	            // 参数顺序: Normal, LightDir, ViewDir, Albedo(0), LightColor, Smoothness, Metallic(0), RefractionBG, Reflection, VolumeColor, Shadow, Transmission
-	            half3 WaterFinalColor = CalculateWaterBxDF(
-	                waterNormal, 
-	                mainLightDir, 
-	                vDirWS, 
-	                volumeColor, 
-	                mainLightRadiance,
-	                smoothness, 
-	                underWaterCol,
-	                refCol.rgb,
-	                mainLightShadow, 
-	                transmission
-	            );
-            	
-            	
-            	//blink
-                float3 blinkNormal1 = var_NormalMap1;
-                float3 blinkNormal2 = var_NormalMap2;
-                float3 blinkNormal;
-                blinkNormal.xy = (blinkNormal1.xy + blinkNormal2.xy)/2*_BlinkIntensity;
-                blinkNormal.z = 1-sqrt(dot(blinkNormal.xy,blinkNormal.xy));
-                blinkNormal = mul(TBN,blinkNormal);
-                float2 blinkUV = blinkNormal.xz/(1+i.pos.w);
-                half3 blink = SAMPLE_TEXTURE2D(_ScreenSpaceReflectionTexture,sampler_ScreenSpaceReflectionTexture,screenPos+blinkUV * _NormalNoise);
-                blink = max(0,blink-_BlinkThreshold);//Use _BlinkThreshold to remove unnecessary part
-             
-            	//ShoreEdge
-            	half3 shoreCol = _ShoreCol;
-                float shoreRange = saturate(exp(-max(waterDepth0,waterDepth)/_ShoreRange));
-                half3 shoreEdge = smoothstep(0.1,1-(_ShoreEdgeWidth-0.2),shoreRange)*shoreCol*_ShoreEdgeIntensity;
-             
-            	//Foam
-                float foamX = saturate(1-waterDepth/_FoamRange);
-                float foamRange = 1-smoothstep(_FoamBend-0.1,1,saturate(max(waterDepth0,waterDepth)/_FoamRange));//遮罩
-                float foamNoise = SAMPLE_TEXTURE2D(_FoamNoise,sampler_FoamNoise,i.posWS.xz*_FoamNoise_ST.xy+_FoamNoise_ST.zw);
-                half4 foam = sin(_FoamFrequency*foamX-_FoamSpeed*_Time.y);
-                foam = saturate(step(foamRange,foam+foamNoise-_FoamDissolve))*foamRange*_FoamCol;
-            	
-                half3 FinalRGB = saturate(WaterFinalColor+shoreEdge+foam);
-            	FinalRGB = FinalRGB+smoothstep(0.3,0.4,rippleNormal.b)*FinalRGB,
-            	FinalRGB += blink;
-            	
-            	half4 result = half4(FinalRGB,1.0);
-            	
-                return result;
-            }
+			    // 屏幕空间的交互波纹法线（你原来就是这么用的，保持不改）
+			    float3 rippleNormalTS = SAMPLE_TEXTURE2D(_WaterRipple, sampler_WaterRipple, screenUV).xyz;
 
-    // 		half4 frag_Back (vertexOutput i) : SV_TARGET
-    //         {
-    //         	float2 screenPos = i.screenPos.xy/i.screenPos.w;
-    //         	
-    //         	//Vector
-    //             float3x3 TBN = float3x3(
-    //               i.tDirWS.x, i.bDirWS.x, i.nDirWS.x,
-    //               i.tDirWS.y, i.bDirWS.y, i.nDirWS.y,
-    //               i.tDirWS.z, i.bDirWS.z, i.nDirWS.z
-    //             );
-    //             
-    //             float3 nDirWS = i.nDirWS;
-    //             
-    //         	
-    //         	//WaterNormal
-    //             float2 normalUV = i.posWS.xz;
-    //         	float2 normalUV1 = normalUV/_NormalScale1 + frac(_NormalSpeed.xy*0.1*_Time.y);
-    //         	float2 normalUV2 = normalUV/_NormalScale2 + frac(_NormalSpeed.zw*0.1*_Time.y);
-    //             float4 NormalMap1 = SAMPLE_TEXTURE2D(_NormalMap,sampler_NormalMap,normalUV1);
-    //             float4 NormalMap2 = SAMPLE_TEXTURE2D(_NormalMap,sampler_NormalMap,normalUV2);
-    //             float3 var_NormalMap1 = UnpackScaleNormal(NormalMap1,_NormalIntensity);
-    //             float3 var_NormalMap2 = UnpackScaleNormal(NormalMap2,_NormalIntensity);
-    //             float3 waterNormal = NormalBlendReoriented(var_NormalMap1,var_NormalMap2);
-    //         	//InteractiveNormal
-    //         	float3 rippleNormal= SAMPLE_TEXTURE2D(_WaterRipple,sampler_WaterRipple,screenPos);
-    //         	//BlendNormal
-    //         	waterNormal = waterNormal+rippleNormal;
-    //         	waterNormal = mul(TBN,waterNormal);
-    //         	waterNormal = normalize(waterNormal);
-    //         	
-    //         	
-    //         	//ReflectionColor
-    //              float2 noiseUV = waterNormal.xz/(1+i.pos.w);
-    //         	float2 reflectUV = screenPos;
-    //         	reflectUV.x += noiseUV*_NormalNoise;
-    //         	half4 refCol = SAMPLE_TEXTURE2D(_ScreenSpaceReflectionTexture,sampler_ScreenSpaceReflectionTexture,reflectUV);
-    //         	
-    //         	//WaterDepth
-    //             float rawDepth0 = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,screenPos).r;
-    //             float3 posWS_frag0 = ReconstructWorldPositionFromDepth(i.screenPos,rawDepth0);
-    //             float waterDepth0 =  posWS_frag0.y- i.posWS.y;
-    //         	
-    //         	float2 grabUV = screenPos;
-    //         	grabUV.x += noiseUV*_NormalNoise;
-    //         	
-    //         	//第一次次采样深度图（扰动）
-    //         	float rawDepth1 =  SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,grabUV).r;
-    //             float3 posWS_frag1 = ReconstructWorldPositionFromDepth(i.screenPos,rawDepth1);
-    //         	
-    //         	float refractionMask = step(i.posWS.y,posWS_frag1.y);
-    //         	grabUV = screenPos;
-    //         	grabUV.x += noiseUV*_NormalNoise/max(i.screenPos.w,2.0f)*refractionMask;
-    //
-    //         	//第二次次采样深度图（去除不该扰动部分）
-    //         	float rawDepth2 =  SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,grabUV).r;
-    //             float3 posWS_frag2 = ReconstructWorldPositionFromDepth(i.screenPos,rawDepth2);
-    //         	float waterDepth = posWS_frag2.y-i.posWS.y;
-    //         	
-    //         	//UnderWater
-				// half3 underWaterCol = SAMPLE_TEXTURE2D(_CameraOpaqueTexture,sampler_CameraOpaqueTexture,grabUV);
-    //         	
-    //         	//WaterColor
-    //             half4 waterCol = _ShallowColor*0.2f+_DeepColor*0.8f;
-    //         	
-    //         	//Light
-    //         	//优化模拟阳光映照水面效果
-    //             float3 nDir = -waterNormal;
-    //         	float3 lDir = -_MainLightPosition.xyz;
-    //         	float3 vDir = normalize(_WorldSpaceCameraPos.xyz - i.posWS);
-    //             float3 hDir = SafeNormalize(lDir+vDir);
-    //             float nDoth = dot(nDir,hDir);
-    //         	float halfLambert = saturate(dot(nDir,lDir)*0.5+0.5);
-    //         	float halfLambert_Modified = remap(halfLambert,0,1,0.5,1);
-    //         	float3 SpecLight = CalculateSpecularResultColor(waterCol,nDir,lDir,vDir,_Smoothness,_Metallic, _SpecCol)*_SpecInt;
-    //         	
-    //         	waterCol.rgb = lerp(refCol*saturate(waterCol+0.3),waterCol,(1-_RefIntensity*0.25f))*halfLambert_Modified;
-    //
-    //         	float FinalA = waterCol.a;
-    //         	
-    //         	half3 waterFinalCol = saturate(lerp(underWaterCol*waterCol,waterCol,FinalA)+SpecLight);
-    //         	
-    //             //Blink
-    //             float3 blinkNormal1 = var_NormalMap1;
-    //             float3 blinkNormal2 = var_NormalMap2;
-    //             float3 blinkNormal;
-    //             blinkNormal.xy = (blinkNormal1.xy + blinkNormal2.xy)/2*_BlinkIntensity;
-    //             blinkNormal.z = 1-sqrt(dot(blinkNormal.xy,blinkNormal.xy));
-    //             blinkNormal = mul(TBN,blinkNormal);
-    //             float2 blinkUV = blinkNormal.xz/(1+i.pos.w);
-    //             half3 blink = SAMPLE_TEXTURE2D(_ScreenSpaceReflectionTexture,sampler_ScreenSpaceReflectionTexture,screenPos+blinkUV * _NormalNoise);
-    //             blink = max(0,blink-_BlinkThreshold);//使用_BlinkThreshold去除不要的部分
-    //
-    //         	//ShoreEdge
-    //         	half3 shoreCol = _ShoreCol;
-    //             float shoreRange = saturate(exp(-max(waterDepth0,waterDepth)/_ShoreRange));
-    //             half3 shoreEdge = smoothstep(0.1,1-(_ShoreEdgeWidth-0.2),shoreRange)*shoreCol*_ShoreEdgeIntensity;
-    //         	
-    //         	//Foam
-    //             float foamX = saturate(1-waterDepth/_FoamRange);
-    //             float foamRange = 1-smoothstep(_FoamBend-0.1,1,saturate(max(waterDepth0,waterDepth)/_FoamRange));//Mask
-    //         	
-    //             float foamNoise = SAMPLE_TEXTURE2D(_FoamNoise,sampler_FoamNoise,i.posWS.xz*_FoamNoise_ST.xy+_FoamNoise_ST.zw);
-    //             half4 foam = sin(_FoamFrequency*foamX-_FoamSpeed*_Time.y);
-    //             foam = saturate(step(foamRange,foam+foamNoise-_FoamDissolve))*foamRange*_FoamCol;
-    //         	
-    //             half3 FinalRGB = saturate(waterFinalCol+foam+shoreEdge);
-    //         	FinalRGB = FinalRGB+smoothstep(0.3,0.4,rippleNormal.b)*FinalRGB,
-    //         	FinalRGB += blink;
-    //         	half4 result = half4(FinalRGB,1.0);
-    //         	
-    //             return result;
-    //         }
-    	
+			    // 合并并转到世界空间
+			    float3 normalWS = normalize(mul(tbn, waterNormalTS + rippleNormalTS));
+
+			    // 给 BxDF 用的法线：翻到朝向视线的半球（避免背面 NdotV < 0 导致 Fresnel/Transmission 异常）
+			    float3 normalForBxDF = (dot(normalWS, viewDirWS) < 0.0) ? -normalWS : normalWS;
+
+			    // 折射扰动方向：建议用未翻转的 normalWS，避免背面扰动方向突变
+			    float2 noiseUV = normalWS.xz / (1.0 + i.screenPos.w);
+
+			    // ==========================================================
+			    // 2. 深度与折射扰动（关键修复：grabUV 采样的 depth 必须用匹配 grabUV 的 screenPos 去反投影）
+			    // ==========================================================
+			    // (A) 原始深度：用于岸边/泡沫等稳定遮罩
+			    float rawDepth0 = SAMPLE_TEXTURE2D(_CameraDepthTexture, sampler_PointClamp, screenUV).r;
+			    float3 posWS0 = ReconstructWorldPositionFromDepth(i.screenPos, rawDepth0);
+				
+			    // (B) 第一次采样：用扰动后的 grabUV 估计背景位置，决定是否允许折射/扰动
+			    float2 distortion = noiseUV * _NormalNoise;
+			    float2 grabUV = screenUV + distortion;
+
+			    float rawDepth1 = SAMPLE_TEXTURE2D(_CameraDepthTexture, sampler_PointClamp, grabUV).r;
+
+			    // 关键：构造“与 grabUV 对应”的 screenPos 再反投影
+			    float4 screenPos1 = i.screenPos;
+			    screenPos1.xy = grabUV * i.screenPos.w;
+			    float3 posWS1 = ReconstructWorldPositionFromDepth(screenPos1, rawDepth1);
+
+			    // (C) 折射/扰动遮罩：判断背景点是否在“水体内部方向”那一侧
+			    // 正面：背景在水面下方 => 允许折射
+			    // 背面：背景在水面上方 => 允许折射
+			    float refractionMask = step(0.0, (i.posWS.y - posWS1.y) * sideSign);
+
+			    // (D) 第二次采样：带遮罩的“干净深度”，用于最终 waterDepth / caustics / refraction 逻辑
+			    float2 jitter = distortion / max(i.screenPos.w, 1.2f);
+			    grabUV = screenUV + jitter * refractionMask;
+
+			    float rawDepth2 = SAMPLE_TEXTURE2D(_CameraDepthTexture, sampler_PointClamp, grabUV).r;
+
+			    float4 screenPos2 = i.screenPos;
+			    screenPos2.xy = grabUV * i.screenPos.w;
+			    float3 posWS2 = ReconstructWorldPositionFromDepth(screenPos2, rawDepth2);
+
+			    float waterDepth = max(0.0, (i.posWS.y - posWS2.y) * sideSign);
+
+			    // ==========================================================
+			    // 3. 水下背景（Opaque） + Caustics
+			    // ==========================================================
+			    float causticsRange = saturate(exp(-waterDepth / _CausiticsRange));
+			    float2 causticsUV = posWS2.xz / _CausiticsScale;
+			    float2 causticsUV1 = causticsUV + frac(_Time.x * _CausiticsSpeed);
+			    float2 causticsUV2 = causticsUV - frac(_Time.x * _CausiticsSpeed);
+
+			    half3 causticsCol1 = SAMPLE_TEXTURE2D(_CausiticsTex, sampler_CausiticsTex, causticsUV1 + float2(0.1f, 0.2f)).rgb;
+			    half3 causticsCol2 = SAMPLE_TEXTURE2D(_CausiticsTex, sampler_CausiticsTex, causticsUV2).rgb;
+
+			    float3 cameraNormal = SAMPLE_TEXTURE2D(_CameraNormalsTexture, sampler_CameraNormalsTexture, grabUV).xyz;
+			    float causticsMask1 = saturate(cameraNormal.y * cameraNormal.y);
+			    float causticsMask2 = saturate(dot(cameraNormal, _MainLightPosition));
+			    float causticsMask  = causticsMask1 * causticsMask2;
+
+			    half3 causticsCol = min(causticsCol1, causticsCol2) * causticsRange * _CausiticsIntensity * causticsMask;
+
+			    half3 underWaterCol = SAMPLE_TEXTURE2D(_CameraOpaqueTexture, sampler_CameraOpaqueTexture, grabUV).rgb;
+			    underWaterCol = saturate(underWaterCol + causticsCol);
+
+			    // ==========================================================
+			    // 4. 反射（SSR）——保持用未扰动 screenUV，避免反射跟着折射 jitter 抖
+			    // ==========================================================
+			    half3 reflectionCol = SAMPLE_TEXTURE2D(_ScreenSpaceReflectionTexture, sampler_ScreenSpaceReflectionTexture, screenUV).rgb;
+
+			    // ==========================================================
+			    // 5. 体积颜色 + 透射率（Beer-Lambert）
+			    //    - Transmission 用 abs(N·V)（两面一致），避免背面路径长度发散
+			    // ==========================================================
+			    float NdotV = max(abs(dot(normalWS, viewDirWS)), 0.001);
+			    float viewPathLength = waterDepth / NdotV;
+			    float transmission = exp(-viewPathLength * _DepthDensity);
+
+			    float colorGradient = 1.0 - clamp(exp(-max(0.0, waterDepth) / _ColorGradientRange), 0.0, 1.0);
+			    half3 volumeColor = lerp(_ShallowColor.rgb, _DeepColor.rgb, colorGradient);
+
+			    // ==========================================================
+			    // 6. 主光源 + BxDF
+			    // ==========================================================
+			    float4 shadowCoord = TransformWorldToShadowCoord(i.posWS);
+			    Light mainLight = GetMainLight(shadowCoord);
+
+			    float3 mainLightDir = mainLight.direction;
+			    float  mainLightShadow = MainLightRealtimeShadow(shadowCoord);
+			    float3 mainLightRadiance = mainLight.color * mainLight.distanceAttenuation;
+
+			    half3 waterLit = CalculateWaterBxDF(
+			        normalForBxDF,
+			        mainLightDir,
+			        viewDirWS,
+			        volumeColor,
+			        mainLightRadiance,
+			        _Smoothness,
+			        underWaterCol,
+			        reflectionCol,
+			        mainLightShadow,
+			        transmission
+			    );
+
+			    // ==========================================================
+			    // 7. 岸边与泡沫（两面统一：如果你不想背面出现，把它们乘 isFrontFace ? 1 : 0 即可）
+			    // ==========================================================
+			    half3 shoreCol = _ShoreCol.rgb;
+			    float shoreRange = saturate(exp(-max(0, waterDepth) / _ShoreRange));
+			    half3 shoreEdge = smoothstep(0.1, 1.0 - (_ShoreEdgeWidth - 0.2), shoreRange) * shoreCol * _ShoreEdgeIntensity;
+
+			    float foamX = saturate(1.0 - waterDepth / _FoamRange);
+			    float foamRange = 1.0 - smoothstep(_FoamBend - 0.1, 1.0, saturate(max(0, waterDepth) / _FoamRange));
+			    float foamNoise = SAMPLE_TEXTURE2D(_FoamNoise, sampler_FoamNoise, i.posWS.xz * _FoamNoise_ST.xy + _FoamNoise_ST.zw).r;
+
+			    half foamWave = sin(_FoamFrequency * foamX - _FoamSpeed * _Time.y);
+			    half foamMask = saturate(step(foamRange, foamWave + foamNoise - _FoamDissolve));
+			    half3 foamCol = foamMask * foamRange * _FoamCol.rgb;
+
+			    // ==========================================================
+			    // 8. 合成输出
+			    // ==========================================================
+			    half3 finalRGB = saturate(waterLit + shoreEdge + foamCol);
+				
+			    finalRGB += smoothstep(0.3, 0.4, rippleNormalTS.b) * finalRGB;
+
+			    return half4(finalRGB, 1.0);
+			}
+
+    		
     	ENDHLSL
     	
     	pass
@@ -773,6 +651,7 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 
         	Tags{"LightMode" = "WaterColorWithoutReflection"}
 
+        	Cull Off
             HLSLPROGRAM
             
             #pragma vertex vert
@@ -780,170 +659,170 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
             #pragma domain domainProgram
             #pragma fragment frag_WaterColor
 
-            half4 frag_WaterColor (vertexOutput i) : SV_TARGET
-            {
-            	float2 screenPos = i.screenPos.xy/i.screenPos.w;
-	            
-	            // --- 1. Vector Setup (Moved Up for Physics Calc) ---
-	            float3 vDirWS = normalize(_WorldSpaceCameraPos.xyz - i.posWS.xyz);
-	            
-	            float3x3 TBN = float3x3(
-	              i.tDirWS.x, i.bDirWS.x, i.nDirWS.x,
-	              i.tDirWS.y, i.bDirWS.y, i.nDirWS.y,
-	              i.tDirWS.z, i.bDirWS.z, i.nDirWS.z
-	            );
-	            
-	            // --- 2. Water Normal ---
-	            float2 normalUV = i.posWS.xz;
-	            float2 normalUV1 = normalUV/_NormalScale1 + frac(_NormalSpeed.xy*0.1*_Time.y);
-	            float2 normalUV2 = normalUV/_NormalScale2 + frac(_NormalSpeed.zw*0.1*_Time.y);
-	            float4 NormalMap1 = SAMPLE_TEXTURE2D(_NormalMap,sampler_NormalMap,normalUV1);
-	            float4 NormalMap2 = SAMPLE_TEXTURE2D(_NormalMap,sampler_NormalMap,normalUV2);
-	            float3 var_NormalMap1 = UnpackScaleNormal(NormalMap1,_NormalIntensity);
-	            float3 var_NormalMap2 = UnpackScaleNormal(NormalMap2,_NormalIntensity);
-	            float3 waterNormal = NormalBlendReoriented(var_NormalMap1,var_NormalMap2);
-            	
-	            // Interactive Ripples
-	            float3 rippleNormal= SAMPLE_TEXTURE2D(_WaterRipple,sampler_WaterRipple,screenPos);
-	            
-	            // Blend & Transform Normal
-	            waterNormal = waterNormal + rippleNormal;
-	            waterNormal = mul(TBN, waterNormal);
-	            waterNormal = normalize(waterNormal);
-            	
-	            
-	            float2 noiseUV = waterNormal.xz/(1+i.pos.w);
-	            
-	            // --- 3. Depth & Distortion ---
-	            // Get Original Depth
-	            float rawDepth0 = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,screenPos).r;
-	            float3 posWS_frag0 = ReconstructWorldPositionFromDepth(i.screenPos,rawDepth0);
-	            float waterDepth0 = i.posWS.y - posWS_frag0.y;
-	            
-	            // Firstly Sample Depth Texture (Distortion)
-	            float2 grabUV = screenPos;
-	            grabUV.x += noiseUV*_NormalNoise;
-	            float rawDepth1 =  SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,grabUV).r;
-	            float3 posWS_frag1 = ReconstructWorldPositionFromDepth(i.screenPos,rawDepth1);
+            half4 frag_WaterColor(vertexOutput i, bool isFrontFace : SV_IsFrontFace) : SV_TARGET
+			{
+			    // ==========================================================
+			    // 0. 基础输入：屏幕UV / 视线方向 / 两面符号
+			    // ==========================================================
+			    float2 screenUV = i.screenPos.xy / i.screenPos.w;
+			    float3 viewDirWS = normalize(_WorldSpaceCameraPos.xyz - i.posWS.xyz);
 
-	            // Get Reflection And Refraction Mask
-	            float refractionMask = step(posWS_frag1.y, i.posWS.y);
-	            // Apply mask to UV jitter
-	            grabUV = screenPos;
-	            grabUV.x += noiseUV*_NormalNoise/max(i.screenPos.w,1.2f) * refractionMask;
+			    // sideSign: 正面(从上往下看水面) = +1；背面(从水下看 underside) = -1
+			    float sideSign = isFrontFace ? 1.0 : -1.0;
 
-	            // Secondly Sample Depth Texture (The clean depth for logic)
-	            float rawDepth2 =  SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,grabUV).r;
-	            float3 posWS_frag2 = ReconstructWorldPositionFromDepth(i.screenPos,rawDepth2);
-	            
-	            // 最终用于计算颜色的物理深度 (Vertical Depth)
-	            float waterDepth = i.posWS.y - posWS_frag2.y;
-	            
-	            // --- 4. Caustics & Background ---
-	            float causitics_range = saturate(exp(-waterDepth/_CausiticsRange));
-	            float2 causiticsUV = posWS_frag2.xz/_CausiticsScale;
-	            float2 causiticsUV1 = causiticsUV+frac(_Time.x*_CausiticsSpeed);
-	            float2 causiticsUV2 = causiticsUV-frac(_Time.x*_CausiticsSpeed);
-	            half3 CausiticsCol1 = SAMPLE_TEXTURE2D(_CausiticsTex,sampler_CausiticsTex,causiticsUV1+float2(0.1f,0.2f));
-	            half3 CausiticsCol2 = SAMPLE_TEXTURE2D(_CausiticsTex,sampler_CausiticsTex,causiticsUV2);
-	            float3 CameraNormal = SAMPLE_TEXTURE2D(_CameraNormalsTexture,sampler_CameraNormalsTexture,grabUV);
-	            float CausticsMask1 = saturate(CameraNormal.y*CameraNormal.y);
-	            float CausticsMask2 = saturate(dot(CameraNormal,_MainLightPosition));
-	            float CausticsMask = CausticsMask1*CausticsMask2;
-	            half3 CausiticsCol = min(CausiticsCol1,CausiticsCol2)*causitics_range*_CausiticsIntensity*CausticsMask;
+			    // ==========================================================
+			    // 1. 计算水面法线（TS -> WS）
+			    //    - normalWS：用于折射扰动/几何判断（不翻面）
+			    //    - normalForBxDF：用于 BxDF（保证 N·V 为正，避免背面 Fresnel/Transmission 崩）
+			    // ==========================================================
+			    float3x3 tbn = float3x3(
+			        i.tDirWS.x, i.bDirWS.x, i.nDirWS.x,
+			        i.tDirWS.y, i.bDirWS.y, i.nDirWS.y,
+			        i.tDirWS.z, i.bDirWS.z, i.nDirWS.z
+			    );
 
-	            // Refraction UnderWater (Background + Caustics)
-	            half3 underWaterCol = SAMPLE_TEXTURE2D(_CameraOpaqueTexture,sampler_CameraOpaqueTexture,grabUV);
-	            underWaterCol = saturate(underWaterCol + CausiticsCol);
-	            
-	            
-            	
-	            // ==========================================================
-	            // --- 5. Water Physics Color (Corrected Logic) ---
-	            // ==========================================================
-	            
-	            // A. 计算光线在水下的实际路径长度 (View Path Length)
-	            // 垂直深度 (Vertical Depth)
-	            float verticalDepth = max(waterDepth, 0.0);
-	            // 视线角度修正 (Slant Factor): 角度越平，NdotV越小，路径越长
-	            float NdotV = max(dot(waterNormal, vDirWS), 0.001); 
-	            float viewPathLength = verticalDepth / NdotV;
+			    float2 normalUV = i.posWS.xz;
+			    float2 normalUV1 = normalUV / _NormalScale1 + frac(_NormalSpeed.xy * 0.1 * _Time.y);
+			    float2 normalUV2 = normalUV / _NormalScale2 + frac(_NormalSpeed.zw * 0.1 * _Time.y);
 
-	            // B. 计算透光率 (Transmission) - Beer-Lambert Law
-	            // _DepthDensity 越大，水越混浊，吸收越快 (建议范围 0.1 ~ 5.0)
-            	// transmission = 1 (清澈/浅), transmission = 0 (浑浊/深)
-	            float transmission = exp(-viewPathLength * _DepthDensity);
+			    float4 normalMap1 = SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, normalUV1);
+			    float4 normalMap2 = SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, normalUV2);
 
-	            // C. 计算水体固有色 (Volume Color)
-	            // 仅基于垂直深度决定是浅水色还是深水色
-	            // _ColorGradientRange 控制颜色过渡的深度 (建议范围 1.0 ~ 10.0)
-            	float colorGradient =1-clamp(exp(-max(0,verticalDepth)/_ColorGradientRange),0,1);
-	            half3 volumeColor = lerp(_ShallowColor.rgb, _DeepColor.rgb, colorGradient);
-            	
-            	// Reflection Color
-	            half3 refCol  = volumeColor;
-            	
-	            // ==========================================================
+			    float3 n1 = UnpackScaleNormal(normalMap1, _NormalIntensity);
+			    float3 n2 = UnpackScaleNormal(normalMap2, _NormalIntensity);
+			    float3 waterNormalTS = NormalBlendReoriented(n1, n2);
 
-	            // Metallic & Smoothness
-	            float smoothness = _Smoothness;
-	            
-	            // MainLight
-	            float4 shadowCoord = TransformWorldToShadowCoord(i.posWS);
-	            Light mainLight = GetMainLight(shadowCoord);
-	            half3 mainLightColor = mainLight.color;
-	            float3 mainLightDir = mainLight.direction;
-	            float mainLightShadow = MainLightRealtimeShadow(shadowCoord);
-	            float3 mainLightRadiance = mainLightColor * mainLight.distanceAttenuation;
-	            
-	            // Final Physics Calculation
-	            // 注意：参数已更新，不再传递错误的 Lerp 结果，而是传递物理参数
-	            // 参数顺序: Normal, LightDir, ViewDir, Albedo(0), LightColor, Smoothness, Metallic(0), RefractionBG, Reflection, VolumeColor, Shadow, Transmission
-	            half3 WaterFinalColor = CalculateWaterBxDF(
-	                waterNormal, 
-	                mainLightDir, 
-	                vDirWS, 
-	                volumeColor, 
-	                mainLightRadiance,
-	                smoothness, 
-	                underWaterCol,
-	                refCol.rgb,
-	                mainLightShadow, 
-	                transmission
-	            );
-            	
-            	
-            	//blink
-                float3 blinkNormal1 = var_NormalMap1;
-                float3 blinkNormal2 = var_NormalMap2;
-                float3 blinkNormal;
-                blinkNormal.xy = (blinkNormal1.xy + blinkNormal2.xy)/2*_BlinkIntensity;
-                blinkNormal.z = 1-sqrt(dot(blinkNormal.xy,blinkNormal.xy));
-                blinkNormal = mul(TBN,blinkNormal);
-                float2 blinkUV = blinkNormal.xz/(1+i.pos.w);
-                half3 blink = SAMPLE_TEXTURE2D(_ScreenSpaceReflectionTexture,sampler_ScreenSpaceReflectionTexture,screenPos+blinkUV * _NormalNoise);
-                blink = max(0,blink-_BlinkThreshold);//Use _BlinkThreshold to remove unnecessary part
-             
-            	//ShoreEdge
-            	half3 shoreCol = _ShoreCol;
-                float shoreRange = saturate(exp(-max(waterDepth0,waterDepth)/_ShoreRange));
-                half3 shoreEdge = smoothstep(0.1,1-(_ShoreEdgeWidth-0.2),shoreRange)*shoreCol*_ShoreEdgeIntensity;
-             
-            	//Foam
-                float foamX = saturate(1-waterDepth/_FoamRange);
-                float foamRange = 1-smoothstep(_FoamBend-0.1,1,saturate(max(waterDepth0,waterDepth)/_FoamRange));//遮罩
-                float foamNoise = SAMPLE_TEXTURE2D(_FoamNoise,sampler_FoamNoise,i.posWS.xz*_FoamNoise_ST.xy+_FoamNoise_ST.zw);
-                half4 foam = sin(_FoamFrequency*foamX-_FoamSpeed*_Time.y);
-                foam = saturate(step(foamRange,foam+foamNoise-_FoamDissolve))*foamRange*_FoamCol;
-            	
-                half3 FinalRGB = saturate(WaterFinalColor+shoreEdge+foam);
-            	FinalRGB = FinalRGB+smoothstep(0.3,0.4,rippleNormal.b)*FinalRGB,
-            	FinalRGB += blink;
-            	
-            	half4 result = half4(FinalRGB,1.0);
-            	
-                return result;
-            }
+			    // 屏幕空间的交互波纹法线（你原来就是这么用的，保持不改）
+			    float3 rippleNormalTS = SAMPLE_TEXTURE2D(_WaterRipple, sampler_WaterRipple, screenUV).xyz;
+
+			    // 合并并转到世界空间
+			    float3 normalWS = normalize(mul(tbn, waterNormalTS + rippleNormalTS));
+
+			    // 给 BxDF 用的法线：翻到朝向视线的半球（避免背面 NdotV < 0 导致 Fresnel/Transmission 异常）
+			    float3 normalForBxDF = (dot(normalWS, viewDirWS) < 0.0) ? -normalWS : normalWS;
+
+			    // 折射扰动方向：建议用未翻转的 normalWS，避免背面扰动方向突变
+			    float2 noiseUV = normalWS.xz / (1.0 + i.screenPos.w);
+
+			    // ==========================================================
+			    // 2. 深度与折射扰动（关键修复：grabUV 采样的 depth 必须用匹配 grabUV 的 screenPos 去反投影）
+			    // ==========================================================
+			    // (A) 原始深度：用于岸边/泡沫等稳定遮罩
+			    float rawDepth0 = SAMPLE_TEXTURE2D(_CameraDepthTexture, sampler_PointClamp, screenUV).r;
+			    float3 posWS0 = ReconstructWorldPositionFromDepth(i.screenPos, rawDepth0);
+				
+			    // (B) 第一次采样：用扰动后的 grabUV 估计背景位置，决定是否允许折射/扰动
+			    float2 distortion = noiseUV * _NormalNoise;
+			    float2 grabUV = screenUV + distortion;
+
+			    float rawDepth1 = SAMPLE_TEXTURE2D(_CameraDepthTexture, sampler_PointClamp, grabUV).r;
+
+			    // 关键：构造“与 grabUV 对应”的 screenPos 再反投影
+			    float4 screenPos1 = i.screenPos;
+			    screenPos1.xy = grabUV * i.screenPos.w;
+			    float3 posWS1 = ReconstructWorldPositionFromDepth(screenPos1, rawDepth1);
+
+			    // (C) 折射/扰动遮罩：判断背景点是否在“水体内部方向”那一侧
+			    // 正面：背景在水面下方 => 允许折射
+			    // 背面：背景在水面上方 => 允许折射
+			    float refractionMask = step(0.0, (i.posWS.y - posWS1.y) * sideSign);
+
+			    // (D) 第二次采样：带遮罩的“干净深度”，用于最终 waterDepth / caustics / refraction 逻辑
+			    float2 jitter = distortion / max(i.screenPos.w, 1.2f);
+			    grabUV = screenUV + jitter * refractionMask;
+
+			    float rawDepth2 = SAMPLE_TEXTURE2D(_CameraDepthTexture, sampler_PointClamp, grabUV).r;
+
+			    float4 screenPos2 = i.screenPos;
+			    screenPos2.xy = grabUV * i.screenPos.w;
+			    float3 posWS2 = ReconstructWorldPositionFromDepth(screenPos2, rawDepth2);
+
+			    float waterDepth = max(0.0, (i.posWS.y - posWS2.y) * sideSign);
+
+			    // ==========================================================
+			    // 3. 水下背景（Opaque） + Caustics
+			    // ==========================================================
+			    float causticsRange = saturate(exp(-waterDepth / _CausiticsRange));
+			    float2 causticsUV = posWS2.xz / _CausiticsScale;
+			    float2 causticsUV1 = causticsUV + frac(_Time.x * _CausiticsSpeed);
+			    float2 causticsUV2 = causticsUV - frac(_Time.x * _CausiticsSpeed);
+
+			    half3 causticsCol1 = SAMPLE_TEXTURE2D(_CausiticsTex, sampler_CausiticsTex, causticsUV1 + float2(0.1f, 0.2f)).rgb;
+			    half3 causticsCol2 = SAMPLE_TEXTURE2D(_CausiticsTex, sampler_CausiticsTex, causticsUV2).rgb;
+
+			    float3 cameraNormal = SAMPLE_TEXTURE2D(_CameraNormalsTexture, sampler_CameraNormalsTexture, grabUV).xyz;
+			    float causticsMask1 = saturate(cameraNormal.y * cameraNormal.y);
+			    float causticsMask2 = saturate(dot(cameraNormal, _MainLightPosition));
+			    float causticsMask  = causticsMask1 * causticsMask2;
+
+			    half3 causticsCol = min(causticsCol1, causticsCol2) * causticsRange * _CausiticsIntensity * causticsMask;
+
+			    half3 underWaterCol = SAMPLE_TEXTURE2D(_CameraOpaqueTexture, sampler_CameraOpaqueTexture, grabUV).rgb;
+			    underWaterCol = saturate(underWaterCol + causticsCol);
+
+			    // ==========================================================
+			    // 4. 反射（SSR）——保持用未扰动 screenUV，避免反射跟着折射 jitter 抖
+			    // ==========================================================
+			    half3 reflectionCol = SAMPLE_TEXTURE2D(_ScreenSpaceReflectionTexture, sampler_ScreenSpaceReflectionTexture, screenUV).rgb;
+
+			    // ==========================================================
+			    // 5. 体积颜色 + 透射率（Beer-Lambert）
+			    //    - Transmission 用 abs(N·V)（两面一致），避免背面路径长度发散
+			    // ==========================================================
+			    float NdotV = max(abs(dot(normalWS, viewDirWS)), 0.001);
+			    float viewPathLength = waterDepth / NdotV;
+			    float transmission = exp(-viewPathLength * _DepthDensity);
+
+			    float colorGradient = 1.0 - clamp(exp(-max(0.0, waterDepth) / _ColorGradientRange), 0.0, 1.0);
+			    half3 volumeColor = lerp(_ShallowColor.rgb, _DeepColor.rgb, colorGradient);
+
+			    // ==========================================================
+			    // 6. 主光源 + BxDF
+			    // ==========================================================
+			    float4 shadowCoord = TransformWorldToShadowCoord(i.posWS);
+			    Light mainLight = GetMainLight(shadowCoord);
+
+			    float3 mainLightDir = mainLight.direction;
+			    float  mainLightShadow = MainLightRealtimeShadow(shadowCoord);
+			    float3 mainLightRadiance = mainLight.color * mainLight.distanceAttenuation;
+
+			    half3 waterLit = CalculateWaterBxDF(
+			        normalForBxDF,
+			        mainLightDir,
+			        viewDirWS,
+			        volumeColor,
+			        mainLightRadiance,
+			        _Smoothness,
+			        underWaterCol,
+			        reflectionCol,
+			        mainLightShadow,
+			        transmission
+			    );
+
+			    // ==========================================================
+			    // 7. 岸边与泡沫（两面统一：如果你不想背面出现，把它们乘 isFrontFace ? 1 : 0 即可）
+			    // ==========================================================
+			    half3 shoreCol = _ShoreCol.rgb;
+			    float shoreRange = saturate(exp(-max(0, waterDepth) / _ShoreRange));
+			    half3 shoreEdge = smoothstep(0.1, 1.0 - (_ShoreEdgeWidth - 0.2), shoreRange) * shoreCol * _ShoreEdgeIntensity;
+
+			    float foamX = saturate(1.0 - waterDepth / _FoamRange);
+			    float foamRange = 1.0 - smoothstep(_FoamBend - 0.1, 1.0, saturate(max(0, waterDepth) / _FoamRange));
+			    float foamNoise = SAMPLE_TEXTURE2D(_FoamNoise, sampler_FoamNoise, i.posWS.xz * _FoamNoise_ST.xy + _FoamNoise_ST.zw).r;
+
+			    half foamWave = sin(_FoamFrequency * foamX - _FoamSpeed * _Time.y);
+			    half foamMask = saturate(step(foamRange, foamWave + foamNoise - _FoamDissolve));
+			    half3 foamCol = foamMask * foamRange * _FoamCol.rgb;
+
+			    // ==========================================================
+			    // 8. 合成输出
+			    // ==========================================================
+			    half3 finalRGB = saturate(waterLit + shoreEdge + foamCol);
+				
+			    finalRGB += smoothstep(0.3, 0.4, rippleNormalTS.b) * finalRGB;
+
+			    return half4(finalRGB, 1.0);
+			}
             
             ENDHLSL
         }
@@ -953,7 +832,7 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
         {
 	        Name "WaterFront"
 
-        	Cull Back
+        	Cull Off 
         	Tags{"LightMode" = "UniversalForward"}
 
 
@@ -966,24 +845,7 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
             
             ENDHLSL
         }
-    	
-//    	pass
-//        {
-//	        Name "WaterBack"
-//
-//        	Cull Front
-//        	Tags{"LightMode" = "SRPDefaultUnlit"}
-//
-//            HLSLPROGRAM
-//            
-//            #pragma vertex vert
-//            #pragma hull hullProgram
-//            #pragma domain domainProgram
-//            #pragma fragment frag_Back
-//            
-//            ENDHLSL
-//        }
-
+        
 	    //DepthOnly
         pass
         {
@@ -1020,14 +882,53 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
         	Tags{"LightMode" = "DepthNormals"}
         	Cull Off
             HLSLPROGRAM
-
+            
+			//#pragma vertex vert_DepthNormals
             #pragma vertex vert
             #pragma hull hullProgram
             #pragma domain domainProgram
             #pragma fragment frag_DepthNormals
+            
+            struct vertexInput_DepthNormals
+            {
+                float4 vertex : POSITION;
+                float3 normal : NORMAL;
+            	float4 tangent : TANGENT;
+            	float4 color : COLOR;
+                float2 uv : TEXCOORD0;
+            };
 
-            half4 frag_DepthNormals(vertexOutput i) : SV_TARGET
+            struct vertexOutput_DepthNormals
+            {
+                float4 pos : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                float3 nDirWS : TEXCOORD1;
+                float3 posWS : TEXCOORD2;
+            	float4 screenPos : TEXCOORD3;
+            	float3 tDirWS : TEXCOORD4;
+            	float3 bDirWS : TEXCOORD5;
+            	float4 color : TEXCOORD6;
+            };
+
+            vertexOutput_DepthNormals vert_DepthNormals (vertexInput_DepthNormals v)
+            {
+                vertexOutput_DepthNormals o;
+            	float4 posCS = TransformObjectToHClip(v.vertex.xyz);
+                o.pos = posCS;
+                o.nDirWS = TransformObjectToWorldNormal(v.normal);
+                o.uv = v.uv;
+                o.posWS = TransformObjectToWorld(v.vertex);
+            	o.screenPos = ComputeScreenPos(posCS);
+            	o.tDirWS = TransformObjectToWorldDir(v.tangent.xyz);
+            	o.bDirWS = normalize(cross(o.nDirWS,o.tDirWS)*v.tangent.w);
+            	o.color = v.color;
+                return o;
+            }
+
+            half4 frag_DepthNormals(vertexOutput i, bool isFrontFace : SV_IsFrontFace) : SV_TARGET
 			{
+				float sideSign = isFrontFace ? 1.0 : -1.0;
+				
 				float2 screenPos = i.screenPos.xy/i.screenPos.w;
 				
 	            float3x3 TBN = float3x3(
@@ -1051,7 +952,7 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 	            waterNormal = mul(TBN, waterNormal);
 	            waterNormal = normalize(waterNormal);
 				
-				return float4(waterNormal,i.pos.z);
+				return float4(waterNormal*sideSign,i.pos.z);
 			}
 
             ENDHLSL
