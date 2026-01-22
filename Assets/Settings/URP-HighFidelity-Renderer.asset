@@ -135,7 +135,6 @@ MonoBehaviour:
   m_Active: 0
   settings:
     renderPassEvent: 550
-    shader: {fileID: 4800000, guid: 67fae0bbe1f66674da30475d39ea3b99, type: 3}
 --- !u!114 &-3808527443434930453
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -456,7 +455,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Active: 1
   settings:
-    renderPassEvent: 400
+    renderPassEvent: 300
     reflectionTexName: _ScreenSpaceReflectionTexture
 --- !u!114 &6596120285823225568
 MonoBehaviour:

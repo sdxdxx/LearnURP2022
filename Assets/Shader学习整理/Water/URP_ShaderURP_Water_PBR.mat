@@ -90,8 +90,8 @@ Material:
     - _MaxTessDistance: 8
     - _Metallic: 1
     - _MinTessDistance: 1
-    - _NormalIntensity: 0.2
-    - _NormalNoise: 0.2
+    - _NormalIntensity: 0.25
+    - _NormalNoise: 0.25
     - _NormalScale: 16.67
     - _NormalScale1: 12
     - _NormalScale2: 8
@@ -115,7 +115,7 @@ Material:
     - _SpecularPow: 44.8
     - _Tess: 16
     - _WaterShallowRange: 0.48
-    - _WaveInt: 0.86
+    - _WaveInt: 1
     - _phaseOffset: 0.3
     m_Colors:
     - _DeepColor: {r: 0, g: 0.068214774, b: 0.29559743, a: 1}

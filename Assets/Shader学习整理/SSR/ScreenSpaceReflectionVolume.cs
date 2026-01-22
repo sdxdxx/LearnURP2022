@@ -37,6 +37,8 @@ public class ScreenSpaceReflectionVolume : VolumeComponent
     //Jitter Dither
     public ClampedFloatParameter DitherIntensity = new ClampedFloatParameter(1f, 0f, 5f);
     
+    public FloatParameter BlurSize = new ClampedFloatParameter(0,0,5,true);
+    
     [Serializable]
     public sealed class ScreenSpaceReflectionTypeParameter : VolumeParameter<ScreenSpaceReflectionVolume.ScreenSpaceReflectionType>
     {

@@ -17,12 +17,55 @@ Shader "URP/PostProcessing/WaterScreenSpaceReflection"
         ZWrite Off
         ZTest Always
         
-        HLSLINCLUDE
+        //SSR Pass
+        pass
+        {
+            HLSLPROGRAM
+            
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
             #include  "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
     		#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/GlobalIllumination.hlsl"
+            
+            #pragma vertex Vert
+            #pragma fragment frag
+            #pragma shader_feature SIMPLE_VS //基础视角空间SSR
+            #pragma shader_feature BINARY_SEARCH_VS //视空间二分搜索SSR
+            #pragma shader_feature BINARY_SEARCH_JITTER_VS //视空间二分搜索SSR+JitterDither
+            
+            
+            //----------贴图声明开始-----------
+            //TEXTURE2D(_CameraDepthTexture);
+            //TEXTURE2D(_CameraNormalsTexture);
+            TEXTURE2D(_m_CameraDepthTexture);
+            TEXTURE2D(_m_CameraNormalsTexture);
+            TEXTURE2D(_WaterColorWithoutReflectionTexture);
+            
+            //----------贴图声明结束-----------
+            
+            CBUFFER_START(UnityPerMaterial)
+            //----------变量声明开始-----------
+            half4 _BaseColor;
+            float4 _MainTex_ST;
+
+            //Simple
+            float _StepLength;
+            float _Thickness;
+
+            //BinarySearch
+            float _MaxStepLength;
+            float _MinDistance;
+
+            //Efficient
+            float _MaxReflectLength;
+            int _DeltaPixel;
+
+            //Jitter Dither
+            float _DitherIntensity;
+            
+            //----------变量声明结束-----------
+            CBUFFER_END
             
             float3 ReconstructViewPositionFromDepth(float2 screenPos, float rawDepth)
             {
@@ -74,55 +117,7 @@ Shader "URP/PostProcessing/WaterScreenSpaceReflection"
                 }
                 return screenPos;
             }
-        ENDHLSL
-        
-        //SSR Pass
-        pass
-        {
-            HLSLPROGRAM
-
-            #pragma vertex Vert
-            #pragma fragment frag
-            #pragma shader_feature SIMPLE_VS //基础视角空间SSR
-            #pragma shader_feature BINARY_SEARCH_VS //视空间二分搜索SSR
-            #pragma shader_feature BINARY_SEARCH_JITTER_VS //视空间二分搜索SSR+JitterDither
             
-            
-            //----------贴图声明开始-----------
-            //TEXTURE2D(_CameraDepthTexture);
-            //TEXTURE2D(_CameraNormalsTexture);
-            TEXTURE2D(_m_CameraDepthTexture);
-            TEXTURE2D(_m_CameraNormalsTexture);
-
-            TEXTURE2D(_CameraDepthTexture_MipLevel_2);
-            TEXTURE2D(_CameraDepthTexture_MipLevel_3);
-            TEXTURE2D(_CameraDepthTexture_MipLevel_4);
-            TEXTURE2D(_CameraDepthTexture_MipLevel_5);
-            TEXTURE2D(_CameraDepthTexture_MipLevel_6);
-            //----------贴图声明结束-----------
-            
-            CBUFFER_START(UnityPerMaterial)
-            //----------变量声明开始-----------
-            half4 _BaseColor;
-            float4 _MainTex_ST;
-
-            //Simple
-            float _StepLength;
-            float _Thickness;
-
-            //BinarySearch
-            float _MaxStepLength;
-            float _MinDistance;
-
-            //Efficient
-            float _MaxReflectLength;
-            int _DeltaPixel;
-
-            //Jitter Dither
-            float _DitherIntensity;
-            
-            //----------变量声明结束-----------
-            CBUFFER_END
 
             //基础SSR
             half4 ScreenSpaceReflection_Simple(Varyings i)
@@ -169,8 +164,20 @@ Shader "URP/PostProcessing/WaterScreenSpaceReflection"
                     if ((sampleLinearEyeDepth<-samplePosVS.z)&&(-samplePosVS.z<(sampleLinearEyeDepth+_Thickness)))
                     {
                         float2 reflectScreenPos = sampleScreenPos;
-                        half3 albedo_reflect =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, reflectScreenPos);
+                        half3 albedo_reflect;
+                        
+                        half4 waterColorMaskParm = SAMPLE_TEXTURE2D(_WaterColorWithoutReflectionTexture, sampler_LinearClamp, reflectScreenPos).rgba;
+                        if (waterColorMaskParm.a>0.5)
+                        {
+                            albedo_reflect =  waterColorMaskParm.rgb;
+                        }
+                        else
+                        {
+                            albedo_reflect =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, reflectScreenPos);
+                        }
+                        
                         result.rgb = albedo_reflect*_BaseColor;
+                        
                         return result;
                     }
                 }
@@ -239,7 +246,16 @@ Shader "URP/PostProcessing/WaterScreenSpaceReflection"
                         {
                             //找到
                             float2 reflectScreenPos = sampleScreenPos;
-                            half3 albedo_reflect =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, reflectScreenPos);
+                            half3 albedo_reflect;
+                            half4 waterColorMaskParm = SAMPLE_TEXTURE2D(_WaterColorWithoutReflectionTexture, sampler_LinearClamp, reflectScreenPos).rgba;
+                            if (waterColorMaskParm.a>0.5)
+                            {
+                                albedo_reflect =  waterColorMaskParm.rgb;
+                            }
+                            else
+                            {
+                                albedo_reflect =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, reflectScreenPos);
+                            }
                             result.rgb = albedo_reflect*_BaseColor;
                             return result;
                         }
@@ -328,7 +344,16 @@ Shader "URP/PostProcessing/WaterScreenSpaceReflection"
                         {
                             //找到
                             float2 reflectScreenPos = sampleScreenPos;
-                            half3 albedo_reflect =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, reflectScreenPos);
+                            half3 albedo_reflect;
+                            half4 waterColorMaskParm = SAMPLE_TEXTURE2D(_WaterColorWithoutReflectionTexture, sampler_LinearClamp, reflectScreenPos).rgba;
+                            if (waterColorMaskParm.a>0.5)
+                            {
+                                albedo_reflect =  waterColorMaskParm.rgb;
+                            }
+                            else
+                            {
+                                albedo_reflect =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, reflectScreenPos);
+                            }
                             result.rgb = albedo_reflect*_BaseColor;
                             return result;
                         }
@@ -372,6 +397,5 @@ Shader "URP/PostProcessing/WaterScreenSpaceReflection"
             
             ENDHLSL
         }
-        
     }
 }

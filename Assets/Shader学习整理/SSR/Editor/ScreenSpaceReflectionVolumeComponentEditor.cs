@@ -28,6 +28,7 @@ namespace UnityEditor.Rendering.Universal
         private SerializedDataParameter m_MaxReflectLength;
         private SerializedDataParameter m_DeltaPixel;
         private SerializedDataParameter m_DitherIntensity;
+        private SerializedDataParameter m_BlurSize;
         
         public override void OnEnable()
         {
@@ -44,6 +45,7 @@ namespace UnityEditor.Rendering.Universal
             m_MaxReflectLength = Unpack(o.Find(x => x.MaxReflectLength));
             m_DeltaPixel = Unpack(o.Find(x => x.DeltaPixel));
             m_DitherIntensity = Unpack(o.Find(x => x.DitherIntensity));
+            m_BlurSize = Unpack(o.Find(x => x.BlurSize));
         }
         
         public override void OnInspectorGUI()
@@ -63,6 +65,7 @@ namespace UnityEditor.Rendering.Universal
                 {
                     PropertyField(m_StepLength);
                     PropertyField(m_Thickness);
+                    PropertyField(m_BlurSize);
                     break;
                 }
 
@@ -70,6 +73,7 @@ namespace UnityEditor.Rendering.Universal
                 {
                     PropertyField(m_MaxStepLength);
                     PropertyField(m_MinDistance);
+                    PropertyField(m_BlurSize);
                     break;
                 }
                 
@@ -78,6 +82,7 @@ namespace UnityEditor.Rendering.Universal
                     PropertyField(m_MaxStepLength);
                     PropertyField(m_MinDistance);
                     PropertyField(m_DitherIntensity);
+                    PropertyField(m_BlurSize);
                     break;
                 }
 
@@ -86,6 +91,7 @@ namespace UnityEditor.Rendering.Universal
                     PropertyField(m_MaxReflectLength);
                     PropertyField(m_DeltaPixel);
                     PropertyField(m_Thickness);
+                    PropertyField(m_BlurSize);
                     break;
                 }
                 
@@ -95,6 +101,7 @@ namespace UnityEditor.Rendering.Universal
                     PropertyField(m_DeltaPixel);
                     PropertyField(m_Thickness);
                     PropertyField(m_DitherIntensity);
+                    PropertyField(m_BlurSize);
                     break;
                 }
 
@@ -102,6 +109,7 @@ namespace UnityEditor.Rendering.Universal
                 {
                     PropertyField(m_StepLength);
                     PropertyField(m_Thickness);
+                    PropertyField(m_BlurSize);
                     break;
                 }
             }

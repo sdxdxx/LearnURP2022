@@ -33,7 +33,7 @@ MonoBehaviour:
     m_Value: 0.1
   MaxStepLength:
     m_OverrideState: 1
-    m_Value: 0.1
+    m_Value: 0.15
   MinDistance:
     m_OverrideState: 1
     m_Value: 0.1
@@ -46,6 +46,9 @@ MonoBehaviour:
   DitherIntensity:
     m_OverrideState: 1
     m_Value: 0.41
+  BlurSize:
+    m_OverrideState: 1
+    m_Value: 0.75
 --- !u!114 &-3931420295255372021
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -92,6 +95,9 @@ MonoBehaviour:
   DitherIntensity:
     m_OverrideState: 0
     m_Value: 1
+  BlurSize:
+    m_OverrideState: 1
+    m_Value: 0
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
