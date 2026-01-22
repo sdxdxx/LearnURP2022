@@ -137,7 +137,7 @@ MonoBehaviour:
     m_Value: {r: 0, g: 0.09662807, b: 0.1981132, a: 1}
   UnderWaterShallowColor:
     m_OverrideState: 1
-    m_Value: {r: 0, g: 0.13217534, b: 0.29411766, a: 1}
+    m_Value: {r: 0.006674961, g: 0.21748547, b: 0.4716981, a: 1}
   UnderWaterFogColor:
     m_OverrideState: 1
     m_Value: {r: 0.44385186, g: 0.6537373, b: 0.7283019, a: 1}
@@ -187,7 +187,7 @@ MonoBehaviour:
     m_Value: 1
   WaterLineWidth:
     m_OverrideState: 1
-    m_Value: 1.85
+    m_Value: 3
   WaterLineSmooth:
     m_OverrideState: 1
     m_Value: 0.102
