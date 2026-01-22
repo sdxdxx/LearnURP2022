@@ -117,9 +117,6 @@ MonoBehaviour:
   m_Active: 1
   settings:
     renderPassEvent: 550
-    waterLayer:
-      serializedVersion: 2
-      m_Bits: 16
 --- !u!114 &-5062150752757379744
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -23,11 +23,11 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
         _NormalNoise("Normal Noise",Range(0,1)) = 0.68
 	    
         [Header(Causitics Tex)]
-        _CausiticsTex("Causitics Tex",2D) = "black"{}
-        _CausiticsScale("Causitics Scale",float) = 5.7
-        _CausiticsRange("Causitics Range",float) = 2.15
-         _CausiticsIntensity("Causitics Intensity",float) = 1.54
-        _CausiticsSpeed("Causitics Speed",float) = 1
+        _CausticsTex("Causitics Tex",2D) = "black"{}
+        _CausticsScale("Causitics Scale",float) = 5.7
+        _CausticsRange("Causitics Range",float) = 5.5
+	    _CausticsIntensity("Causitics Intensity",float) = 1
+        _CausticsSpeed("Causitics Speed",float) = 1
         
         [Header(Shore)]
         _ShoreCol("Shore Col",color) = (0,0,0,0)
@@ -126,10 +126,10 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
     		float _RippleInt;
             
             float _Blur;
-            float _CausiticsScale;
-            float _CausiticsRange;
-            float _CausiticsIntensity;
-            float _CausiticsSpeed;
+            float _CausticsScale;
+            float _CausticsRange;
+            float _CausticsIntensity;
+            float _CausticsSpeed;
     	
             half4 _ShoreCol;
             float _ShoreRange;
@@ -560,10 +560,10 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 			    // ==========================================================
 			    // 3. 水下背景（Opaque） + Caustics
 			    // ==========================================================
-			    float causticsRange = saturate(exp(-waterDepth / _CausiticsRange));
-			    float2 causticsUV = posWS2.xz / _CausiticsScale;
-			    float2 causticsUV1 = causticsUV + frac(_Time.x * _CausiticsSpeed);
-			    float2 causticsUV2 = causticsUV - frac(_Time.x * _CausiticsSpeed);
+			    float causticsRange = saturate(exp(-waterDepth / _CausticsRange));
+			    float2 causticsUV = posWS2.xz / _CausticsScale;
+			    float2 causticsUV1 = causticsUV + frac(_Time.x * _CausticsSpeed);
+			    float2 causticsUV2 = causticsUV - frac(_Time.x * _CausticsSpeed);
 
 			    half3 causticsCol1 = SAMPLE_TEXTURE2D(_CausiticsTex, sampler_CausiticsTex, causticsUV1 + float2(0.1f, 0.2f)).rgb;
 			    half3 causticsCol2 = SAMPLE_TEXTURE2D(_CausiticsTex, sampler_CausiticsTex, causticsUV2).rgb;
@@ -573,7 +573,7 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 			    float causticsMask2 = saturate(dot(cameraNormal, _MainLightPosition));
 			    float causticsMask  = causticsMask1 * causticsMask2;
 
-			    half3 causticsCol = min(causticsCol1, causticsCol2) * causticsRange * _CausiticsIntensity * causticsMask;
+			    half3 causticsCol = min(causticsCol1, causticsCol2) * causticsRange * _CausticsIntensity * causticsMask;
 
 			    half3 underWaterCol = SAMPLE_TEXTURE2D(_CameraOpaqueTexture, sampler_CameraOpaqueTexture, grabUV).rgb;
 			    underWaterCol = saturate(underWaterCol + causticsCol);
@@ -651,7 +651,7 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 
         	Tags{"LightMode" = "WaterColorWithoutReflection"}
 
-        	Cull Off
+        	Cull Back
             HLSLPROGRAM
             
             #pragma vertex vert
@@ -742,10 +742,10 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 			    // ==========================================================
 			    // 3. 水下背景（Opaque） + Caustics
 			    // ==========================================================
-			    float causticsRange = saturate(exp(-waterDepth / _CausiticsRange));
-			    float2 causticsUV = posWS2.xz / _CausiticsScale;
-			    float2 causticsUV1 = causticsUV + frac(_Time.x * _CausiticsSpeed);
-			    float2 causticsUV2 = causticsUV - frac(_Time.x * _CausiticsSpeed);
+			    float causticsRange = saturate(exp(-waterDepth / _CausticsRange));
+			    float2 causticsUV = posWS2.xz / _CausticsScale;
+			    float2 causticsUV1 = causticsUV + frac(_Time.x * _CausticsSpeed);
+			    float2 causticsUV2 = causticsUV - frac(_Time.x * _CausticsSpeed);
 
 			    half3 causticsCol1 = SAMPLE_TEXTURE2D(_CausiticsTex, sampler_CausiticsTex, causticsUV1 + float2(0.1f, 0.2f)).rgb;
 			    half3 causticsCol2 = SAMPLE_TEXTURE2D(_CausiticsTex, sampler_CausiticsTex, causticsUV2).rgb;
@@ -755,7 +755,7 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 			    float causticsMask2 = saturate(dot(cameraNormal, _MainLightPosition));
 			    float causticsMask  = causticsMask1 * causticsMask2;
 
-			    half3 causticsCol = min(causticsCol1, causticsCol2) * causticsRange * _CausiticsIntensity * causticsMask;
+			    half3 causticsCol = min(causticsCol1, causticsCol2) * causticsRange * _CausticsIntensity * causticsMask;
 
 			    half3 underWaterCol = SAMPLE_TEXTURE2D(_CameraOpaqueTexture, sampler_CameraOpaqueTexture, grabUV).rgb;
 			    underWaterCol = saturate(underWaterCol + causticsCol);

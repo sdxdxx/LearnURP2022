@@ -40,7 +40,6 @@ Shader "URP/PostProcessing/WaterScreenSpaceReflection"
             //TEXTURE2D(_CameraNormalsTexture);
             TEXTURE2D(_m_CameraDepthTexture);
             TEXTURE2D(_m_CameraNormalsTexture);
-            TEXTURE2D(_WaterColorWithoutReflectionTexture);
             
             //----------贴图声明结束-----------
             
@@ -164,18 +163,7 @@ Shader "URP/PostProcessing/WaterScreenSpaceReflection"
                     if ((sampleLinearEyeDepth<-samplePosVS.z)&&(-samplePosVS.z<(sampleLinearEyeDepth+_Thickness)))
                     {
                         float2 reflectScreenPos = sampleScreenPos;
-                        half3 albedo_reflect;
-                        
-                        half4 waterColorMaskParm = SAMPLE_TEXTURE2D(_WaterColorWithoutReflectionTexture, sampler_LinearClamp, reflectScreenPos).rgba;
-                        if (waterColorMaskParm.a>0.5)
-                        {
-                            albedo_reflect =  waterColorMaskParm.rgb;
-                        }
-                        else
-                        {
-                            albedo_reflect =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, reflectScreenPos);
-                        }
-                        
+                        half3 albedo_reflect =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, reflectScreenPos);
                         result.rgb = albedo_reflect*_BaseColor;
                         
                         return result;
@@ -246,16 +234,7 @@ Shader "URP/PostProcessing/WaterScreenSpaceReflection"
                         {
                             //找到
                             float2 reflectScreenPos = sampleScreenPos;
-                            half3 albedo_reflect;
-                            half4 waterColorMaskParm = SAMPLE_TEXTURE2D(_WaterColorWithoutReflectionTexture, sampler_LinearClamp, reflectScreenPos).rgba;
-                            if (waterColorMaskParm.a>0.5)
-                            {
-                                albedo_reflect =  waterColorMaskParm.rgb;
-                            }
-                            else
-                            {
-                                albedo_reflect =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, reflectScreenPos);
-                            }
+                            half3 albedo_reflect =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, reflectScreenPos);
                             result.rgb = albedo_reflect*_BaseColor;
                             return result;
                         }
@@ -344,16 +323,7 @@ Shader "URP/PostProcessing/WaterScreenSpaceReflection"
                         {
                             //找到
                             float2 reflectScreenPos = sampleScreenPos;
-                            half3 albedo_reflect;
-                            half4 waterColorMaskParm = SAMPLE_TEXTURE2D(_WaterColorWithoutReflectionTexture, sampler_LinearClamp, reflectScreenPos).rgba;
-                            if (waterColorMaskParm.a>0.5)
-                            {
-                                albedo_reflect =  waterColorMaskParm.rgb;
-                            }
-                            else
-                            {
-                                albedo_reflect =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, reflectScreenPos);
-                            }
+                            half3 albedo_reflect =  SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, reflectScreenPos);
                             result.rgb = albedo_reflect*_BaseColor;
                             return result;
                         }

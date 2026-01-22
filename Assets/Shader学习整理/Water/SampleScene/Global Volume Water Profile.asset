@@ -134,10 +134,10 @@ MonoBehaviour:
     m_Value: 0
   UnderWaterDeepColor:
     m_OverrideState: 1
-    m_Value: {r: 0.25447488, g: 0.38632476, b: 0.3886792, a: 1}
+    m_Value: {r: 0, g: 0.09662807, b: 0.1981132, a: 1}
   UnderWaterShallowColor:
     m_OverrideState: 1
-    m_Value: {r: 0.36970448, g: 0.5573334, b: 0.5849056, a: 1}
+    m_Value: {r: 0, g: 0.13217534, b: 0.29411766, a: 1}
   UnderWaterFogColor:
     m_OverrideState: 1
     m_Value: {r: 0.44385186, g: 0.6537373, b: 0.7283019, a: 1}
@@ -196,4 +196,4 @@ MonoBehaviour:
     m_Value: 0
   WaterLineColor:
     m_OverrideState: 1
-    m_Value: {r: 0, g: 0.08235294, b: 0.07058824, a: 1}
+    m_Value: {r: 0, g: 0.01372322, b: 0.08235294, a: 1}
