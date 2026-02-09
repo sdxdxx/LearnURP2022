@@ -30,7 +30,7 @@ Shader "URP/WaterRipple_ParticleNormal"
             cull off
             Blend One OneMinusSrcAlpha
             Zwrite Off
-             
+            Ztest Always
             HLSLPROGRAM
             
 
