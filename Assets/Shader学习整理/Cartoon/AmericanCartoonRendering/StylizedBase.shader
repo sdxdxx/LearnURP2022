@@ -212,7 +212,7 @@ Shader "URP/Cartoon/StylizedBase"
             	
             	//RampTex Direct
             	//第一行(0.75-1): additional light shadowRamp
-            	//第二行(0.5-0.75): env specularRamp
+            	//第二行(0.5-0.75): env specular rim Ramp
             	//第三行(0.25-0.5): direct/additional light specularRamp
             	//第四行(0-0.25): direct light shadowRamp
             	#ifdef _ENABLE_RAMP_TEX
@@ -258,25 +258,26 @@ Shader "URP/Cartoon/StylizedBase"
             		float3 iblMatCap = lerp(baseMatCap,metalMatCap,metallic);
             		iblSpecular = lerp(iblSpecular,iblMatCap,matCapLerp);
             		
-					float surfaceReduction = 1.0 / (roughness*roughness + 1.0); //Liner空间
+					float surfaceReduction = 1.0 / (roughness*roughness + 1.0); //Linear空间
 					//float surfaceReduction = 1.0 - 0.28*roughness*perceptualRoughness; //Gamma空间
-            		
-					float oneMinusReflectivity = 1 - max(max(specularResult.r, specularResult.g), specularResult.b);
+					
+					float oneMinusReflectivity = 1 - max(max(F0.r, F0.g), F0.b);
 					float grazingTerm = saturate(smoothness + (1 - oneMinusReflectivity));
+					
             		float3 physicalFresnel = FresnelLerp(F0, grazingTerm, nDotv);
+					physicalFresnel = saturate(physicalFresnel);
+            		half3 envRimRamp = SAMPLE_TEXTURE2D(_RampTex, sampler_RampTex, float2(Luminance(physicalFresnel), 0.6)).rgb;
             		
-            		half3 envRimRamp = SAMPLE_TEXTURE2D(_RampTex, sampler_RampTex, float2(1-nDotv, 0.6)).rgb;
             		#ifdef _ENABLE_RAMP_TEX
-            		float3 fresnel = physicalFresnel * envRimRamp;
+            		float3 fresnel = envRimRamp;
             		#else
             		float3 fresnel = physicalFresnel;
             		#endif
-            		
+					
             		float3 iblSpecColor = iblSpecular * surfaceReduction * fresnel;
             	
 					IndirectResult = iblDiffColor+iblSpecColor;
 				}
-            	
             	float3 result_RBR = DirectLightResult*shadow + IndirectResult*ao;
             	
             	return  result_RBR;

@@ -145,6 +145,7 @@ Material:
     - _SrcBlendAlpha: 1
     - _Surface: 0
     - _Test: 0
+    - _Unit: 10
     - _WorkflowMode: 1
     - _ZWrite: 1
     m_Colors:

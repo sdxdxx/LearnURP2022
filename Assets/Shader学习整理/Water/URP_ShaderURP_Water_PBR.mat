@@ -28,7 +28,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _CausticsTex:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 714e2248e936aa64fb0501832f694796, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _DistorationNoise:
@@ -85,14 +85,14 @@ Material:
     - _CausticsScale: 5.7
     - _CausticsSpeed: 1
     - _ColorGradientRange: 1
-    - _DepthDensity: 1.5
+    - _DepthDensity: 0.86
     - _FlowSpeed: 0
     - _FlowStrength: 0
     - _FoamBend: 0.2
-    - _FoamDissolve: 0
+    - _FoamDissolve: 0.28
     - _FoamFrequency: 5
     - _FoamRange: 0.38
-    - _FoamSpeed: -5
+    - _FoamSpeed: 5
     - _FomaBend: 0.2
     - _FresnelPow: 20
     - _MaxTessDistance: 8
@@ -107,10 +107,12 @@ Material:
     - _NormalSpeed1: 0
     - _NormalSpeed2: 0
     - _PhaseOffset: 0
+    - _RefInt: 1
     - _RefIntensity: 0.5
+    - _ReflectionInt: 0.75
     - _RefractionInt: 0.2
-    - _RippleInt: 0.825
-    - _ShoreEdgeIntensity: 1
+    - _RippleInt: 0.5
+    - _ShoreEdgeIntensity: 0.634
     - _ShoreEdgeWidth: 0
     - _ShoreNoiseScale: 1
     - _ShoreNoiseSpeed: 1.45

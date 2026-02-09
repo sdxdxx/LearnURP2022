@@ -49,6 +49,7 @@ Shader "URP/TestPerObjectShadow_Lambert"
                 float4 pos   : SV_POSITION;
                 float3 posWS : TEXCOORD0;
                 float3 normalWS : TEXCOORD1;
+                float3 posOS : TEXCOORD2;
             };
 
             vertexOutput vert(vertexInput v)
@@ -56,6 +57,7 @@ Shader "URP/TestPerObjectShadow_Lambert"
                 vertexOutput o;
                 o.pos = TransformObjectToHClip(v.vertex.xyz);
                 o.posWS = TransformObjectToWorld(v.vertex.xyz);
+                o.posOS = v.vertex.xyz;
                 o.normalWS = TransformObjectToWorldNormal(v.normal);
                 return o;
             }
@@ -66,7 +68,7 @@ Shader "URP/TestPerObjectShadow_Lambert"
                 float3 normalWS = i.normalWS;
                 
                 // 计算自定义阴影
-                float perObjectShaodw = ComputePerObjectShadow(i.posWS, normalWS);
+                float perObjectShaodw = ComputePerObjectShadow(TransformObjectToWorld(i.posOS), NormalizeNormalPerPixel(normalWS));
                 float4 shadowCoord = TransformWorldToShadowCoord(i.posWS);
                 float shadow = MainLightRealtimeShadow(shadowCoord);
                 shadow = 1;

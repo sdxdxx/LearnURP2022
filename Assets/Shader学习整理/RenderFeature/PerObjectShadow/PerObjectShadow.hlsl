@@ -33,7 +33,7 @@ float GetShadowStoredDepth(float2 uv, float receiverZ, int idx)
     clampedUV.x = clamp(uv.x, uvClamp.x + halfTexelWidth,  uvClamp.y - halfTexelWidth);
     clampedUV.y = clamp(uv.y, uvClamp.z + halfTexelHeight, uvClamp.w - halfTexelHeight);
 
-    float rawZ = SAMPLE_TEXTURE2D(_CharacterShadowAtlas, sampler_CharacterShadowAtlas, clampedUV).r;
+    float rawZ = SAMPLE_TEXTURE2D(_CharacterShadowAtlas, sampler_PointClamp, clampedUV).r;
 
     float storedZ = rawZ;
     #if UNITY_REVERSED_Z

@@ -254,7 +254,7 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: 6c091b1897e7ef04b893a0300fdfa7dd,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 2.94
+      value: 0.4
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 6c091b1897e7ef04b893a0300fdfa7dd,
         type: 3}
@@ -447,13 +447,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mainLight: {fileID: 1068465136}
   candidatesRenderers:
+  - groupName: Cube
+    root: {fileID: 483334219}
+    renderers:
+    - {fileID: 483334217}
   - groupName: Cheeta_Fixed
     root: {fileID: 1549387658}
     renderers:
     - {fileID: 437957311}
   candidateRoots:
+  - {fileID: 483334219}
   - {fileID: 1549387658}
-  autoCollectFromRoots: 0
+  autoCollectFromRoots: 1
   debugDraw: 1
 --- !u!137 &437957311 stripped
 SkinnedMeshRenderer:
@@ -560,7 +565,7 @@ Transform:
   m_GameObject: {fileID: 483334215}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -7.9, y: -2.7, z: -21.56}
+  m_LocalPosition: {x: -30.9, y: 4.7, z: -10.7}
   m_LocalScale: {x: 2.6405, y: 2.6405, z: 2.6405}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -866,6 +871,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Cheeta_Fixed (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 6c091b1897e7ef04b893a0300fdfa7dd,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

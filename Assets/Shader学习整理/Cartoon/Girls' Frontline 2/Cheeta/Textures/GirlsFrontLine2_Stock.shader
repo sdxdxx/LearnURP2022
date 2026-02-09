@@ -20,6 +20,9 @@ Shader "URP/NPR/GirlsFrontLine2/Stock"
 	    
     	[Header(Ramp)]
     	_RampTex("Ramp Texture",2D) = "white"{}
+    	
+    	[Header(PerObjectShadow)]
+        [IntRange]_Unit("Unit",Range(1,10)) = 1
 	    
     	[Header(Matcap)]
     	_MetalMatCap("Metal Mat Cap",2D) = "black"{}
@@ -49,6 +52,7 @@ Shader "URP/NPR/GirlsFrontLine2/Stock"
     		#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
     		#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/GlobalIllumination.hlsl"
     		#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+    		#include "Assets/Shader学习整理/RenderFeature/PerObjectShadow/PerObjectShadow.hlsl"
     	
 
     		#pragma multi_compile  _MAIN_LIGHT_SHADOWS
@@ -378,6 +382,8 @@ Shader "URP/NPR/GirlsFrontLine2/Stock"
                 half3 mainLightColor = mainLight.color;
             	float3 mainLightDir = mainLight.direction;
             	float mainLightShadow = MainLightRealtimeShadow(shadowCoord);
+            	float perObjectShaodw = ComputePerObjectShadow(i.posWS, nDirWS);
+            	mainLightShadow = mainLightShadow*perObjectShaodw;
             	float3 mainLightRadiance = mainLightColor * mainLight.distanceAttenuation;
             	half3 mainColor = CalculateBxDFResult(nDirWS,mainLightDir,vDirWS,tDirWS,bDirWS,anisotropy,albedo.rgb,mainLightRadiance,smoothness,metallic,ao,metalMatCap,satinMatCap,mainLightShadow,TEXTURE2D_ARGS(_RampTex,sampler_RampTex),0);
 

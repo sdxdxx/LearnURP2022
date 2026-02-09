@@ -217,8 +217,6 @@ Shader "URP/VFX/UniversalEffect"
                 #endif
 
                 
-               
-
                 //UV扰动
                 float2 distortion = 0;
                 #ifdef _EnableDistortion

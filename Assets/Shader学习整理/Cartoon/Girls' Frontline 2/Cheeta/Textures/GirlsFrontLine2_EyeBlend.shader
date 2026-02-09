@@ -13,24 +13,6 @@ Shader "URP/NPR/GirlsFrontLine2/EyeBlend"
     	
     	[Header(PBR)]
         _ColorTint("Color Tint",Color) = (1.0,1.0,1.0,1.0)
-    	[Toggle(_ENABLE_RMO_MAP)]_EnableRMOMap("Enable RMO",float) = 1
-    	_RMOMap("Roughness Metallic Occlusion Texture",2D) = "white"{}
-    	_Smoothness("Smoothness",Range(0,1)) = 0
-    	_Metallic("Metallic",Range(0,1)) = 0
-    	_AOInt("Ambient Occlusion Intensity",Range(0,1)) = 1
-    	
-    	[Header(Normal)]
-    	_NormalMap("Normal Map",2D) = "bump"{}
-    	_NormalInt("Normal Intensity",Range(0,5)) = 1
-	    
-    	[Header(Ramp)]
-    	_RampTex("Ramp Texture",2D) = "white"{}
-    	
-    	
-    	[Header(Matcap)]
-    	_MetalMatCap("Metal Mat Cap",2D) = "black"{}
-    	_SatinMatCap("Satin Mat Cap",2D) = "black"{}
-    	_MatCapLerp("Mat Cap Lerp",Range(0,1)) = 0.5
 	    
     	_Test("Test",Range(0,1)) = 0
     }
@@ -68,37 +50,13 @@ Shader "URP/NPR/GirlsFrontLine2/EyeBlend"
             SAMPLER(sampler_MainTex);//定义采样器
     		TEXTURE2D(_CameraDepthTexture);
             SAMPLER(sampler_CameraDepthTexture);
-    		TEXTURE2D(_NormalMap);
-            SAMPLER(sampler_NormalMap);
-    		TEXTURE2D(_RMOMap);
-            SAMPLER(sampler_RMOMap);
-    		TEXTURE2D(_RampTex);
-            SAMPLER(sampler_RampTex);
-    		
-    		TEXTURE2D(_MetalMatCap);
-    		SAMPLER(sampler_MetalMatCap);
-    		TEXTURE2D(_SatinMatCap);
-    		SAMPLER(sampler_SatinMatCap);
     	
             //----------贴图声明结束-----------
             
             CBUFFER_START(UnityPerMaterial)
             //----------变量声明开始-----------
             half4 _ColorTint;
-
-    		float _NormalInt;
-    		float4 _NormalMap_ST;
-            
-            float _Smoothness;
-            float _Metallic;
-    		float _AOInt;
-    	
-            half4 _RimCol;
-            float _RimWidth;
-    	
             float4 _MainTex_ST;
-    		
-    		float _MatCapLerp;
     		float _Test;
             //----------变量声明结束-----------
             CBUFFER_END

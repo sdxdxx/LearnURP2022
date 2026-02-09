@@ -5,6 +5,9 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
     	[Header(Light)]
         _Smoothness("Smoothness",range(0,1)) = 0.5
     	
+    	[Header(Reflection)]
+    	_ReflectionInt("Reflection Intensity",Range(0,1)) = 1
+    	
     	[Header(Water Color)]
         _ShallowColor("Shallow Color",color) = (1.0,1.0,1.0,1.0)
         _DeepColor("Deep Color",color) = (1.0,1.0,1.0,1.0)
@@ -101,8 +104,8 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
             SAMPLER(sampler_NormalMap);
     		TEXTURE2D(_WaterRipple);
             SAMPLER(sampler_WaterRipple);
-            TEXTURE2D(_CausiticsTex);
-            SAMPLER(sampler_CausiticsTex);
+            TEXTURE2D(_CausticsTex);
+            SAMPLER(sampler_CausticsTex);
     	
             TEXTURE2D(_FoamNoise);
             SAMPLER(sampler_FoamNoise);
@@ -116,6 +119,8 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
             half4 _DeepColor;
     		float _DepthDensity;
     		float _ColorGradientRange;
+    		
+    		float _ReflectionInt;
             
             float _NormalIntensity;
             float _NormalScale1;
@@ -200,6 +205,7 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 			    float smoothness, 
 			    half3 refractionCol, // 背景色 (Background)
 			    half3 refCol,        // 表面反射 (Skybox)
+			    float refInt,
 			    float shadow,
 			    float transmission   // 1=清澈, 0=浑浊
 			)
@@ -217,14 +223,7 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 			    float F0_val = 0.02; 
 			    float fresnelTerm = F0_val + (1.0 - F0_val) * pow(1.0 - nDotv, 5.0); 
 			    
-			    // --- 2. 漫反射 (Diffuse) - 卡通海洋的核心 ---
-			    // 💡 技巧：对于卡通水，可以使用 Half-Lambert 防止背光面死黑
-			    // float halfLambert = nDotl * 0.5 + 0.5; 
-			    // float3 diffuseTerm = lightCol * halfLambert * shadow;
-			    
-			    // 标准 Lambert:
-			    // Kd: 能量守恒系数。在PBR中，反射越强，折射(漫反射)越弱
-			    // 如果想要更"卡通/塑料"的感觉，可以去掉 (1-fresnelTerm)
+			    // --- 2. 漫反射 (Diffuse)
 			    float3 kd = 1 - fresnelTerm;
 			    float3 diffuseTerm = kd * lightCol * (nDotl*0.5+0.5) * shadowRamp; // 这里没有乘PI，防止过曝
 
@@ -243,8 +242,8 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 			    
 			    // Specular Term
 			    float3 directSpecular = (D * G * fresnelTerm) / (4 * nDotv * nDotl + 0.0001);
-			    
-			    // ⚠️ 你之前保留了 PI，我把它加回来了，如果你觉得高光太爆可以去掉
+            	
+            	
 			    float3 specularResult = directSpecular * lightCol * nDotl * PI * shadowRamp;
 
 			    // --- 5. 水下混合 (Under Water Mix) ---
@@ -254,8 +253,9 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 			    half3 underWaterColor = lerp(litWaterBody, refractionCol, transmission); 
 			    
 			    // --- 6. 最终菲涅尔混合 ---
+            	refCol = lerp(underWaterColor,refCol,refInt);
 			    half3 finalColor = lerp(underWaterColor, refCol, fresnelTerm);
-			    
+            	
 			    // --- 7. 叠加高光 ---
 			    finalColor += specularResult;
 
@@ -428,7 +428,7 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
             	o.screenPos = ComputeScreenPos(posCS);
             	
             	//Interactive Water
-            	float rippleHeight  = SAMPLE_TEXTURE2D_LOD(_WaterRipple,sampler_PointClamp,o.screenPos.xy/o.screenPos.w,0).x;
+            	float rippleHeight  = SAMPLE_TEXTURE2D_LOD(_WaterRipple,sampler_PointClamp,o.screenPos.xy/o.screenPos.w,0).z;
             	p.y+=rippleHeight*_RippleInt*0.1f;
 
             	v.vertex.xyz = TransformWorldToObject(p);
@@ -565,8 +565,8 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 			    float2 causticsUV1 = causticsUV + frac(_Time.x * _CausticsSpeed);
 			    float2 causticsUV2 = causticsUV - frac(_Time.x * _CausticsSpeed);
 
-			    half3 causticsCol1 = SAMPLE_TEXTURE2D(_CausiticsTex, sampler_CausiticsTex, causticsUV1 + float2(0.1f, 0.2f)).rgb;
-			    half3 causticsCol2 = SAMPLE_TEXTURE2D(_CausiticsTex, sampler_CausiticsTex, causticsUV2).rgb;
+			    half3 causticsCol1 = SAMPLE_TEXTURE2D(_CausticsTex, sampler_CausticsTex, causticsUV1 + float2(0.1f, 0.2f)).rgb;
+			    half3 causticsCol2 = SAMPLE_TEXTURE2D(_CausticsTex, sampler_CausticsTex, causticsUV2).rgb;
 
 			    float3 cameraNormal = SAMPLE_TEXTURE2D(_CameraNormalsTexture, sampler_CameraNormalsTexture, grabUV).xyz;
 			    float causticsMask1 = saturate(cameraNormal.y * cameraNormal.y);
@@ -613,6 +613,7 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 			        _Smoothness,
 			        underWaterCol,
 			        reflectionCol,
+			        _ReflectionInt,
 			        mainLightShadow,
 			        transmission
 			    );
@@ -637,7 +638,7 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 			    // ==========================================================
 			    half3 finalRGB = saturate(waterLit + shoreEdge + foamCol);
 				
-			    finalRGB += smoothstep(0.3, 0.4, rippleNormalTS.b) * finalRGB;
+			    finalRGB += smoothstep(0.2, 0.4, rippleNormalTS.z) * finalRGB * 0.01;
 
 			    return half4(finalRGB, 1.0);
 			}
@@ -747,8 +748,8 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 			    float2 causticsUV1 = causticsUV + frac(_Time.x * _CausticsSpeed);
 			    float2 causticsUV2 = causticsUV - frac(_Time.x * _CausticsSpeed);
 
-			    half3 causticsCol1 = SAMPLE_TEXTURE2D(_CausiticsTex, sampler_CausiticsTex, causticsUV1 + float2(0.1f, 0.2f)).rgb;
-			    half3 causticsCol2 = SAMPLE_TEXTURE2D(_CausiticsTex, sampler_CausiticsTex, causticsUV2).rgb;
+			    half3 causticsCol1 = SAMPLE_TEXTURE2D(_CausticsTex, sampler_CausticsTex, causticsUV1 + float2(0.1f, 0.2f)).rgb;
+			    half3 causticsCol2 = SAMPLE_TEXTURE2D(_CausticsTex, sampler_CausticsTex, causticsUV2).rgb;
 
 			    float3 cameraNormal = SAMPLE_TEXTURE2D(_CameraNormalsTexture, sampler_CameraNormalsTexture, grabUV).xyz;
 			    float causticsMask1 = saturate(cameraNormal.y * cameraNormal.y);
@@ -795,6 +796,7 @@ Shader "URP/ShaderURP_Water_SSR_PBR"
 			        _Smoothness,
 			        underWaterCol,
 			        reflectionCol,
+			        _ReflectionInt,
 			        mainLightShadow,
 			        transmission
 			    );

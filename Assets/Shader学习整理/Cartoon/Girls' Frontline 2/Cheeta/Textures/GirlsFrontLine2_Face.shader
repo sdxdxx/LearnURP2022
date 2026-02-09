@@ -17,6 +17,9 @@ Shader "URP/NPR/GirlsFrontLine2/Face"
     	[Header(Ramp)]
     	_RampTex("Ramp Texture",2D) = "white"{}
     	
+    	[Header(PerObjectShadow)]
+        [IntRange]_Unit("Unit",Range(1,10)) = 1
+    	
     	[Header(SDF)]
     	_SDF("SDF",2D) = "white"{}
     	_SDFSmoothness("SDF Smoothness",Range(0,0.2)) = 0.1
@@ -43,6 +46,7 @@ Shader "URP/NPR/GirlsFrontLine2/Face"
     		#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
     		#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/GlobalIllumination.hlsl"
     		#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+    		#include "Assets/Shader学习整理/RenderFeature/PerObjectShadow/PerObjectShadow.hlsl"
     	
 
     		#pragma multi_compile  _MAIN_LIGHT_SHADOWS
@@ -315,6 +319,8 @@ Shader "URP/NPR/GirlsFrontLine2/Face"
                 half3 mainLightColor = mainLight.color;
             	float3 mainLightDir = mainLight.direction;
             	float mainLightShadow = MainLightRealtimeShadow(shadowCoord);
+            	float perObjectShaodw = ComputePerObjectShadow(i.posWS, nDirWS);
+            	mainLightShadow = perObjectShaodw*mainLightShadow;
             	float3 mainLightRadiance = mainLightColor * mainLight.distanceAttenuation;
             	half3 mainColor = CalculateBxDFResult(nDirWS,mainLightDir,vDirWS,albedo.rgb,mainLightRadiance,smoothness,metallic,sdf,sdf_reverse,mainLightShadow,hairShadowRange,TEXTURE2D_ARGS(_RampTex,sampler_RampTex),0);
 

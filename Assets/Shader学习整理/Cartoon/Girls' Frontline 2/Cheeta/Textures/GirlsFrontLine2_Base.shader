@@ -19,6 +19,9 @@ Shader "URP/NPR/GirlsFrontLine2/Base"
 	    
     	[Header(Ramp)]
     	_RampTex("Ramp Texture",2D) = "white"{}
+    	
+    	[Header(PerObjectShadow)]
+        [IntRange]_Unit("Unit",Range(1,10)) = 1
 	    
     	[Header(Matcap)]
     	_MetalMatCap("Metal Mat Cap",2D) = "black"{}
@@ -48,6 +51,7 @@ Shader "URP/NPR/GirlsFrontLine2/Base"
     		#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
     		#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/GlobalIllumination.hlsl"
     		#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+    		#include "Assets/Shader学习整理/RenderFeature/PerObjectShadow/PerObjectShadow.hlsl"
     	
 
     		#pragma multi_compile  _MAIN_LIGHT_SHADOWS
@@ -143,7 +147,7 @@ Shader "URP/NPR/GirlsFrontLine2/Base"
                 vertexOutput o;
             	float4 posCS = TransformObjectToHClip(v.vertex.xyz);
                 o.pos = posCS;
-                o.nDirWS = v.normal;//TransformObjectToWorldNormal(v.normal);
+                o.nDirWS = TransformObjectToWorldNormal(v.normal);
                 o.uv = v.uv;
                 o.posWS = TransformObjectToWorld(v.vertex);
             	o.screenPos = ComputeScreenPos(posCS);
@@ -214,7 +218,7 @@ Shader "URP/NPR/GirlsFrontLine2/Base"
             	half3 specRamp = SAMPLE_TEXTURE2D(_RampTex,sampler_RampTex,float2(nDotl,0.4)).rgb;
 				float3 specColor = SpecularResult * lightCol * specRamp * PI;
             	
-				 
+            	
 				//直接光漫反射部分
 				//漫反射系数
 				float kd = (1-F)*(1-metallic);
@@ -257,7 +261,6 @@ Shader "URP/NPR/GirlsFrontLine2/Base"
 					//间接光结果
 					IndirectResult = iblDiffColor + iblSpecColor;
 				}
-				
             	
             	float3 result_RBR = DirectLightResult*shadow + IndirectResult*ao;
 
@@ -284,7 +287,7 @@ Shader "URP/NPR/GirlsFrontLine2/Base"
             	float2 normalUV = i.uv*_NormalMap_ST.xy+_NormalMap_ST.zw;
             	float4 packedNormal = SAMPLE_TEXTURE2D(_NormalMap,sampler_NormalMap,normalUV);
             	float3 var_NormalMap = UnpackScaleNormal(packedNormal,_NormalInt);
-
+            	
 				//Vector
 				float3 nDirWS = normalize(mul(var_NormalMap,TBN));
             	float3 nDirVS = TransformWorldToViewNormal(nDirWS);
@@ -315,9 +318,12 @@ Shader "URP/NPR/GirlsFrontLine2/Base"
                 half3 mainLightColor = mainLight.color;
             	float3 mainLightDir = mainLight.direction;
             	float mainLightShadow = MainLightRealtimeShadow(shadowCoord);
+            	float perObjectShaodw = ComputePerObjectShadow(i.posWS, nDirWS);
+            	mainLightShadow = perObjectShaodw*mainLightShadow;
             	float3 mainLightRadiance = mainLightColor * mainLight.distanceAttenuation;
             	half3 mainColor = CalculatePBRResult(nDirWS,mainLightDir,vDirWS,albedo.rgb,mainLightRadiance,smoothness,metallic,ao,metalMatCap,satinMatCap,mainLightShadow,TEXTURE2D_ARGS(_RampTex,sampler_RampTex),0);
 
+            	
             	//AditionalLight
             	uint lightCount = GetAdditionalLightsCount();
             	half3 additionalColor = half3(0,0,0);

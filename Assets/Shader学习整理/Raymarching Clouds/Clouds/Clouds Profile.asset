@@ -135,7 +135,7 @@ MonoBehaviour:
     m_Value: 1
   BlurRange:
     m_OverrideState: 1
-    m_Value: 0.2
+    m_Value: 0.5
   CloudColor:
     m_OverrideState: 1
     m_Value: {r: 1, g: 1, b: 1, a: 1}
@@ -194,7 +194,7 @@ MonoBehaviour:
     m_Value: 1
   densityMultiplier:
     m_OverrideState: 1
-    m_Value: 4.14
+    m_Value: 5.84
   heightWeights:
     m_OverrideState: 1
     m_Value: 1

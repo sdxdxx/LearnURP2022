@@ -22,6 +22,9 @@ Shader "URP/NPR/GirlsFrontLine2/Eye"
     	[Header(Normal)]
     	_NormalMap("Normal Map",2D) = "bump"{}
     	_NormalInt("Normal Intensity",Range(0,5)) = 1
+    	
+    	[Header(PerObjectShadow)]
+        [IntRange]_Unit("Unit",Range(1,10)) = 1
 	    
     	[Header(Ramp)]
     	_RampTex("Ramp Texture",2D) = "white"{}
@@ -52,6 +55,7 @@ Shader "URP/NPR/GirlsFrontLine2/Eye"
     		#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
     		#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/GlobalIllumination.hlsl"
     		#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+    		#include "Assets/Shader学习整理/RenderFeature/PerObjectShadow/PerObjectShadow.hlsl"
     	
 
     		#pragma multi_compile  _MAIN_LIGHT_SHADOWS
@@ -320,6 +324,9 @@ Shader "URP/NPR/GirlsFrontLine2/Eye"
                 half3 mainLightColor = mainLight.color;
             	float3 mainLightDir = mainLight.direction;
             	float mainLightShadow = MainLightRealtimeShadow(shadowCoord);
+            	float perObjectShaodw = ComputePerObjectShadow(i.posWS, nDirWS);
+            	mainLightShadow = perObjectShaodw*mainLightShadow;
+            	mainLightShadow = lerp(0.75,1,mainLightShadow);
             	float3 mainLightRadiance = mainLightColor * mainLight.distanceAttenuation;
             	half3 mainColor = CalculatePBRResult(nDirWS,mainLightDir,vDirWS,albedo.rgb,mainLightRadiance,smoothness,metallic,ao,metalMatCap,satinMatCap,mainLightShadow,TEXTURE2D_ARGS(_RampTex,sampler_RampTex),0);
 
