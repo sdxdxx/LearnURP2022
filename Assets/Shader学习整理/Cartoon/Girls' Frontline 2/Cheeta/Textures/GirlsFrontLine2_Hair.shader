@@ -155,7 +155,7 @@ Shader "URP/NPR/GirlsFrontLine2/Hair"
             	o.uv1 = v.uv1;
                 o.posWS = TransformObjectToWorld(v.vertex);
             	o.screenPos = ComputeScreenPos(posCS);
-            	o.tDirWS = normalize(TransformObjectToWorld(v.tangent));
+            	o.tDirWS = normalize(TransformObjectToWorldDir(v.tangent));
             	o.bDirWS = normalize(cross(o.nDirWS,o.tDirWS)*v.tangent.w);
             	o.color = v.color;
                 return o;

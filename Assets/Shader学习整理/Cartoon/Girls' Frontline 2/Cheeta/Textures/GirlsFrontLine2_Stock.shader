@@ -153,7 +153,7 @@ Shader "URP/NPR/GirlsFrontLine2/Stock"
                 o.uv = v.uv;
                 o.posWS = TransformObjectToWorld(v.vertex);
             	o.screenPos = ComputeScreenPos(posCS);
-            	o.tDirWS = float4(normalize(TransformObjectToWorld(v.tangent.xyz)),v.tangent.w * unity_WorldTransformParams.w);
+            	o.tDirWS = float4(normalize(TransformObjectToWorldDir(v.tangent.xyz)),v.tangent.w);
             	o.bDirWS = normalize(cross(o.nDirWS,o.tDirWS)*v.tangent.w);
             	o.color = v.color;
                 return o;

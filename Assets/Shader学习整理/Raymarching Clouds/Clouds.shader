@@ -87,16 +87,26 @@ Shader "URP/PostProcessing/Clouds"
              }
             
             //Reconstruct World Position
-            float3 ReconstructWorldPositionFromDepth(float2 screenPos, float depth)
+            float3 ReconstructWorldPositionFromDepth01(float2 screenPos, float depth01)
             {
                 float2 ndcPos = screenPos*2-1;//map[0,1] -> [-1,1]
                 float3 clipPos = float3(ndcPos.x,ndcPos.y,1)*_ProjectionParams.z;// z = far plane = mvp result w
-                float3 viewPos = mul(unity_CameraInvProjection,clipPos.xyzz).xyz * depth;
+                float3 viewPos = mul(unity_CameraInvProjection,clipPos.xyzz).xyz * depth01;
                 float3 worldPos = mul(UNITY_MATRIX_I_V,float4(viewPos,1)).xyz;
                 return worldPos;
             }
-            
-            
+           
+           float3 ReconstructWorldPositionFromRawDepth(float2 screenPos, float rawDepth)
+            {
+                float2 ndcPos = screenPos * 2 - 1;
+                float4 clipPos = float4(ndcPos.x, ndcPos.y, rawDepth, 1.0);
+                float4 viewPosH = mul(unity_CameraInvProjection, clipPos);
+                float3 viewPos = viewPosH.xyz / viewPosH.w;
+                float3 worldPos = mul(UNITY_MATRIX_I_V, float4(viewPos, 1.0)).xyz;
+                return worldPos;
+            }
+           
+           
             float2 rayBoxDst(float3 boundsMin, float3 boundsMax, float3 rayOrigin, float3 invRaydir) 
             {
                 float3 t0 = (boundsMin - rayOrigin) * invRaydir;
@@ -284,7 +294,7 @@ Shader "URP/PostProcessing/Clouds"
                 float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture,sampler_PointClamp,screenPos).r;
                 float linear01Depth = Linear01Depth(rawDepth,_ZBufferParams);
                 
-                float3 posWS_Frag = ReconstructWorldPositionFromDepth(screenPos,linear01Depth);
+                float3 posWS_Frag = ReconstructWorldPositionFromDepth01(screenPos,linear01Depth);
 
                 float3 worldViewDir = normalize(posWS_Frag.xyz - _WorldSpaceCameraPos.xyz);
                 

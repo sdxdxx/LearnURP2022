@@ -15,7 +15,7 @@ MonoBehaviour:
   active: 1
   ScreenSpaceReflectionMode:
     m_OverrideState: 1
-    m_Value: 3
+    m_Value: 1
   EnableReflection:
     m_OverrideState: 1
     m_Value: 1

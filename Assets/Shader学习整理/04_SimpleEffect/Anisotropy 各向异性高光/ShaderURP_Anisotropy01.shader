@@ -65,8 +65,8 @@ Shader "URP/SimpleEffect/Anisotropy01"
                 vertexOutput o;
                 o.pos = TransformObjectToHClip(v.vertex.xyz);
                 o.nDirWS = TransformObjectToWorldNormal(v.normal);
-                o.tDirWS = TransformObjectToWorld(v.tangent.xyz);
-                o.bDirWS = cross(o.nDirWS,o.tDirWS)*v.tangent.w;
+                o.tDirWS = normalize(TransformObjectToWorldDir(v.tangent.xyz));
+                o.bDirWS = normalize(cross(o.nDirWS,o.tDirWS))*v.tangent.w;
                 o.uv = v.uv*_MainTex_ST.xy+_MainTex_ST.zw;
                 o.posOS = v.vertex.xyz;
                 
@@ -77,32 +77,36 @@ Shader "URP/SimpleEffect/Anisotropy01"
             {
                 float3 posWS = TransformObjectToWorld(i.posOS);
                 
-                float3x3 TBN = float3x3(
-                    i.tDirWS.x,i.bDirWS.x,i.nDirWS.x,
-                    i.tDirWS.y,i.bDirWS.y,i.nDirWS.y,
-                    i.bDirWS.z,i.bDirWS.z,i.bDirWS.z
-                    );
+                // 1. 移除了没用的 TBN 矩阵定义，保持整洁
 
                 float3 tDirWS = normalize(i.tDirWS);
                 float3 bDirWS = normalize(i.bDirWS);
+                float3 nDir = normalize(i.nDirWS);
                 
-                float3 nDir = i.nDirWS;
-                float3 lDir= _MainLightPosition.xyz;
+                float3 lDir = _MainLightPosition.xyz; // 假设是平行光
                 float3 vDir = normalize(_WorldSpaceCameraPos.xyz - posWS.xyz);
                 float3 hDir = normalize(lDir + vDir);
                 
-                //副切线向量与半角向量点乘高光
-                float bDoth = dot(bDirWS, hDir);
-                float bDoth_Rervese = 1-bDoth;
-                float bDoth_Dark = smoothstep(-1,0,bDoth);
-
-                //获得拉丝高光渐变
-                float Ramp_Anisotropy = bDoth_Rervese * bDoth_Dark;
+                // --- 你的拟合算法核心 (这部分逻辑作为近似是没问题的) ---
+                float bDoth = dot(tDirWS, hDir);
+                float Ramp_Anisotropy = 1.0 - abs(bDoth);
+                Ramp_Anisotropy = pow(saturate(Ramp_Anisotropy), 5.0); // 建议加上这一步控制粗细
                 
-                half4 albedo = SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,i.uv);
-                half3 FinalRGB = albedo.rgb*_BaseColor.rgb*bDoth*Ramp_Anisotropy;
-                half4 result = half4(Ramp_Anisotropy.xxx,1.0);
-                return result;
+                // 1. 计算基础漫反射 (受光面)
+                float NdotL = saturate(dot(nDir, lDir));
+                
+                half4 albedo = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
+                
+                // 2. 漫反射部分
+                half3 Diffuse = albedo.rgb * _BaseColor.rgb * NdotL;
+                
+                // 3. 高光部分 (通常高光要乘以光源颜色，且要受 NdotL 遮蔽，防止阴影面发光)
+                half3 Specular = _BaseColor.rgb * Ramp_Anisotropy * NdotL; // 简单的金属风格叠加
+                
+                // 4. 最终结果：漫反射 + 高光
+                half3 FinalRGB = Diffuse + Specular;
+
+                return half4(FinalRGB, 1.0);
             }
             
             ENDHLSL

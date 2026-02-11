@@ -195,8 +195,8 @@ Shader "URP/NPR/GirlsFrontLine2/Face"
             	
             	//faceSDF
             	float flatLightForward = dot(float2(0,1),normalize(lDirOS.xz));
-            	float sdfSmoothness_Fixed = saturate(1-flatLightForward)*_SDFSmoothness;
             	float sdfSmoothness = _SDFSmoothness;
+            	float sdfSmoothness_Fixed = saturate(1-flatLightForward)*sdfSmoothness;
             	float faceSDF_R = smoothstep(sdf.r,sdf.r+sdfSmoothness_Fixed,flatLightForward)*step(0,lDirOS.x)*sdf.a;
             	float faceSDF_L = smoothstep(sdf_reverse.r,sdf_reverse.r+sdfSmoothness_Fixed,flatLightForward)*step(lDirOS.x,0)*sdf_reverse.a;
             	float faceSDF = saturate(faceSDF_L+faceSDF_R);
@@ -251,7 +251,7 @@ Shader "URP/NPR/GirlsFrontLine2/Face"
 					float surfaceReduction = 1.0 / (roughness*roughness + 1.0); //Liner空间
 					//float surfaceReduction = 1.0 - 0.28*roughness*perceptualRoughness; //Gamma空间
 
-					float oneMinusReflectivity = 1 - max(max(SpecularResult.r, SpecularResult.g), SpecularResult.b);
+					float oneMinusReflectivity = 1 - max(max(F0, F0.g), F0.b);
 					float grazingTerm = saturate(smoothness + (1 - oneMinusReflectivity));
             		float3 iblSpecColor =  iblSpecular * surfaceReduction * FresnelLerp(F0, grazingTerm, nDotv_Ramp);
             		
