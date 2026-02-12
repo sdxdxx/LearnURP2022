@@ -30,7 +30,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _MaxRange: 1
-    - _MinRange: 0
+    - _MinRange: 0.2
     - _RimOffset: 1
     - _RimThreshold: 1.88
     - _Spread: 1
