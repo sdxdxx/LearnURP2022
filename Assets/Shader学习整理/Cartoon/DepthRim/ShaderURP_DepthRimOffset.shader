@@ -9,7 +9,8 @@ Shader "URP/DepthRimOffset"
         _OffsetX("Offset X", Range(-1, 1)) = 0
         _OffsetY("Offset Y", Range(-1, 1)) = 0
         _OffsetZ("Offset Z", Range(-1, 1)) = 0
-        _CullBias("Cull Bias", Range(-1,1)) = 0.005
+        _CullBiasMin("Cull Bias Min", float) = 0
+        _CullBiasMax("Cull Bias Max", float) = 0
     }
     
     SubShader
@@ -68,7 +69,8 @@ Shader "URP/DepthRimOffset"
              float _OffsetX;
              float _OffsetY;
              float _OffsetZ;
-             float _CullBias;
+             float _CullBiasMin;
+             float _CullBiasMax;
             CBUFFER_END
 
              TEXTURE2D_X_FLOAT(_CameraDepthTexture);
@@ -109,10 +111,14 @@ Shader "URP/DepthRimOffset"
                 float depth0 = LinearEyeDepth(depthTex0,_ZBufferParams);//view space depth 
                 float rim = saturate((depth - depth0));
                 
+                float3 nDir = NormalizeNormalPerPixel(i.worldNormal);
+                float3 lDir = _MainLightPosition;
+                float nDotL = saturate(dot(nDir,lDir));
+                
                 rim = smoothstep(min(_MinRange, 0.99), _MaxRange, rim);
                 
                 half4 col = 1;
-                col.xyz = rim * _RimCol.xyz;
+                col.xyz = nDotL+rim * _RimCol.xyz;
                 return col;
             }
              ENDHLSL

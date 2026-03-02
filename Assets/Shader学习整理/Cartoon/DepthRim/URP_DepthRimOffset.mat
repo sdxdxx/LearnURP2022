@@ -27,8 +27,14 @@ Material:
     m_Floats:
     - OffsetX: 0
     - OffsetY: 0
+    - _CullBias: 0.1
+    - _CullBiasMax: 14
+    - _CullBiasMin: 0
     - _MaxRange: 1
     - _MinRange: 0
+    - _OffsetX: 0.005
+    - _OffsetY: 0
+    - _OffsetZ: 0.001
     - _Width: 0
     m_Colors:
     - _RimCol: {r: 1, g: 1, b: 1, a: 1}

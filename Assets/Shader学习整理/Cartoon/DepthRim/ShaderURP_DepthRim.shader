@@ -102,8 +102,15 @@ Shader "URP/DepthRim"
                 float rim = saturate((depth - depth0));
                 rim = smoothstep(min(_MinRange, 0.99), _MaxRange, rim);
                 
+                float3 nDir = NormalizeNormalPerPixel(i.worldNormal);
+                float3 lDir = _MainLightPosition;
+                float3 vDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos.xyz);
+                float nDotv = pow(max(0,1-dot(nDir,vDir)),3);
+                nDotv = step(0.1,nDotv);
+                float nDotL = saturate(dot(nDir,lDir));
+                nDotL = step(0.25,nDotL);
                 half4 col = 1;
-                col.xyz = rim * _RimCol.xyz;
+                col.xyz = rim*nDotL * _RimCol.xyz;
                 return col;
             }
              ENDHLSL

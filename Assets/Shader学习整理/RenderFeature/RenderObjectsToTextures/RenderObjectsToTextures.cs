@@ -116,6 +116,8 @@ public sealed class RenderObjectsToTextures : ScriptableRendererFeature
             desc.msaaSamples = 1;
             desc.width /= m_Settings.downSample;
             desc.height /= m_Settings.downSample;
+            desc.bindMS = false;             // 必须显式关闭！否则会触发 ResolveAA 崩溃
+            desc.useMipMap = false;
 
             RenderTextureDescriptor depthDescriptor = desc;
             depthDescriptor.colorFormat = RenderTextureFormat.Depth;
