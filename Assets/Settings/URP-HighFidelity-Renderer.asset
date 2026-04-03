@@ -159,16 +159,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6672849c969558349853b5345008dadc, type: 3}
   m_Name: LoopRenderPassFeature
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   settings:
-    renderPassEvent: 500
-    renderQueueType: 1
+    renderPassEvent: 400
+    renderQueueType: 0
     layerMask:
       serializedVersion: 2
       m_Bits: 4294967295
     lightModeTags:
     - Fur
-    loopTimes: 100
+    loopTimes: 31
 --- !u!114 &-3379088772835417971
 MonoBehaviour:
   m_ObjectHideFlags: 0

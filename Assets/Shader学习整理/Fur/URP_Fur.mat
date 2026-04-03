@@ -11,8 +11,11 @@ Material:
   m_Shader: {fileID: 4800000, guid: 1db622ad3d98f364f9021a1be906dc4d, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
-  m_InvalidKeywords: []
+  m_ValidKeywords:
+  - _USE_FUR_BXDF
+  m_InvalidKeywords:
+  - _ENABLE_RMO_MAP
+  - _USEFURBXDF_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -24,16 +27,55 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _FurNoise:
-        m_Texture: {fileID: 2800000, guid: 95f76d50f4d7f7b40ad4c1cbb63f7d04, type: 3}
-        m_Scale: {x: 5, y: 5}
+        m_Texture: {fileID: 2800000, guid: 13956aec4791ab444b7fceedb6256f61, type: 3}
+        m_Scale: {x: 20, y: 20}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
+        m_Texture: {fileID: 2800000, guid: a284512c2f0c00143af7efaf78a91518, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MetalMatCap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MetallicSmoothnessTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RMOMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RampTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SatinMatCap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _AOInt: 1
+    - _EnableRMOMap: 1
+    - _FurLength: 0.041
+    - _Gravity: 0
+    - _GravityStrength: 0.5
+    - _MatCapLerp: 0
+    - _Metallic: 0
+    - _NormalInt: 1
+    - _OutlineWidth: 1
+    - _Smoothness: 0
+    - _Test: 0
+    - _Unit: 1
+    - _UseFurBxDF: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _FurColor: {r: 1, g: 0, b: 0, a: 1}
+    - _ColorTint: {r: 1, g: 1, b: 1, a: 1}
+    - _FurColor: {r: 1, g: 1, b: 1, a: 1}
+    - _OutlineColor: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
