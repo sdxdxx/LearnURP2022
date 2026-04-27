@@ -14,24 +14,51 @@ public sealed class ColorTintRenderFeature : ScriptableRendererFeature
     [SerializeField] public Settings settings = new Settings();
 
     private ColorTintPass m_Pass;
+    
+    private bool m_RequiresRendering;
+    
+    private bool ShouldRender(in RenderingData renderingData)
+    {
+        ColorTintVolume volume = null;
+
+        if (settings.shader == null)
+            return false;
+
+        if (renderingData.cameraData.cameraType == CameraType.Preview)
+            return false;
+
+        var stack = VolumeManager.instance.stack;
+        volume = stack.GetComponent<ColorTintVolume>();
+
+        return volume != null && volume.IsActive();
+    }
 
     public override void Create()
     {
-        // 如果 shader 没配，pass 仍然创建，但会在执行时跳过
-        m_Pass = new ColorTintPass(settings.renderPassEvent, settings.shader);
-    }
-
-    public override void SetupRenderPasses(ScriptableRenderer renderer, in RenderingData renderingData)
-    {
-        // 直接把 cameraColor 传进去即可；
-        m_Pass.Setup(renderer.cameraColorTargetHandle);
+        if (m_Pass == null)
+        {
+            m_Pass = new ColorTintPass(settings.renderPassEvent, settings.shader);
+        }
+        
+        m_Pass.UpdateSettings(settings.renderPassEvent, settings.shader);
     }
 
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
     {
+        m_RequiresRendering = ShouldRender(in renderingData);
+        if (!m_RequiresRendering) return;
+        
         renderer.EnqueuePass(m_Pass);
     }
-
+    
+    public override void SetupRenderPasses(ScriptableRenderer renderer, in RenderingData renderingData)
+    {
+        if (!m_RequiresRendering) return;
+        
+        // 直接把 cameraColor 传进去
+        m_Pass.Setup(renderer.cameraColorTargetHandle);
+    }
+    
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
@@ -62,6 +89,19 @@ public sealed class ColorTintRenderFeature : ScriptableRendererFeature
 
             if (shader != null)
                 m_Material = CoreUtils.CreateEngineMaterial(shader);
+        }
+        
+        public void UpdateSettings(RenderPassEvent evt, Shader shader)
+        {
+            this.renderPassEvent = evt;
+
+            // 只有当 Shader 真的发生改变时，才重新生成 Material
+            if (shader != null && (m_Material == null || m_Material.shader != shader))
+            {
+                // 先销毁旧的材质
+                CoreUtils.Destroy(m_Material); 
+                m_Material = CoreUtils.CreateEngineMaterial(shader);
+            }
         }
 
         public void Setup(RTHandle cameraColor)
@@ -95,26 +135,21 @@ public sealed class ColorTintRenderFeature : ScriptableRendererFeature
             // 取 Volume 参数
             var stack = VolumeManager.instance.stack;
             var volume = stack.GetComponent<ColorTintVolume>();
-
-            // 没有组件或未启用时，跳过（避免每帧无意义 blit）
-            // if (volume == null || !volume.active)
-            //     return;
-
+            
             m_Material.SetColor(k_BaseColorId, volume.ColorChange.value);
 
-            var cmd = CommandBufferPool.Get(k_ProfilerTag);
+            var cmd = CommandBufferPool.Get();
 
             using (new ProfilingScope(cmd, m_ProfilingSampler))
             {
                 
                 Blitter.BlitCameraTexture(cmd, m_CameraColor, m_TempRT);
-
-                
                 Blitter.BlitCameraTexture(cmd, m_TempRT, m_CameraColor, m_Material, 0);
             }
 
             context.ExecuteCommandBuffer(cmd);
             cmd.Clear();
+            
             CommandBufferPool.Release(cmd);
         }
 
