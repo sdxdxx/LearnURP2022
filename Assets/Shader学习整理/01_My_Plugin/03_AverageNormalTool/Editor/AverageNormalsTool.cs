@@ -84,32 +84,35 @@ public class AverageNormalsTool : EditorWindow
 
     private void WirteAverageNormalToVertexNormal(Mesh mesh)
     {
-        var averageNormalHash = new Dictionary<Vector3, Vector3>();
+        Vector3[] vertices = mesh.vertices;
+        Vector3[] normals = mesh.normals;
+
+        var normalSumHash = new Dictionary<Vector3, Vector3>(mesh.vertexCount);
+
         for (var j = 0; j < mesh.vertexCount; j++)
         {
-            if (!averageNormalHash.ContainsKey(mesh.vertices[j]))
+            Vector3 position = vertices[j];
+            Vector3 normal = normals[j];
+
+            if (!normalSumHash.ContainsKey(position))
             {
-                averageNormalHash.Add(mesh.vertices[j], mesh.normals[j]);
+                normalSumHash.Add(position, normal);
             }
             else
             {
-                averageNormalHash[mesh.vertices[j]] =
-                    (averageNormalHash[mesh.vertices[j]] + mesh.normals[j]).normalized;
+                normalSumHash[position] += normal;
             }
         }
 
-        var averageNormals = new Vector3[mesh.vertexCount];
+        var vertexNormals = new Vector3[mesh.vertexCount];
+
         for (var j = 0; j < mesh.vertexCount; j++)
         {
-            averageNormals[j] = averageNormalHash[mesh.vertices[j]];
+            Vector3 position = vertices[j];
+            vertexNormals[j] = normalSumHash[position].normalized;
         }
 
-        var vertexNormal = new Vector3[mesh.vertexCount];
-        for (var j = 0; j < mesh.vertexCount; j++)
-        {
-            vertexNormal[j] = new Vector4(averageNormals[j].x, averageNormals[j].y, averageNormals[j].z, 0);
-        }
-        mesh.normals = vertexNormal;
+        mesh.normals = vertexNormals;
     }
     
     private void WirteAverageNormalToVertexColorTools()
@@ -133,31 +136,41 @@ public class AverageNormalsTool : EditorWindow
 
     private void WirteAverageNormalToVertexColor(Mesh mesh)
     {
-        var averageNormalHash = new Dictionary<Vector3, Vector3>();
+        Vector3[] vertices = mesh.vertices;
+        Vector3[] normals = mesh.normals;
+
+        var normalSumHash = new Dictionary<Vector3, Vector3>(mesh.vertexCount);
+
         for (var j = 0; j < mesh.vertexCount; j++)
         {
-            if (!averageNormalHash.ContainsKey(mesh.vertices[j]))
+            Vector3 position = vertices[j];
+            Vector3 normal = normals[j];
+
+            if (!normalSumHash.ContainsKey(position))
             {
-                averageNormalHash.Add(mesh.vertices[j], mesh.normals[j]);
+                normalSumHash.Add(position, normal);
             }
             else
             {
-                averageNormalHash[mesh.vertices[j]] =
-                    (averageNormalHash[mesh.vertices[j]] + mesh.normals[j]).normalized;
+                normalSumHash[position] += normal;
             }
         }
 
-        var averageNormals = new Vector3[mesh.vertexCount];
+        var vertexColors = new Color[mesh.vertexCount];
+
         for (var j = 0; j < mesh.vertexCount; j++)
         {
-            averageNormals[j] = averageNormalHash[mesh.vertices[j]];
+            Vector3 position = vertices[j];
+            Vector3 averageNormal = normalSumHash[position].normalized;
+
+            vertexColors[j] = new Color(
+                averageNormal.x,
+                averageNormal.y,
+                averageNormal.z,
+                0
+            );
         }
 
-        var vertexColors = new Color[mesh.vertexCount];
-        for (var j = 0; j < mesh.vertexCount; j++)
-        {
-            vertexColors[j] = new Vector4(averageNormals[j].x, averageNormals[j].y, averageNormals[j].z, 0);
-        }
         mesh.colors = vertexColors;
     }
     

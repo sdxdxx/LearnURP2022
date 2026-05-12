@@ -16,7 +16,6 @@ Shader "URP/Cartoon/Outline"
             "RenderPipeline" = "UniversalPipeline"
         }
     	
-    	//解决深度引动模式Depth Priming Mode问题
         UsePass "Universal Render Pipeline/Unlit/DepthOnly"
         UsePass "Universal Render Pipeline/Unlit/DepthNormalsOnly"
         
