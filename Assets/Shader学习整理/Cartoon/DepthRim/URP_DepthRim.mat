@@ -29,14 +29,14 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _MaxRange: 0.6
-    - _MinRange: 0.2
+    - _DepthRimMaxRange: 0.139
+    - _DepthRimMinRange: 0
+    - _DepthRimWidth: 3
     - _RimOffset: 1
     - _RimThreshold: 1.88
     - _Spread: 1
-    - _Width: 3
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _DepthRimColor: {r: 1, g: 1, b: 1, a: 1}
     - _RimCol: {r: 1, g: 1, b: 1, a: 1}
-    - _RimColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []

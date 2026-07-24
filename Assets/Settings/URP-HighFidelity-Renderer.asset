@@ -51,7 +51,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7ad6e5c5a0096b944af0279fb5a821c8, type: 3}
   m_Name: GrabColorRF
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   settings:
     renderPassEvent: 500
 --- !u!114 &-6691189070050867988
@@ -208,7 +208,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 828a9754f8867d847a3a6b204a18a19c, type: 3}
   m_Name: CustomDepthNormalsRendererFeature
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   settings:
     renderPassEvent: 220
     layerMask:
@@ -431,7 +431,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 41b455fe0617c774fa7468e6c22981d6, type: 3}
   m_Name: WaveEffectMaskRF
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   settings:
     renderPassEvent: 300
     shaderTagsList:
@@ -497,7 +497,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eaf2fe485fa603c47a1a06b822c8b824, type: 3}
   m_Name: WaveEffectRF
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   settings:
     renderPassEvent: 500
     shaderTagsList:

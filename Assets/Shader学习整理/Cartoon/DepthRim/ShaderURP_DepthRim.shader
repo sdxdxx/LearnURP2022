@@ -2,119 +2,91 @@ Shader "URP/DepthRim"
 {
     Properties
     {
-        _Width ("Width", Float) = 0
-        _MinRange ("MinRange", Range(0, 1)) = 0 
-        _MaxRange ("MaxRange", Range(0, 1)) = 1
-        [HDR]_RimCol ("Rim Color", Color) = (1, 1, 1, 1)
-        
+        _DepthRimWidth("Depth Rim Width",Float) = 0.0
+        _DepthRimMinRange("Depth Rim Min Range",Range(0.0,1.0)) = 0.0
+        _DepthRimMaxRange("Depth Rim Max Range",Range(0.0,1.0)) = 1.0
+        [HDR]_DepthRimColor("Depth Rim Color",Color) = (1.0,1.0,1.0,1.0)
     }
-    
+
     SubShader
     {
         Tags
         {
-            "RenderType"="Opaque"
-            "RenderPipeline" = "UniversalPipeline"  
+            "RenderType" = "Opaque"
+            "RenderPipeline" = "UniversalPipeline"
         }
 
-        //解决深度引动模式Depth Priming Mode问题
         UsePass "Universal Render Pipeline/Lit/DepthOnly"
         UsePass "Universal Render Pipeline/Lit/DepthNormals"
-        
+
         pass
         {
-            Tags{"LightMode"="UniversalForward"}
-             
-            HLSLPROGRAM
-             #pragma vertex vert
-             #pragma fragment frag
+            Name "ForwardUnlit"
 
-            //引入URP的计算核心库，以此识别宏、以及变量名
-             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            //URP Light部分函数，返回Light 值
-             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-
-             struct appdata
+            Tags
             {
-                 float4 vertex : POSITION;
-                 float4 uv : TEXCOORD0;
-                 half3 normal : NORMAL;          //法线
-                 half4 tangent : TANGENT;        //切线
-                 half4 color : COLOR0;           //顶点色
+                "LightMode" = "UniversalForward"
+            }
 
-            };
+            HLSLPROGRAM
 
-             struct v2f
-             {
-                 float4 pos : SV_POSITION;
-                 float2 uv : TEXCOORD0;
-                 float4 scrPos : TEXCOORD5;
-                 float3 worldPos : TEXCOORD1;        //世界坐标
-                 float3 worldNormal : TEXCOORD2;     //世界空间法线
-                 half4 color : COLOR0;               //顶点色
-             };
+            #pragma vertex vert
+            #pragma fragment frag
 
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-             CBUFFER_START(UnityPerMaterial)
-             sampler2D   _MainTex;
-             float4  _MainTex_ST;
+            TEXTURE2D(_CameraDepthTexture);
+            SAMPLER(sampler_CameraDepthTexture);
 
-             float _Width;
-            float _MinRange, _MaxRange;
-            float4 _RimCol;
+            CBUFFER_START(UnityPerMaterial)
+            float _DepthRimWidth;
+            float _DepthRimMinRange;
+            float _DepthRimMaxRange;
+            half4 _DepthRimColor;
             CBUFFER_END
 
-             TEXTURE2D_X_FLOAT(_CameraDepthTexture);
-             SAMPLER(sampler_CameraDepthTexture);
-
-             v2f vert(appdata v)
-             {
-                 v2f o;
-                 VertexPositionInputs vertexInput = GetVertexPositionInputs(v.vertex.xyz);
-                 VertexNormalInputs vertexNormalInput = GetVertexNormalInputs(v.normal, v.tangent);
-                 
-                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                 o.pos = vertexInput.positionCS;
-
-                 o.scrPos = ComputeScreenPos(vertexInput.positionCS);
-             
-                 o.worldPos = vertexInput.positionWS;
-                 o.worldNormal = vertexNormalInput.normalWS;
-
-                 o.color = v.color;     //顶点色
-
-                 return o;
-             }
-
-             float4 frag(v2f i) : SV_Target
+            struct VertexInput
             {
-                 //world normal 
-                float3 wNor = normalize(i.worldNormal);
-                //view normal 
-                float3 vNor = mul(UNITY_MATRIX_V, float4(wNor, 0.0)).xyz;
-                //screen pos 
-                float2 scrPos = i.scrPos.xy / i.scrPos.w;
-                scrPos += vNor.xy * _Width * 0.001;//uv offset 
-                float depthTex = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture,sampler_CameraDepthTexture,scrPos);
-                float depthTex0 = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture,sampler_CameraDepthTexture,i.scrPos.xy / i.scrPos.w);
-                float depth = LinearEyeDepth(depthTex,_ZBufferParams);//view space depth 
-                float depth0 = LinearEyeDepth(depthTex0,_ZBufferParams);//view space depth 
-                float rim = saturate((depth - depth0));
-                rim = smoothstep(min(_MinRange, 0.99), _MaxRange, rim);
-                
-                float3 nDir = NormalizeNormalPerPixel(i.worldNormal);
-                float3 lDir = _MainLightPosition;
-                float3 vDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos.xyz);
-                float nDotv = pow(max(0,1-dot(nDir,vDir)),3);
-                nDotv = step(0.1,nDotv);
-                float nDotL = saturate(dot(nDir,lDir));
-                nDotL = step(0.25,nDotL);
-                half4 col = 1;
-                col.xyz = rim*nDotL * _RimCol.xyz;
-                return col;
+                float4 vertex : POSITION;
+                float3 normal : NORMAL;
+            };
+
+            struct VertexOutput
+            {
+                float4 pos : SV_POSITION;
+                float4 screenPos : TEXCOORD0;
+                float3 normalWS : TEXCOORD1;
+            };
+
+            VertexOutput vert (VertexInput v)
+            {
+                VertexOutput o;
+                o.pos = TransformObjectToHClip(v.vertex.xyz);
+                o.screenPos = ComputeScreenPos(o.pos);
+                o.normalWS = TransformObjectToWorldNormal(v.normal);
+                return o;
             }
-             ENDHLSL
+
+            half4 frag (VertexOutput i) : SV_TARGET
+            {
+                float3 normalWS = normalize(i.normalWS);
+                float3 normalVS = TransformWorldToViewDir(normalWS);
+                float2 screenUV = i.screenPos.xy/i.screenPos.w;
+                float2 offsetUV = screenUV+normalVS.xy*_DepthRimWidth*0.001;
+
+                float depthTexSample_Offset = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture,sampler_CameraDepthTexture,offsetUV);
+                float depthTexSample = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture,sampler_CameraDepthTexture,screenUV);
+                float offsetDepth = LinearEyeDepth(depthTexSample_Offset,_ZBufferParams);
+                float depth = LinearEyeDepth(depthTexSample,_ZBufferParams);
+
+                float rim = saturate(offsetDepth-depth);
+                rim = smoothstep(min(_DepthRimMinRange,0.99),_DepthRimMaxRange,rim);
+
+                half4 color = half4(rim*_DepthRimColor.rgb,1.0);
+                return color;
+            }
+
+            ENDHLSL
         }
-        
-}
+    }
 }

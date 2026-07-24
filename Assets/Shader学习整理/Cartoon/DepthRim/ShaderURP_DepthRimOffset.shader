@@ -38,7 +38,7 @@ Shader "URP/DepthRimOffset"
             //URP Light部分函数，返回Light 值
              #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
-             struct appdata
+             struct VertexInput
             {
                  float4 vertex : POSITION;
                  float4 uv : TEXCOORD0;
@@ -48,7 +48,7 @@ Shader "URP/DepthRimOffset"
 
             };
 
-             struct v2f
+             struct VertexOutput
              {
                  float4 pos : SV_POSITION;
                  float2 uv : TEXCOORD0;
@@ -76,9 +76,9 @@ Shader "URP/DepthRimOffset"
              TEXTURE2D_X_FLOAT(_CameraDepthTexture);
              SAMPLER(sampler_CameraDepthTexture);
 
-             v2f vert(appdata v)
+             VertexOutput vert(VertexInput v)
              {
-                 v2f o;
+                 VertexOutput o;
                  VertexPositionInputs vertexInput = GetVertexPositionInputs(v.vertex.xyz);
                  VertexNormalInputs vertexNormalInput = GetVertexNormalInputs(v.normal, v.tangent);
                  
@@ -95,7 +95,7 @@ Shader "URP/DepthRimOffset"
                  return o;
              }
 
-             float4 frag(v2f i) : SV_Target
+             float4 frag(VertexOutput i) : SV_Target
             {
                  //world normal 
                 float3 wNor = normalize(i.worldNormal);
